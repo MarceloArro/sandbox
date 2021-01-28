@@ -542,7 +542,7 @@ export class auxMeth {
 
             }
 
-            //console.log(expr);
+            console.log(expr);
 
             //PARSE CEIL
             let ceilmatch = /\bceil\(/g;
@@ -562,14 +562,19 @@ export class auxMeth {
                     let ceilExpr = ceilResult[i];
                     let tochange = "ceil(" + ceilExpr+ ")";
 
-                    let maxpresent = /\if\[|\bmax\(|\bmin\(|\bsum\(|\b%\[|\bfloor\(|\bceil\(|\bcount[E|L|H]\(|\//g;
+                    let maxpresent = /\if\[|\bmax\(|\bmin\(|\bsum\(|\b%\[|\bfloor\(|\bceil\(|\bcount[E|L|H]\(/g;
                     let maxpresentcheck = ceilExpr.match(maxpresent);
 
                     if(!maxpresentcheck){
                         if(isNaN(ceilExpr)){
-                            let roll = new Roll(ceilExpr).roll();
-                            let finalvalue = roll.total;
-                            expr = expr.replace(tochange,parseInt(finalvalue)); 
+                            //                            let roll = new Roll(ceilExpr).roll();
+                            //                            let finalvalue = roll.total;
+                            //                            expr = expr.replace(tochange,parseInt(finalvalue));
+
+                            //console.log(ceilExpr);
+                            let test = eval(ceilExpr);
+                            let finalstring = "ceil(" + test+ ")";
+                            expr = expr.replace(tochange,finalstring); 
                         }
 
                     }
@@ -602,9 +607,13 @@ export class auxMeth {
 
                     if(!maxpresentcheck){
                         if(isNaN(floorExpr)){
-                            let roll = new Roll(floorExpr).roll();
-                            let finalvalue = roll.total;
-                            expr = expr.replace(tochange,parseInt(finalvalue)); 
+                            //                            let roll = new Roll(floorExpr).roll();
+                            //                            let finalvalue = roll.total;
+                            //                            expr = expr.replace(tochange,parseInt(finalvalue)); 
+
+                            let test = eval(floorExpr);
+                            let finalstring = "ceil(" + test+ ")";
+                            expr = expr.replace(tochange,finalstring); 
                         }
 
                     }
@@ -1237,7 +1246,7 @@ export class auxMeth {
 
         }
 
-        //console.log(expr);
+        console.log(expr);
         //console.log(exprmode);
 
         //console.log("finished parsed")
