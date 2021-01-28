@@ -251,6 +251,10 @@ TRICK 3: if you want a rollable button in a row, just create a label property, w
 
 ![Rolls and Tables](docs/images/tuto30.png)
 
+Finally, there is the option "Show Totals" that will display an extra row with the totalised results of the properties in a column. For that, the property needs to have the "Totalize" option checked and needs to be a simplenumeric:
+
+![Totalize](docs/images/totalize.jpg)
+
 ## 6.Modifiers (MODs)
 Now, get ready for the difficult stuff, rules automation. Sandbox is based on the following mantra: character sheets are modified by cItems, and rule systems can be modelled by designing a cItems structure. So, every modification a cItem performs to an Actor is called MOD. Let's get to it.
 
