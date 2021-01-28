@@ -449,7 +449,7 @@ Hooks.on("updateToken", async (scene, token, updatedData, options, userId) => {
     //console.log("updatingTokenActor");
     //console.log(token);
     //console.log(updatedData);
-    if(!token.owner){
+    if(!token.owner && !game.user.isGM){
         return;
     }
     let myToken = canvas.tokens.get(token._id);
@@ -467,7 +467,9 @@ Hooks.on("updateToken", async (scene, token, updatedData, options, userId) => {
         newdata.actorData.data.citems = updatedData["data.citems"];
     }
 
+
     if(!options.stopit && newdata.actorData){
+        //console.log("Changing token");
 
         let myData = await myactor.actorUpdater(myToken.actor.data);
 
@@ -590,6 +592,13 @@ Hooks.on("deleteActor", (actor) =>{
 
 Hooks.on("updateActor", async (actor, updateData,options,userId) => {
     //console.log(actor.data);
+    if(actor.data.permission.default >= CONST.ENTITY_PERMISSIONS.OBSERVER ||  actor.data.permission[game.user._id] >= CONST.ENTITY_PERMISSIONS.OBSERVER){
+        let myuser = userId;
+    }
+    else{
+        return;
+    }
+
     //    console.log(options);
     //    console.log(userId);
     //    console.log(actor.data.flags.lastupdatedBy);
