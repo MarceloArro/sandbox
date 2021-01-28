@@ -542,6 +542,8 @@ export class auxMeth {
 
             }
 
+            //console.log(expr);
+
             //PARSE CEIL
             let ceilmatch = /\bceil\(/g;
             var ceilResultArray;
@@ -560,7 +562,7 @@ export class auxMeth {
                     let ceilExpr = ceilResult[i];
                     let tochange = "ceil(" + ceilExpr+ ")";
 
-                    let maxpresent = /\if\[|\bmax\(|\bmin\(|\bsum\(|\b%\[|\bfloor\(|\bceil\(|\bcount[E|L|H]\(/g;
+                    let maxpresent = /\if\[|\bmax\(|\bmin\(|\bsum\(|\b%\[|\bfloor\(|\bceil\(|\bcount[E|L|H]\(|\//g;
                     let maxpresentcheck = ceilExpr.match(maxpresent);
 
                     if(!maxpresentcheck){
@@ -595,7 +597,7 @@ export class auxMeth {
                     let floorExpr = floorResult[i];
                     let tochange = "floor(" + floorExpr+ ")";
 
-                    let maxpresent = /\if\[|\bmax\(|\bmin\(|\bsum\(|\b%\[|\bceil\(|\bfloor\(|\bcount[E|L|H]\(/g;
+                    let maxpresent = /\if\[|\bmax\(|\bmin\(|\bsum\(|\b%\[|\bceil\(|\bfloor\(|\bcount[E|L|H]\(|\//g;
                     let maxpresentcheck = floorExpr.match(maxpresent);
 
                     if(!maxpresentcheck){
