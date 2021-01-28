@@ -401,7 +401,7 @@ export class auxMeth {
                     attvalue=0;
                 //console.log(attname + " " + attvalue);
                 let nonvalid = /\,|\[|\]|\(|\)|\;/g;
-                let nonvalidexpr = attpresult[i].match(nonvalid);
+                let nonvalidexpr = attcresult[i].match(nonvalid);
 
                 if(!nonvalidexpr)
                     expr = expr.replace(attname,attvalue);
