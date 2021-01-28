@@ -1945,9 +1945,9 @@ export class gActor extends Actor{
             rollformula = rollexp;
             //}
         }
-        console.log(rollexp);
+        //console.log(rollexp);
         rollexp = await auxMeth.autoParser(rollexp,actorattributes,citemattributes,true,false,number);
-        console.log(rollexp);
+        //console.log(rollexp);
         //console.log(rollformula);
 
         //PARSING FOLL FORMULA, TO IMPROVE!!!
