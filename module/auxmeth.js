@@ -331,9 +331,17 @@ export class auxMeth {
             for (let i=0;i<result.length;i++){
                 let rawattname = result[i];
                 let attProp = "value";
+                let attTotal;
                 if(rawattname.includes(".max")){
                     rawattname = rawattname.replace(".max","");
                     attProp = "max";
+                }
+
+                if(rawattname.includes(".totals.")){
+                    let splitter = rawattname.split('.');
+                    rawattname = splitter[0];
+                    attTotal = splitter[2];
+                    attProp = "total";
                 }
 
                 let attname = "@{" + result[i]+ "}";
@@ -342,7 +350,10 @@ export class auxMeth {
                 if(attributes!=null){
                     let myatt = attributes[rawattname];
 
+
                     if(myatt!=null){
+                        if(attTotal!=null && attTotal!="")
+                            myatt = attributes[rawattname].totals[attTotal];
                         attvalue = myatt[attProp];
                     }
                     else{
@@ -389,7 +400,11 @@ export class auxMeth {
                 if(attvalue=="" || attvalue ==null)
                     attvalue=0;
                 //console.log(attname + " " + attvalue);
-                expr = expr.replace(attname,attvalue);
+                let nonvalid = /\,|\[|\]|\(|\)|\;/g;
+                let nonvalidexpr = attpresult[i].match(nonvalid);
+
+                if(!nonvalidexpr)
+                    expr = expr.replace(attname,attvalue);
             }         
 
         }
@@ -402,16 +417,24 @@ export class auxMeth {
 
             //Substitute string for current value
             for (let i=0;i<attpresult.length;i++){
-                //                let debugname = attpresult[i];
-                //                console.log(debugname);
+                let debugname = attpresult[i];
+                //console.log(debugname);
                 let attname = "__" + attpresult[i]+ "__";
                 let attvalue=0;
                 if(attributes!=null){
                     if(attributes[attpresult[i]]!=null)
                         attvalue = attributes[attpresult[i]].value;
+
+                    //                    if(attvalue=="")
+                    //                        attvalue = 0;
                 }
 
-                expr = expr.replace(attname,attvalue);
+                let nonvalid = /\,|\[|\]|\(|\)|\;/g;
+                let nonvalidexpr = attpresult[i].match(nonvalid);
+                //console.log(attvalue);
+
+                if(!nonvalidexpr)
+                    expr = expr.replace(attname,attvalue);
             }         
 
         }
@@ -445,63 +468,73 @@ export class auxMeth {
                 //console.log(expr);
                 //Substitute string for current value
                 for (let i=scaleresult.length-1;i>=0;i--){
-                    let limits = scaleresult[i].split(",");
-                    //console.log(limits[0]);
-                    let value = limits[0];
-                    if(isNaN(value)){
-                        let roll = new Roll(limits[0]).roll();
-                        value = roll.total;
-                    }
+                    let nonvalidscale = /\if\[|\bmax\(|\bmin\(|\bsum\(|\bcount[E|L|H]\(/g;
+                    let nonvalidscalecheck = scaleresult[i].match(nonvalidscale);
 
-                    let valuemod=0;
-
-                    let limitArray = [];
-
-                    for(let j=1;j<limits.length;j++){
-                        let splitter = limits[j].split(":");
-                        let scale = splitter[0];
-                        if(isNaN(scale)){
-                            //if(isNaN(scale) || scale.includes('+')|| scale.includes('-')|| scale.includes('/')|| scale.includes('*')){
-                            let newroll = new Roll(scale).roll();
-                            //expr = expr.replace(scale,newroll.total);
-                            scale = newroll.total;
-
+                    if(!nonvalidscalecheck){
+                        let limits = scaleresult[i].split(",");
+                        //console.log(limits[0]);
+                        let value = limits[0];
+                        if(isNaN(value) && !value.includes("$") && !value.includes("min") && !value.includes("max") ){
+                            let roll = new Roll(limits[0]).roll();
+                            value = roll.total;
                         }
 
-                        let limitEl = {};
-                        limitEl.scale = scale;
-                        limitEl.value = splitter[1];
-                        await limitArray.push(limitEl);
-                    }
+                        let valuemod=0;
 
-                    await limitArray.sort(function (x, y) {
-                        return x.scale - y.scale;
-                    });
-                    //console.log(limitArray);
-                    //console.log(value);
-                    valuemod= limitArray[0].value;
-                    //console.log(valuemod);
-                    for(let k=0;k<limitArray.length;k++){
-                        let checker = limitArray[k];
-                        let checkscale = Number(checker.scale);
-                        //console.log(checkscale);
-                        if(value>=checkscale){
-                            valuemod=checker.value;
+                        let limitArray = [];
+
+                        for(let j=1;j<limits.length;j++){
+                            let splitter = limits[j].split(":");
+                            let scale = splitter[0];
+                            //console.log(scale);
+                            if(isNaN(scale)  && !scale.includes("$") && !scale.includes("min") && !scale.includes("max") ){
+                                //if(isNaN(scale) || scale.includes('+')|| scale.includes('-')|| scale.includes('/')|| scale.includes('*')){
+                                let newroll = new Roll(scale).roll();
+                                //expr = expr.replace(scale,newroll.total);
+                                scale = newroll.total;
+
+                            }
+
+                            let limitEl = {};
+                            limitEl.scale = scale;
+                            limitEl.value = splitter[1];
+                            await limitArray.push(limitEl);
                         }
-                    }
-                    if(isNaN(valuemod)){
+
+                        await limitArray.sort(function (x, y) {
+                            return x.scale - y.scale;
+                        });
+                        //console.log(limitArray);
+                        //console.log(value);
+                        valuemod= limitArray[0].value;
                         //console.log(valuemod);
-                        let nonum = /[#@]{|\%\[|\if\[/g;
-                        let checknonum = valuemod.match(nonum);
-
-                        if(checknonum!=null){
-                            sums_are_num = false;
+                        for(let k=0;k<limitArray.length;k++){
+                            let checker = limitArray[k];
+                            let checkscale = Number(checker.scale);
+                            //console.log(checkscale);
+                            if(value>=checkscale){
+                                valuemod=checker.value;
+                            }
                         }
+                        if(isNaN(valuemod)){
+                            //console.log(valuemod);
+                            let nonum = /[#@]{|\%\[|\if\[/g;
+                            let checknonum = valuemod.match(nonum);
+
+                            if(checknonum!=null){
+                                sums_are_num = false;
+                            }
+                        }
+
+
+                        let attname = "%[" + scaleresult[i]+ "]";
+                        expr = expr.replace(attname,valuemod);
                     }
 
-
-                    let attname = "%[" + scaleresult[i]+ "]";
-                    expr = expr.replace(attname,valuemod);
+                    else{
+                        sums_are_num = false;
+                    }
 
 
                 }
@@ -509,7 +542,73 @@ export class auxMeth {
 
             }
 
+            //PARSE CEIL
+            let ceilmatch = /\bceil\(/g;
+            var ceilResultArray;
+            var ceilResult = [];
 
+            while (ceilResultArray = ceilmatch.exec(expr)) {
+                //console.log(maxResultArray.index + ' ' + mrmatch.lastIndex);
+                let suba = expr.substring(ceilmatch.lastIndex, expr.length);
+                let subb = auxMeth.getParenthesString(suba);
+                ceilResult.push(subb);
+            }
+
+            if(ceilResult!=null){
+                //Substitute string for current value        
+                for (let i=0;i<ceilResult.length;i++){
+                    let ceilExpr = ceilResult[i];
+                    let tochange = "ceil(" + ceilExpr+ ")";
+
+                    let maxpresent = /\if\[|\bmax\(|\bmin\(|\bsum\(|\b%\[|\bfloor\(|\bceil\(|\bcount[E|L|H]\(/g;
+                    let maxpresentcheck = ceilExpr.match(maxpresent);
+
+                    if(!maxpresentcheck){
+                        if(isNaN(ceilExpr)){
+                            let roll = new Roll(ceilExpr).roll();
+                            let finalvalue = roll.total;
+                            expr = expr.replace(tochange,parseInt(finalvalue)); 
+                        }
+
+                    }
+
+                }
+            }
+
+            //console.log(expr);
+
+            //PARSE FLOOR
+            let floormatch = /\bfloor\(/g;
+            var floorResultArray;
+            var floorResult = [];
+
+            while (floorResultArray = floormatch.exec(expr)) {
+                //console.log(maxResultArray.index + ' ' + mrmatch.lastIndex);
+                let suba = expr.substring(floormatch.lastIndex, expr.length);
+                let subb = auxMeth.getParenthesString(suba);
+                floorResult.push(subb);
+            }
+
+            if(floorResult!=null){
+                //Substitute string for current value        
+                for (let i=0;i<floorResult.length;i++){
+                    let floorExpr = floorResult[i];
+                    let tochange = "floor(" + floorExpr+ ")";
+
+                    let maxpresent = /\if\[|\bmax\(|\bmin\(|\bsum\(|\b%\[|\bceil\(|\bfloor\(|\bcount[E|L|H]\(/g;
+                    let maxpresentcheck = floorExpr.match(maxpresent);
+
+                    if(!maxpresentcheck){
+                        if(isNaN(floorExpr)){
+                            let roll = new Roll(floorExpr).roll();
+                            let finalvalue = roll.total;
+                            expr = expr.replace(tochange,parseInt(finalvalue)); 
+                        }
+
+                    }
+
+                }
+            }
 
             //console.log(expr);
 
@@ -544,6 +643,8 @@ export class auxMeth {
                 }
             }
 
+            //console.log(expr);
+
             //MAXOF
             //var maxResult = expr.match(/(?<=\max\().*?(?=\))/g);
             let mrmatch = /\bmax\(/g;
@@ -560,31 +661,53 @@ export class auxMeth {
             if(maxResult!=null){
                 //Substitute string for current value        
                 for (let i=0;i<maxResult.length;i++){
+                    //console.log(maxResult[i]);
+                    let ifpresent = /\if\[|\bmax\(|\bmin\(|\bceil\(|\bfloor\(|\bsum\(|\bcount[E|L|H]\(/g;
+                    let ifpresentcheck = maxResult[i].match(ifpresent);
 
-                    let blocks = maxResult[i].split(",");
-                    let finalvalue=0;
-                    let valueToMax = Array();
-                    let nonumber=false;
-                    for (let n=0;n<blocks.length;n++){
-                        if(!isNaN(blocks[n])){
-                            valueToMax.push(parseInt(blocks[n]));
+                    if(!ifpresentcheck){
+                        let blocks = maxResult[i].split(",");
+                        let finalvalue=0;
+                        let valueToMax = Array();
+                        let nonumber=false;
+                        for (let n=0;n<blocks.length;n++){
+                            let pushblock = blocks[n];
+                            let nonumsum = /[#@]{|\%\[|\if\[|\?/g;
+                            let checknonumsum = blocks[n].match(nonumsum);
+                            //console.log(pushblock);
+                            if(!checknonumsum){
+                                if(isNaN(pushblock)){
+                                    let roll = new Roll(blocks[n]).roll();
+                                    pushblock = roll.total;
+                                }
+
+                                valueToMax.push(parseInt(pushblock));
+                            }
+                            else{
+                                //console.log("nonumber");
+                                nonumber=true;
+                            }
                         }
+                        if(!nonumber){
+                            finalvalue = Math.max.apply(Math, valueToMax);
+                            let tochange = "max(" + maxResult[i]+ ")";
+                            expr = expr.replace(tochange,parseInt(finalvalue)); 
+                        }
+
                         else{
-                            nonumber=true;
+                            sums_are_num = false;
                         }
-                    }
-                    if(!nonumber){
-                        finalvalue = Math.max.apply(Math, valueToMax);
-                        let tochange = "max(" + maxResult[i]+ ")";
-                        expr = expr.replace(tochange,parseInt(finalvalue)); 
                     }
 
                     else{
                         sums_are_num = false;
                     }
 
+
                 }
             }
+
+            //console.log(expr);
 
             //MINOF
             //var minResult = expr.match(/(?<=\min\().*?(?=\))/g);
@@ -601,25 +724,40 @@ export class auxMeth {
             if(minResult!=null){
                 //Substitute string for current value        
                 for (let i=0;i<minResult.length;i++){
-                    //                let debugname = attpresult[i];
-                    //                console.log(debugname);
+                    let ifpresent = /\if\[|\bmax\(|\bmin\(|\bceil\(|\bfloor\(|\bsum\(|\bcount[E|L|H]\(/g;
+                    let ifpresentcheck = minResult[i].match(ifpresent);
 
-                    let blocks = minResult[i].split(",");
-                    let finalvalue;
-                    let valueToMin = Array();
-                    let nonumber=false;
-                    for (let n=0;n<blocks.length;n++){
-                        if(!isNaN(blocks[n])){
-                            valueToMin.push(parseInt(blocks[n]));
+                    if(!ifpresentcheck){
+                        let blocks = minResult[i].split(",");
+                        let finalvalue;
+                        let valueToMin = Array();
+                        let nonumber=false;
+                        for (let n=0;n<blocks.length;n++){
+                            let pushblock = blocks[n];
+                            //console.log(pushblock);
+                            let nonumsum = /[#@]{|\%\[|\if\[|\?/g;
+                            let checknonumsum = blocks[n].match(nonumsum);
+                            if(!checknonumsum){
+                                if(isNaN(pushblock)){
+                                    let roll = new Roll(blocks[n]).roll();
+                                    pushblock = roll.total;
+                                }
+
+                                valueToMin.push(parseInt(pushblock));
+                            }
+                            else{
+                                nonumber=true;
+                            }
                         }
+                        if(!nonumber){
+                            finalvalue = Math.min.apply(Math, valueToMin);
+                            let tochange = "min(" + minResult[i]+ ")";
+                            expr = expr.replace(tochange,parseInt(finalvalue)); 
+                        }
+
                         else{
-                            nonumber=true;
+                            sums_are_num = false;
                         }
-                    }
-                    if(!nonumber){
-                        finalvalue = Math.min.apply(Math, valueToMin);
-                        let tochange = "min(" + minResult[i]+ ")";
-                        expr = expr.replace(tochange,parseInt(finalvalue)); 
                     }
 
                     else{
@@ -629,6 +767,10 @@ export class auxMeth {
 
                 }
             }
+
+            //console.log(expr);
+            //console.log(sums_are_num);
+
             //COUNTIF
             //console.log(expr);
             //var countIfResult = expr.match(/(?<=\bcountE\b\().*?(?=\))/g);
@@ -875,79 +1017,133 @@ export class auxMeth {
                 //Substitute string for current value
                 for (let i=ifresult.length-1;i>=0;i--){
 
-                    var nonumber = false;
-                    let limits = ifresult[i].split(",");
-                    let general_cond = limits[0];
-                    let truevalue = limits[1];
-                    let falsevalue = limits[2];
-                    let dontparse = false;
-                    falsevalue = falsevalue.replace("ELSE ","");
-                    let checknonumcond;
-                    let nonumcond;
+                    let nonvalidif = /\bmax\(|\bmin\(|\%\[/g;
+                    let nonvalidifcheck = ifresult[i].match(nonvalidif);
 
-                    let finalvalue = falsevalue;
+                    if(!nonvalidifcheck){
+                        var nonumber = false;
+                        let limits = ifresult[i].split(",");
+                        let general_cond = limits[0];
+                        let truevalue = limits[1];
+                        let falsevalue = limits[2];
+                        let dontparse = false;
+                        falsevalue = falsevalue.replace("ELSE ","");
+                        let checknonumcond;
+                        let nonumcond;
 
-                    var findOR = general_cond.search(" OR "); 
-                    var findAND = general_cond.search(" AND ");
+                        let finalvalue = falsevalue;
 
-                    let orconditions;
-                    let andconditions;
+                        var findOR = general_cond.search(" OR "); 
+                        var findAND = general_cond.search(" AND ");
 
-                    if (findOR != -1){
-                        //console.log("OR");
-                        orconditions = general_cond.split(" OR ");
-                        for(let j=0;j<orconditions.length;j++){
-                            let conditions = orconditions[j].split(":");
-                            let thiscondition = conditions[0];
-                            let checker = conditions[1];
+                        let orconditions;
+                        let andconditions;
 
-                            if (thiscondition === "true" || thiscondition === "false") {
-                                thiscondition = (thiscondition === "true");
-                            }
+                        if (findOR != -1){
+                            //console.log("OR");
+                            orconditions = general_cond.split(" OR ");
+                            for(let j=0;j<orconditions.length;j++){
+                                let conditions = orconditions[j].split(":");
+                                let thiscondition = conditions[0];
+                                let checker = conditions[1];
 
-                            if (checker === "true" || checker === "false") {
-                                checker = (checker === "true");
-                            }
-
-                            if(isNaN(checker)){
-                                try{
-                                    let newroll = new Roll(checker).roll();
-                                    checker = newroll.total;
+                                if (thiscondition === "true" || thiscondition === "false") {
+                                    thiscondition = (thiscondition === "true");
                                 }
-                                catch(err){
 
+                                if (checker === "true" || checker === "false") {
+                                    checker = (checker === "true");
                                 }
-                            }
 
-                            if(isNaN(thiscondition)){
-                                nonumcond = /\+|\-|\\|\*/g;
-                                checknonumcond = thiscondition.match(nonumcond);
-                            }
+                                if(isNaN(checker)){
+                                    try{
+                                        let newroll = new Roll(checker).roll();
+                                        checker = newroll.total;
+                                    }
+                                    catch(err){
 
-
-                            if(isNaN(thiscondition) || checknonumcond!=null){
-                                try{
-                                    let newroll = new Roll(thiscondition).roll();
-                                    thiscondition = newroll.total;
+                                    }
                                 }
-                                catch(err){
 
+                                if(isNaN(thiscondition)){
+                                    nonumcond = /\+|\-|\\|\*/g;
+                                    checknonumcond = thiscondition.match(nonumcond);
                                 }
-                            }
 
-                            if(thiscondition==checker)
-                                finalvalue = truevalue;
+
+                                if(isNaN(thiscondition) || checknonumcond!=null){
+                                    try{
+                                        let newroll = new Roll(thiscondition).roll();
+                                        thiscondition = newroll.total;
+                                    }
+                                    catch(err){
+
+                                    }
+                                }
+
+                                if(thiscondition==checker)
+                                    finalvalue = truevalue;
+                            }
                         }
-                    }
 
-                    else if (findAND != -1){
-                        //console.log("AND");
-                        andconditions = general_cond.split(" AND ");
-                        finalvalue = truevalue;
-                        for(let j=0;j<andconditions.length;j++){
-                            let conditions = andconditions[j].split(":");
+                        else if (findAND != -1){
+                            //console.log("AND");
+                            andconditions = general_cond.split(" AND ");
+                            finalvalue = truevalue;
+                            for(let j=0;j<andconditions.length;j++){
+                                let conditions = andconditions[j].split(":");
+                                let thiscondition = conditions[0];
+                                let checker = conditions[1];
+
+                                if (thiscondition === "true" || thiscondition === "false") {
+                                    thiscondition = (thiscondition === "true");
+                                }
+
+                                if (checker === "true" || checker === "false") {
+                                    checker = (checker === "true");
+                                }
+
+                                if(isNaN(checker)){
+                                    try{
+                                        let newroll = new Roll(checker).roll();
+                                        checker = newroll.total;
+                                    }
+                                    catch(err){
+                                        dontparse = true;
+
+                                    }
+                                }
+
+                                if(isNaN(thiscondition)){
+                                    nonumcond = /\+|\-|\\|\*/g;
+                                    checknonumcond = thiscondition.match(nonumcond);
+                                }
+
+                                if(isNaN(thiscondition) || checknonumcond!=null){
+                                    try{
+                                        let newroll = new Roll(thiscondition).roll();
+                                        thiscondition = newroll.total;
+                                    }
+                                    catch(err){
+                                        dontparse = true;
+                                    }
+                                }
+
+                                //console.log(thiscondition + " " + checker);
+
+                                if(thiscondition!=checker)
+                                    finalvalue = falsevalue;
+                            }
+                        }
+
+                        else {
+                            //console.log("NONE");
+
+                            let conditions = general_cond.split(":");
                             let thiscondition = conditions[0];
                             let checker = conditions[1];
+                            //console.log(conditions);
+                            //console.log(checker);
 
                             if (thiscondition === "true" || thiscondition === "false") {
                                 thiscondition = (thiscondition === "true");
@@ -956,6 +1152,8 @@ export class auxMeth {
                             if (checker === "true" || checker === "false") {
                                 checker = (checker === "true");
                             }
+
+                            //console.log(thiscondition + " " + checker);
 
                             if(isNaN(checker)){
                                 try{
@@ -964,7 +1162,6 @@ export class auxMeth {
                                 }
                                 catch(err){
                                     dontparse = true;
-
                                 }
                             }
 
@@ -972,6 +1169,7 @@ export class auxMeth {
                                 nonumcond = /\+|\-|\\|\*/g;
                                 checknonumcond = thiscondition.match(nonumcond);
                             }
+                            //console.log(thiscondition + " " + checker);
 
                             if(isNaN(thiscondition) || checknonumcond!=null){
                                 try{
@@ -985,74 +1183,32 @@ export class auxMeth {
 
                             //console.log(thiscondition + " " + checker);
 
-                            if(thiscondition!=checker)
-                                finalvalue = falsevalue;
-                        }
-                    }
-
-                    else {
-                        //console.log("NONE");
-                        let conditions = general_cond.split(":");
-                        let thiscondition = conditions[0];
-                        let checker = conditions[1];
-
-                        if (thiscondition === "true" || thiscondition === "false") {
-                            thiscondition = (thiscondition === "true");
-                        }
-
-                        if (checker === "true" || checker === "false") {
-                            checker = (checker === "true");
-                        }
-
-                        //console.log(thiscondition + " " + checker);
-
-                        if(isNaN(checker)){
-                            try{
-                                let newroll = new Roll(checker).roll();
-                                checker = newroll.total;
-                            }
-                            catch(err){
-                                dontparse = true;
+                            if(thiscondition.toString() === checker.toString()){
+                                finalvalue = truevalue;
                             }
                         }
 
-                        if(isNaN(thiscondition)){
-                            nonumcond = /\+|\-|\\|\*/g;
-                            checknonumcond = thiscondition.match(nonumcond);
+                        //console.log(finalvalue);
+
+                        let attname = "if[" + ifresult[i]+ "]";
+
+                        let nonum = /[#@]{|\%\[|\if\[|\?/g;
+                        let checknonumtrue = falsevalue.match(nonum);
+                        let checknonumfalse = truevalue.match(nonum);
+
+                        if(checknonumtrue!=null || checknonumfalse!=null){
+                            sums_are_num = false;
                         }
 
-                        if(isNaN(thiscondition) || checknonumcond!=null){
-                            try{
-                                let newroll = new Roll(thiscondition).roll();
-                                thiscondition = newroll.total;
-                            }
-                            catch(err){
-                                dontparse = true;
-                            }
+                        else{
+                            expr = expr.replace(attname,finalvalue);
                         }
-
-                        //console.log(thiscondition + " " + checker);
-
-                        if(thiscondition .toString() === checker.toString()){
-                            finalvalue = truevalue;
-                        }
-                    }
-
-                    //console.log(finalvalue);
-
-                    let attname = "if[" + ifresult[i]+ "]";
-
-                    let nonum = /[#@]{|\%\[|\if\[|\?/g;
-                    let checknonumtrue = falsevalue.match(nonum);
-                    let checknonumfalse = truevalue.match(nonum);
-
-                    if(checknonumtrue!=null || checknonumfalse!=null){
-                        sums_are_num = false;
                     }
 
                     else{
-                        expr = expr.replace(attname,finalvalue);
+                        sums_are_num = false;
                     }
+
 
                 }         
 
@@ -1064,6 +1220,14 @@ export class auxMeth {
             expr = expr.replace(plusmin,"-");
             let minmin = /\-\-/g;
             expr = expr.replace(minmin,"+");
+            let commazero = /\,\s\-\b0|\,\-\b0/g;
+            expr = expr.replace(commazero,",0");
+            let pluszero = /\+\s\b0|\+\b0/g;
+            expr = expr.replace(pluszero,"");
+            let minuszero = /\-\s\b0|\-\b0/g;
+            expr = expr.replace(minuszero,"");
+            //            let zeroplus = /\b0\+|\b0\s\+|\b0\-|\b0\s\-/g;
+            //            expr = expr.replace(zeroplus,"");
 
             //console.log(expr);
 
