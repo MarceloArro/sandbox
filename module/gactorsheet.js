@@ -526,6 +526,14 @@ export class gActorSheet extends ActorSheet {
             await this.setAttributeValues(attId,attData);
         }
 
+        //For special cases of tables
+        let tableinputs = form.getElementsByClassName("sbtable");
+        for(let i = 0; i < tableinputs.length; i++){
+            let newAtt = tableinputs[i];
+            let attId = newAtt.getAttribute("attId");
+            await this.setAttributeValues(attId,attData);
+        }
+
         //Get token settings
         //Set token mode
         let tokenbar = form.getElementsByClassName("token-bar1");
@@ -569,23 +577,52 @@ export class gActorSheet extends ActorSheet {
         //const attData = this.actor.data.data.attributes;
         const property = game.items.get(attID);
         const attribute = property.data.data.attKey;
-        //console.log(attribute);
-        if(!hasProperty(attData,attribute)){
+        //console.log(property.data.data.attKey + " " + property.data.data.datatype);
+        if(!hasProperty(attData,attribute) || Object.keys(attData[attribute]).length == 0){
             //console.log("setting");
             attData[attribute] = {};
+            setProperty(attData[attribute],"id", property._id);
 
             //Sets id and auto
-            setProperty(attData[attribute],"id", property._id);
-            setProperty(attData[attribute],"value", "");
-            setProperty(attData[attribute],"prev", "");
-            await setProperty(attData[attribute],"isset", false);
+            if(property.data.data.datatype!="table"){
 
-            //Sets auto, auto max, and max
-            if(property.data.data.automax!="" || property.data.data.datatype=="radio"){
+                setProperty(attData[attribute],"value", "");
+                setProperty(attData[attribute],"prev", "");
+                await setProperty(attData[attribute],"isset", false);
 
-                setProperty(attData[attribute],"max", "");
+                //Sets auto, auto max, and max
+                if(property.data.data.automax!="" || property.data.data.datatype=="radio"){
 
+                    setProperty(attData[attribute],"max", "");
+
+                }
             }
+            else{
+                //console.log("setting table");
+                let tablegroup = property.data.data.group;
+                let groupObj = await game.items.get(tablegroup.id);
+                let groupprops = groupObj.data.data.properties;
+                //console.log(groupprops);
+                setProperty(attData[attribute],"istable", true);
+                setProperty(attData[attribute],"totals", {});
+                const attTableKey = attData[attribute];
+                for(let i = 0; i < groupprops.length; i++){
+                    let propId = groupprops[i].id;
+                    let propData = game.items.get(propId);
+                    let propKey = propData.data.data.attKey;
+                    setProperty(attTableKey.totals,propKey, {});
+                    const tableAtt = attTableKey.totals[propKey];
+                    setProperty(tableAtt,"id", propId);
+                    if(propData.data.data.totalize){
+
+                        setProperty(tableAtt,"total", "");
+                        setProperty(tableAtt,"prev", "");
+                    }
+
+                }
+            }
+
+
         }
 
         //return attData;
@@ -1232,6 +1269,8 @@ export class gActorSheet extends ActorSheet {
                     else{
                         sInput.className = "table-free";
                     }
+
+                    sInput.className += " sbtable";
 
                     sInput.setAttribute("name", "data.attributes." + property.data.attKey);
                     sInput.setAttribute("value", "{{data.attributes." + property.data.attKey + ".value}}");
@@ -2066,7 +2105,7 @@ export class gActorSheet extends ActorSheet {
     /* -------------------------------------------- */
 
     async refreshCItems(basehtml){
-        console.log("refreshingCItems");
+        //console.log("refreshingCItems");
         //TEST
         var parser = new DOMParser();
         let htmlcode = await auxMeth.getTempHTML(this.actor.data.data.gtemplate);
@@ -2131,10 +2170,12 @@ export class gActorSheet extends ActorSheet {
             //const propTable = await propitems.find(y=>y._id == html[i].getAttribute("attid"));
             let group;
             let groupID;
+            let tableKey;
 
             if(propTable!=null){
                 groupID = propTable.data.data.group;
                 group = game.items.get(groupID.id);
+                tableKey = propTable.data.data.attKey;
             }
 
             if(group!=null){
@@ -2486,21 +2527,6 @@ export class gActorSheet extends ActorSheet {
                                                 }
 
                                                 if(propdata.auto!=""){
-                                                    //                                                    let rawvalue = await auxMeth.autoParser(propdata.auto,attributes,ciObject.attributes,false);
-                                                    //
-                                                    //                                                    if(isNaN(rawvalue) && propdata.datatype != "simpletext"){
-                                                    //
-                                                    //                                                        let afinal = new Roll(rawvalue).roll();
-                                                    //                                                        if(!isNaN(afinal.total))
-                                                    //                                                            rawvalue = afinal.total;
-                                                    //
-                                                    //                                                    }
-                                                    //
-                                                    //                                                    cellvalue.value =rawvalue;
-                                                    //
-                                                    //                                                    if(ciObject.attributes[propKey].value!=cellvalue.value){
-                                                    //                                                        this.saveNewCIAtt(ciObject.id,groupprops[k].id,cellvalue.value);
-                                                    //                                                    }
 
                                                     cellvalue.setAttribute("readonly", true);
                                                 }
@@ -2579,6 +2605,97 @@ export class gActorSheet extends ActorSheet {
                     }
                     if(table!=null)
                         table.appendChild(new_row);
+
+                }
+
+                if(propTable.data.data.hastotals){
+                    let new_row = document.createElement("TR");
+                    new_row.className="totals-row";
+
+                    let headercells = document.getElementsByTagName("table");
+                    let counter = groupcitems.length;
+
+                    let lastRow = table.children[table.children.length-1];
+                    let cellTotal = lastRow.children.length;
+                    let cellcounter = 0;
+
+                    if(propTable.data.data.onlynames!="ONLY_NAMES"){
+
+                        if(propTable.data.data.onlynames!="NO_NAMES"){
+                            let empty_cell = document.createElement("TD");
+                            empty_cell.textContent = "TOTAL";
+                            empty_cell.className = lastRow.children[cellcounter].className;
+                            empty_cell.className += " boldtext";
+                            empty_cell.className = empty_cell.className.replace("linkable","");
+                            new_row.appendChild(empty_cell);
+                            cellcounter +=1;
+                        }
+
+                        if(propTable.data.data.hasactivation){
+                            let empty_cell = document.createElement("TD");
+                            empty_cell.className = lastRow.children[cellcounter].className;
+                            new_row.appendChild(empty_cell);
+                            cellcounter +=1;
+                        }
+
+                        if(propTable.data.data.hasactivation){
+                            let empty_cell = document.createElement("TD");
+                            empty_cell.className = lastRow.children[cellcounter].className;
+                            new_row.appendChild(empty_cell);
+                            cellcounter +=1;
+                        }
+
+                        if(propTable.data.data.hasunits){
+                            let empty_cell = document.createElement("TD");
+                            empty_cell.className = lastRow.children[cellcounter].className;
+                            new_row.appendChild(empty_cell);
+                            cellcounter +=1;
+                        }
+
+
+                        for(let k=0;k<groupprops.length;k++){
+
+                            let propRef = groupprops[k].id;
+                            let propObj = game.items.get(groupprops[k].id);
+                            let propdata = propObj.data.data;
+                            let propKey = propObj.data.data.attKey;
+                            if(propdata.totalize){
+                                let total_cell = document.createElement("TD");
+                                let newtotal;
+                                if(myactor.attributes[tableKey]!=null){
+                                    let totalvalue = myactor.attributes[tableKey].totals[propKey];
+                                    newtotal = totalvalue.total;
+                                }
+
+                                if(newtotal==null || isNaN(newtotal))
+                                    newtotal = 0;
+                                total_cell.className = lastRow.children[cellcounter].className;
+                                total_cell.textContent = newtotal;
+                                new_row.appendChild(total_cell);
+                                cellcounter +=1;
+                            }
+                            else{
+                                let empty_cell = document.createElement("TD");
+                                empty_cell.className = lastRow.children[cellcounter].className;
+                                new_row.appendChild(empty_cell);
+                                cellcounter +=1;
+                            }
+
+                        }
+
+                        if(propTable.data.data.editable || game.user.isGM){
+                            let empty_cell = document.createElement("TD");
+                            empty_cell.className = lastRow.children[cellcounter].className;
+                            new_row.appendChild(empty_cell);
+                            cellcounter +=1;
+                        }
+
+
+                        if(table!=null)
+                            table.appendChild(new_row);
+                    }
+
+
                 }
 
             }
@@ -2707,7 +2824,7 @@ export class gActorSheet extends ActorSheet {
         //get Item
         await this.actor.deletecItem(itemID, cascading);
 
-        this.scrollbarSet();
+        //this.scrollbarSet();
 
         await this.actor.update(this.actor.data);
 
@@ -2776,7 +2893,7 @@ export class gActorSheet extends ActorSheet {
         const html = await basehtml.find(".scrollable");
         for(let i=0;i<html.length;i++){
             let scrollNode = html[i];
-            scrollNode.style.height = newheight + "px";
+            scrollNode.style.height = (newheight - 20) + "px";
 
             if(scrollNode.classList.contains("active")){
                 let thisuser = game.user._id;
@@ -3045,7 +3162,7 @@ export class gActorSheet extends ActorSheet {
 
     async _updateObject(event, formData) {
         event.preventDefault();
-        console.log("updateObject");
+        //console.log("updateObject");
         //console.log(event);
         //console.log(event.target.name);
         //console.log(formData);
@@ -3063,6 +3180,7 @@ export class gActorSheet extends ActorSheet {
             formData["data.gtemplate"]=this.actor.data.data.gtemplate;
 
 
+        formData = await this.checkAttributes(formData);
         this.scrollbarSet();
 
         //console.log("User: " + game.user._id + " is updating actor: " + this.actor.name + " target: " + event.target.name);
@@ -3089,7 +3207,7 @@ export class gActorSheet extends ActorSheet {
                 target = target.replace(".value","");
                 target = target.replace(".max","");
 
-                formData = await this.checkAttributes(formData);
+
                 let attri = target.split(".")[2];
                 //console.log(attri);
                 property = game.items.find(y=>y.data.type=="property" && y.data.data.attKey==attri);
@@ -3141,7 +3259,7 @@ export class gActorSheet extends ActorSheet {
         }
 
         //console.log(formData);
-        console.log("updating form");
+        //console.log("updating form");
 
         await super._updateObject(event, formData);
 
