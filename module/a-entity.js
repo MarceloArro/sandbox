@@ -2229,13 +2229,13 @@ export class gActor extends Actor{
         }
 
 
-        console.log(rollexp);
+        //console.log(rollexp);
         //console.log(rollformula);
 
         //ROLL EXPRESSION
         //rollformula = await auxMeth.autoParser(rollformula,actorattributes,citemattributes,true,false,number);
         rollformula = await auxMeth.autoParser(rollformula,actorattributes,citemattributes,true,false,number);
-        console.log(rollexp);
+        //console.log(rollexp);
         let partroll = new Roll(rollexp);
         roll = partroll.roll();
 
