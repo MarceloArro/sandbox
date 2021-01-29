@@ -468,9 +468,9 @@ export class auxMeth {
                 //console.log(expr);
                 //Substitute string for current value
                 for (let i=scaleresult.length-1;i>=0;i--){
-                    let nonvalidscale = /\if\[|\bmax\(|\bmin\(|\bsum\(|\bcount[E|L|H]\(/g;
+                    let nonvalidscale = /\if\[|\bmax\(|\bmin\(|\bsum\(|\bcount[E|L|H]\(|\%\[/g;
                     let nonvalidscalecheck = scaleresult[i].match(nonvalidscale);
-
+                    //console.log(scaleresult[i]);
                     if(!nonvalidscalecheck){
                         let limits = scaleresult[i].split(",");
                         //console.log(limits[0]);
@@ -508,7 +508,7 @@ export class auxMeth {
                         //console.log(limitArray);
                         //console.log(value);
                         valuemod= limitArray[0].value;
-                        //console.log(valuemod);
+
                         for(let k=0;k<limitArray.length;k++){
                             let checker = limitArray[k];
                             let checkscale = Number(checker.scale);
@@ -517,6 +517,7 @@ export class auxMeth {
                                 valuemod=checker.value;
                             }
                         }
+                        //console.log(valuemod);
                         if(isNaN(valuemod)){
                             //console.log(valuemod);
                             let nonum = /[#@]{|\%\[|\if\[/g;
@@ -529,7 +530,10 @@ export class auxMeth {
 
 
                         let attname = "%[" + scaleresult[i]+ "]";
+                        //console.log(attname);
                         expr = expr.replace(attname,valuemod);
+
+                        //console.log(expr);
                     }
 
                     else{
@@ -542,7 +546,7 @@ export class auxMeth {
 
             }
 
-            console.log(expr);
+            //console.log(expr);
 
             //PARSE CEIL
             let ceilmatch = /\bceil\(/g;
@@ -574,7 +578,10 @@ export class auxMeth {
                             //console.log(ceilExpr);
                             let test = eval(ceilExpr);
                             let finalstring = "ceil(" + test+ ")";
-                            expr = expr.replace(tochange,finalstring); 
+                            expr = expr.replace(tochange,finalstring);
+                            for (let x=ceilResult.length-1;x>=0;x--){
+                                ceilResult[x] = ceilResult[x].replace(tochange,finalstring);
+                            }
                         }
 
                     }
@@ -602,7 +609,7 @@ export class auxMeth {
                     let floorExpr = floorResult[i];
                     let tochange = "floor(" + floorExpr+ ")";
 
-                    let maxpresent = /\if\[|\bmax\(|\bmin\(|\bsum\(|\b%\[|\bceil\(|\bfloor\(|\bcount[E|L|H]\(|\//g;
+                    let maxpresent = /\if\[|\bmax\(|\bmin\(|\bsum\(|\%\[|\bceil\(|\bfloor\(|\bcount[E|L|H]\(|\//g;
                     let maxpresentcheck = floorExpr.match(maxpresent);
 
                     if(!maxpresentcheck){
@@ -1246,7 +1253,7 @@ export class auxMeth {
 
         }
 
-        console.log(expr);
+        //console.log(expr);
         //console.log(exprmode);
 
         //console.log("finished parsed")
