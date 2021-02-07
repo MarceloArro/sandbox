@@ -1691,7 +1691,15 @@ export class gActor extends Actor{
 
                 regobject.expr = await this.expandPropsP(regobject.expr,attributes);
                 regobject.expr = await auxMeth.autoParser(regobject.expr,attributes,null,false);
-                //console.log(regobject.expr);
+
+                //                let parseexp = /\if\[|\bmax\(|\bmin\(|\bsum\(|\%\[|\bfloor\(|\bceil\(|\bcount[E|L|H]\(/g;
+                //                let parsecheck = regobject.expr.match(parseexp);
+                //                let numbexp = /^[0-9]*$/g;
+                //                let numbcheck = regobject.expr.match(numbexp);
+                //
+                //                if(!parsecheck && numbcheck){
+                //                    regobject.expr = eval(regobject.expr);
+                //                }
 
                 regobject.result = regobject.expr;
                 await regArray.push(regobject);
