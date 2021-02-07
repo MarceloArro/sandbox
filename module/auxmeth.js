@@ -250,6 +250,7 @@ export class auxMeth {
                 //console.log(regobject.expr);
 
                 regobject.result = await auxMeth.autoParser(regobject.expr,attributes,itemattributes,false,true);
+
                 await regArray.push(regobject);
 
                 expr = expr.replace(attname,attvalue);
@@ -451,101 +452,6 @@ export class auxMeth {
             if(safety_break>7)
                 break;
 
-            //PARSE SCALED AUTO VALUES
-            //var scaleresult = expr.match(/(?<=\%\[).*?(?=\])/g);
-            let scmatch = /\%\[/g;
-            var scaleresultArray;
-            var scaleresult = [];
-
-            while (scaleresultArray = scmatch.exec(expr)) {
-                //console.log(maxResultArray.index + ' ' + mrmatch.lastIndex);
-                let suba = expr.substring(scmatch.lastIndex, expr.length);
-                let subb = auxMeth.getBracketsString(suba);
-                scaleresult.push(subb);
-            }
-            //console.log(scaleresult);
-            if(scaleresult!=null && scaleresult.length>0){
-                //console.log(expr);
-                //Substitute string for current value
-                for (let i=scaleresult.length-1;i>=0;i--){
-                    let nonvalidscale = /\if\[|\bmax\(|\bmin\(|\bsum\(|\bcount[E|L|H]\(|\%\[/g;
-                    let nonvalidscalecheck = scaleresult[i].match(nonvalidscale);
-                    //console.log(scaleresult[i]);
-                    if(!nonvalidscalecheck){
-                        let limits = scaleresult[i].split(",");
-                        //console.log(limits[0]);
-                        let value = limits[0];
-                        if(isNaN(value) && !value.includes("$") && !value.includes("min") && !value.includes("max") ){
-                            let roll = new Roll(limits[0]).roll();
-                            value = roll.total;
-                        }
-
-                        let valuemod=0;
-
-                        let limitArray = [];
-
-                        for(let j=1;j<limits.length;j++){
-                            let splitter = limits[j].split(":");
-                            let scale = splitter[0];
-                            //console.log(scale);
-                            if(isNaN(scale)  && !scale.includes("$") && !scale.includes("min") && !scale.includes("max") ){
-                                //if(isNaN(scale) || scale.includes('+')|| scale.includes('-')|| scale.includes('/')|| scale.includes('*')){
-                                let newroll = new Roll(scale).roll();
-                                //expr = expr.replace(scale,newroll.total);
-                                scale = newroll.total;
-
-                            }
-
-                            let limitEl = {};
-                            limitEl.scale = scale;
-                            limitEl.value = splitter[1];
-                            await limitArray.push(limitEl);
-                        }
-
-                        await limitArray.sort(function (x, y) {
-                            return x.scale - y.scale;
-                        });
-                        //console.log(limitArray);
-                        //console.log(value);
-                        valuemod= limitArray[0].value;
-
-                        for(let k=0;k<limitArray.length;k++){
-                            let checker = limitArray[k];
-                            let checkscale = Number(checker.scale);
-                            //console.log(checkscale);
-                            if(value>=checkscale){
-                                valuemod=checker.value;
-                            }
-                        }
-                        //console.log(valuemod);
-                        if(isNaN(valuemod)){
-                            //console.log(valuemod);
-                            let nonum = /[#@]{|\%\[|\if\[/g;
-                            let checknonum = valuemod.match(nonum);
-
-                            if(checknonum!=null){
-                                sums_are_num = false;
-                            }
-                        }
-
-
-                        let attname = "%[" + scaleresult[i]+ "]";
-                        //console.log(attname);
-                        expr = expr.replace(attname,valuemod);
-
-                        //console.log(expr);
-                    }
-
-                    else{
-                        sums_are_num = false;
-                    }
-
-
-                }
-                //console.log(expr);
-
-            }
-
             //console.log(expr);
 
             //PARSE CEIL
@@ -566,23 +472,22 @@ export class auxMeth {
                     let ceilExpr = ceilResult[i];
                     let tochange = "ceil(" + ceilExpr+ ")";
 
-                    let maxpresent = /\if\[|\bmax\(|\bmin\(|\bsum\(|\b%\[|\bfloor\(|\bceil\(|\bcount[E|L|H]\(/g;
+                    let maxpresent = /\if\[|\bmax\(|\bmin\(|\bsum\(|\%\[|\bfloor\(|\bceil\(|\bcount[E|L|H]\(|\?\[/g;
                     let maxpresentcheck = ceilExpr.match(maxpresent);
 
                     if(!maxpresentcheck){
-                        if(isNaN(ceilExpr)){
-                            //                            let roll = new Roll(ceilExpr).roll();
-                            //                            let finalvalue = roll.total;
-                            //                            expr = expr.replace(tochange,parseInt(finalvalue));
+                        //if(isNaN(ceilExpr)){
+                        //                            let roll = new Roll(ceilExpr).roll();
+                        //                            let finalvalue = roll.total;
+                        //                            expr = expr.replace(tochange,parseInt(finalvalue));
 
-                            //console.log(ceilExpr);
-                            let test = eval(ceilExpr);
-                            let finalstring = "ceil(" + test+ ")";
-                            expr = expr.replace(tochange,finalstring);
-                            for (let x=ceilResult.length-1;x>=0;x--){
-                                ceilResult[x] = ceilResult[x].replace(tochange,finalstring);
-                            }
-                        }
+
+                        let test = eval(ceilExpr);
+                        let finalstring = "ceil(" + test+ ")";
+                        let roll = new Roll(finalstring).roll();
+                        finalstring = roll.total;
+                        expr = expr.replace(tochange,finalstring);
+                        //}
 
                     }
 
@@ -609,7 +514,7 @@ export class auxMeth {
                     let floorExpr = floorResult[i];
                     let tochange = "floor(" + floorExpr+ ")";
 
-                    let maxpresent = /\if\[|\bmax\(|\bmin\(|\bsum\(|\%\[|\bceil\(|\bfloor\(|\bcount[E|L|H]\(|\//g;
+                    let maxpresent = /\if\[|\bmax\(|\bmin\(|\bsum\(|\%\[|\bfloor\(|\bceil\(|\bcount[E|L|H]\(|\?\[/g;
                     let maxpresentcheck = floorExpr.match(maxpresent);
 
                     if(!maxpresentcheck){
@@ -619,8 +524,10 @@ export class auxMeth {
                             //                            expr = expr.replace(tochange,parseInt(finalvalue)); 
 
                             let test = eval(floorExpr);
-                            let finalstring = "ceil(" + test+ ")";
-                            expr = expr.replace(tochange,finalstring); 
+                            let finalstring = "floor(" + test+ ")";
+                            let roll = new Roll(finalstring).roll();
+                            finalstring = roll.total;
+                            expr = expr.replace(tochange,finalstring);
                         }
 
                     }
@@ -680,7 +587,7 @@ export class auxMeth {
                 //Substitute string for current value        
                 for (let i=0;i<maxResult.length;i++){
                     //console.log(maxResult[i]);
-                    let ifpresent = /\if\[|\bmax\(|\bmin\(|\bceil\(|\bfloor\(|\bsum\(|\bcount[E|L|H]\(/g;
+                    let ifpresent = /\if\[|\bmax\(|\bmin\(|\bsum\(|\%\[|\bceil\(|\bfloor\(|\bcount[E|L|H]\(|\?\[/g;
                     let ifpresentcheck = maxResult[i].match(ifpresent);
 
                     if(!ifpresentcheck){
@@ -690,7 +597,7 @@ export class auxMeth {
                         let nonumber=false;
                         for (let n=0;n<blocks.length;n++){
                             let pushblock = blocks[n];
-                            let nonumsum = /[#@]{|\%\[|\if\[|\?/g;
+                            let nonumsum = /[#@]{|\%\[|\if\[|\?\[/g;
                             let checknonumsum = blocks[n].match(nonumsum);
                             //console.log(pushblock);
                             if(!checknonumsum){
@@ -742,7 +649,7 @@ export class auxMeth {
             if(minResult!=null){
                 //Substitute string for current value        
                 for (let i=0;i<minResult.length;i++){
-                    let ifpresent = /\if\[|\bmax\(|\bmin\(|\bceil\(|\bfloor\(|\bsum\(|\bcount[E|L|H]\(/g;
+                    let ifpresent = /\if\[|\bmax\(|\bmin\(|\bsum\(|\%\[|\bceil\(|\bfloor\(|\bcount[E|L|H]\(|\?\[/g;
                     let ifpresentcheck = minResult[i].match(ifpresent);
 
                     if(!ifpresentcheck){
@@ -753,7 +660,7 @@ export class auxMeth {
                         for (let n=0;n<blocks.length;n++){
                             let pushblock = blocks[n];
                             //console.log(pushblock);
-                            let nonumsum = /[#@]{|\%\[|\if\[|\?/g;
+                            let nonumsum = /[#@]{|\%\[|\if\[|\?\[/g;
                             let checknonumsum = blocks[n].match(nonumsum);
                             if(!checknonumsum){
                                 if(isNaN(pushblock)){
@@ -950,6 +857,8 @@ export class auxMeth {
                 }
             }
 
+            //console.log(expr);
+
             //SUM
             //var sumResult = expr.match(/(?<=\bsum\b\().*?(?=\))/g);
             let summatch = /\bsum\(/g;
@@ -976,25 +885,15 @@ export class auxMeth {
                     let nonumber=false;
 
                     for (let n=0;n<blocks.length;n++){
-                        let nonumsum = /[#@]{|\%\[|\if\[|\?/g;
+                        let nonumsum = /\if\[|\bmax\(|\bmin\(|\bsum\(|\%\[|\bceil\(|\bfloor\(|\bcount[E|L|H]\(|\?\[/g;
                         let checknonumsum = blocks[n].match(nonumsum);
                         //console.log(blocks[n])
-                        if(!isNaN(blocks[n]) && (checknonumsum==null)){
-
-                            let blocktotal = blocks[n];
-                            let arithmparser = /\+|\-|\\|\*/g;
-                            let has_arith = blocktotal.match(arithmparser);
-
-                            if(has_arith!=null){
-                                try{
-                                    let newroll = new Roll(blocks[n]).roll();
-                                    blocktotal = newroll.total;
-                                }
-                                catch(err){
-
-                                }
+                        if((checknonumsum==null)){
+                            let sumExpr = blocks[n];
+                            if(isNaN(blocks[n])){
+                                sumExpr = eval(sumExpr);
                             }
-                            finalvalue += parseInt(blocktotal);
+                            finalvalue += parseInt(sumExpr);
                         }
                         else{
                             //console.log("nonumber");
@@ -1018,6 +917,103 @@ export class auxMeth {
 
             //console.log(expr);
 
+            //PARSE SCALED AUTO VALUES
+            //var scaleresult = expr.match(/(?<=\%\[).*?(?=\])/g);
+            let scmatch = /\%\[/g;
+            var scaleresultArray;
+            var scaleresult = [];
+
+            while (scaleresultArray = scmatch.exec(expr)) {
+                //console.log(maxResultArray.index + ' ' + mrmatch.lastIndex);
+                let suba = expr.substring(scmatch.lastIndex, expr.length);
+                let subb = auxMeth.getBracketsString(suba);
+                scaleresult.push(subb);
+            }
+            //console.log(scaleresult);
+            if(scaleresult!=null && scaleresult.length>0){
+                //console.log(expr);
+                //Substitute string for current value
+                for (let i=scaleresult.length-1;i>=0;i--){
+                    let nonvalidscale = /\if\[|\bmax\(|\bmin\(|\bsum\(|\%\[|\bceil\(|\bfloor\(|\bcount[E|L|H]\(|\?\[/g;
+                    let nonvalidscalecheck = scaleresult[i].match(nonvalidscale);
+                    //console.log(scaleresult[i]);
+                    if(!nonvalidscalecheck){
+                        let limits = scaleresult[i].split(",");
+                        //console.log(limits[0]);
+                        let value = limits[0];
+                        if(isNaN(value) && !value.includes("$") && !value.includes("min") && !value.includes("max") ){
+                            let roll = new Roll(limits[0]).roll();
+                            value = roll.total;
+                        }
+
+                        let valuemod=0;
+
+                        let limitArray = [];
+
+                        for(let j=1;j<limits.length;j++){
+                            let splitter = limits[j].split(":");
+                            let scale = splitter[0];
+                            //console.log(scale);
+                            if(isNaN(scale)  && !scale.includes("$") && !scale.includes("min") && !scale.includes("max") ){
+                                //if(isNaN(scale) || scale.includes('+')|| scale.includes('-')|| scale.includes('/')|| scale.includes('*')){
+                                let newroll = new Roll(scale).roll();
+                                //expr = expr.replace(scale,newroll.total);
+                                scale = newroll.total;
+
+                            }
+
+                            let limitEl = {};
+                            limitEl.scale = scale;
+                            limitEl.value = splitter[1];
+                            await limitArray.push(limitEl);
+                        }
+
+                        await limitArray.sort(function (x, y) {
+                            return x.scale - y.scale;
+                        });
+                        //console.log(limitArray);
+                        //console.log(value);
+                        valuemod= limitArray[0].value;
+
+                        for(let k=0;k<limitArray.length;k++){
+                            let checker = limitArray[k];
+                            let checkscale = Number(checker.scale);
+                            //console.log(checkscale);
+                            if(value>=checkscale){
+                                valuemod=checker.value;
+                            }
+                        }
+                        //console.log(valuemod);
+                        if(isNaN(valuemod)){
+                            //console.log(valuemod);
+                            let nonum = /[#@]{|\%\[|\if\[/g;
+                            let checknonum = valuemod.match(nonum);
+
+                            if(checknonum!=null){
+                                sums_are_num = false;
+                            }
+                        }
+
+
+                        let attname = "%[" + scaleresult[i]+ "]";
+                        //console.log(attname);
+                        expr = expr.replace(attname,valuemod);
+
+                        //console.log(expr);
+                    }
+
+                    else{
+                        sums_are_num = false;
+                    }
+
+
+                }
+                //console.log(expr);
+
+            }
+
+            //console.log(expr);
+
             //PARSE CONDITIONAL
             //var ifresult = expr.match(/(?<=\if\[).*?(?=\])/g);
             var ifmatch = /\if\[/g;
@@ -1035,7 +1031,7 @@ export class auxMeth {
                 //Substitute string for current value
                 for (let i=ifresult.length-1;i>=0;i--){
 
-                    let nonvalidif = /\bmax\(|\bmin\(|\%\[/g;
+                    let nonvalidif = /\if\[|\bmax\(|\bmin\(|\bsum\(|\%\[|\bceil\(|\bfloor\(|\bcount[E|L|H]\(|\?\[/g;
                     let nonvalidifcheck = ifresult[i].match(nonvalidif);
 
                     if(!nonvalidifcheck){
@@ -1210,7 +1206,7 @@ export class auxMeth {
 
                         let attname = "if[" + ifresult[i]+ "]";
 
-                        let nonum = /[#@]{|\%\[|\if\[|\?/g;
+                        let nonum = /[#@]{|\%\[|\if\[|\?\[/g;
                         let checknonumtrue = falsevalue.match(nonum);
                         let checknonumfalse = truevalue.match(nonum);
 
