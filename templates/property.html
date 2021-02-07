@@ -68,6 +68,12 @@
                             <input class="check-hasroll" name="data.hasroll" id="check-hasroll" type="checkbox" {{checked item.data.hasroll}}/>
                         </div>
                     </div>
+                    <div class="new-row">
+                        <div class="flexblock-left">
+                            <label class="label-medlarge">Totalize</label>
+                            <input class="check-totalize" name="data.totalize" id="check-totalize" type="checkbox" {{checked item.data.totalize}}/>
+                        </div>
+                    </div>
                     {{/ifNot}}
                     {{#ifCond item.data.datatype "table"}}
                     <div class="new-row">
@@ -141,6 +147,12 @@
                         <div class="flexblock-left">
                             <label class="label-medlarge">Show Activation?</label>
                             <input class="check-hasactivation" name="data.hasactivation" id="check-hasactivation" type="checkbox" {{checked item.data.hasactivation}}/>
+                        </div>
+                    </div>
+                    <div class="new-row">
+                        <div class="flexblock-left">
+                            <label class="label-medlarge">Show Totals?</label>
+                            <input class="check-hastotals" name="data.hastotals" id="check-hastotals" type="checkbox" {{checked item.data.hastotals}}/>
                         </div>
                     </div>
 
