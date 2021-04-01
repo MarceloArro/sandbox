@@ -1,14 +1,9 @@
 <form class="{{cssClass}}" autocomplete="off">
-    <header class="sheet-header">
-        <div class="new-row">
-            <div class="header-left">
-                <img class="profile-img" src="{{item.img}}" data-edit="img" title="{{item.name}}"/>
-                <div class="new-block">
-                    <h1 class="charname"><input name="name" type="text" value="{{item.name}}" placeholder="Name"/></h1>
-                    <h3 class="typelabel">PROPERTY</h3>
-                </div>
-            </div>
-
+    <header class="item-sheet-header">
+        <img class="profile-img" src="{{item.img}}" data-edit="img" title="{{item.name}}"/>
+        <div class="header-fields">
+            <h1 class="charname"><input name="name" class="itemname" type="text" value="{{item.name}}" placeholder="Name"/></h1>
+            <h3 class="typelabel cItem">PROPERTY</h3>
         </div>
     </header>
 
@@ -141,6 +136,13 @@
                         <div class="flexblock-left">
                             <label class="label-medlarge">Show Units?</label>
                             <input class="check-hasunits" name="data.hasunits" id="check-hasunits" type="checkbox" {{checked item.data.hasunits}}/>
+
+                        </div>
+                    </div>
+                    <div class="new-row">
+                        <div class="flexblock-left">
+                            <label class="label-medlarge">Show Uses?</label>
+                            <input class="check-hasuses" name="data.hasuses" id="check-hasuses" type="checkbox" {{checked item.data.hasuses}}/>
                         </div>
                     </div>
                     <div class="new-row">
@@ -219,9 +221,23 @@
                             </select>
                         </div>
                     </div>
+
                     {{/if}}
                     {{/if}}
                     {{/ifNot}}
+
+                    <div class="new-row">
+                        <div class="flexblock-left">
+                            <label class="label-medlarge" title="Adds this class to the label's HTML style for ease of edition" >Font Group</label>
+                            <input type="text" name="data.fontgroup" value="{{data.fontgroup}}"/>
+                        </div>
+                    </div>
+                    <div class="new-row">
+                        <div class="flexblock-left">
+                            <label class="label-medlarge" title="Adds this class to the input's HTML style for ease of edition" >Input Group</label>
+                            <input type="text" name="data.inputgroup" value="{{data.inputgroup}}"/>
+                        </div>
+                    </div>
 
                     {{#ifCond item.data.datatype "simpletext"}}
                     <div class="new-row">
@@ -269,6 +285,21 @@
                 </div>
 
             </div>
+
+            {{#if item.data.haslabel}}
+            <div class="flexblock">
+                <div class="col-1-1">
+                    <div class="new-row">
+                        <div class="flexblock-left">
+                            <label class="label-medlarge">Tooltip</label>
+                            <textarea name="data.tooltip" >{{data.tooltip}}</textarea >
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+            {{/if}}
+
             {{#if item.data.hasroll}}
             {{#ifNot item.data.datatype "table"}}
             <div class="flexblock">
