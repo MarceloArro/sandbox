@@ -42,7 +42,7 @@ export class auxMeth {
         }
 
         if(html==null || html==""){
-            console.log("defaulting template");
+            //console.log("defaulting template");
             gtemplate="Default";
             html = await fetch(this.getHTMLPath(gtemplate)).then(resp => resp.text());
 
@@ -170,7 +170,7 @@ export class auxMeth {
 
             }
 
-            let exprparse = expr.match(/(?<=\$)[0-9]/g);
+            let exprparse = expr.match(/(?<=\$)[0-9]+/g);
 
             for (let i=0;i<exprparse.length;i++){
                 let regindex = exprparse[i];
@@ -192,8 +192,10 @@ export class auxMeth {
 
     static async autoParser(expr,attributes,itemattributes,exprmode,noreg=false,number=1){
         var toreturn = expr;
+        //console.log("autoparsing");
         //console.log(expr);
-        //console.log(typeof(expr));
+
+
         if(typeof(expr)!="string")
             return expr;
 
@@ -226,6 +228,7 @@ export class auxMeth {
 
             //Substitute string for current value
             for (let i=0;i<expreg.length;i++){
+
                 let attname = "$<" + expreg[i]+ ">";
                 let attvalue="";
 
@@ -235,7 +238,7 @@ export class auxMeth {
                 regobject.index = regblocks[0];
                 regobject.expr = expreg[i].replace(regblocks[0]+";",'');
                 //console.log(regobject.expr);
-                let internalvBle = regobject.expr.match(/(?<=\$)[0-9]/g);
+                let internalvBle = regobject.expr.match(/(?<=\$)[0-9]+/g);
                 if(internalvBle!=null){
                     for (let k=0;k<internalvBle.length;k++){
                         let regindex = internalvBle[k];
@@ -250,6 +253,7 @@ export class auxMeth {
                 //console.log(regobject.expr);
 
                 regobject.result = await auxMeth.autoParser(regobject.expr,attributes,itemattributes,false,true);
+                //console.log(regobject.result);
 
                 await regArray.push(regobject);
 
@@ -269,10 +273,15 @@ export class auxMeth {
                     if(regObj!=null)
                         attvalue = regObj.result;
 
+                    //console.log(regindex);
                     //console.log(attvalue);
+
                     expr = expr.replace(attname,attvalue);
+                    expr = expr.trimStart();
                 }
             }
+
+            //console.log(expr);
 
         }
 
@@ -281,12 +290,17 @@ export class auxMeth {
 
         //Parses last roll
         if(itemattributes!=null && expr.includes("#{roll}")){
-            expr=expr.replace("#{roll}",itemattributes._lastroll);
+            expr=expr.replace(/\#{roll}/g,itemattributes._lastroll);
         }
 
         //Parses number of citems
         if(itemattributes!=null && expr.includes("#{num}")){
-            expr=expr.replace("#{num}",number);
+            expr=expr.replace(/\#{num}/g,number);
+        }
+
+        if(itemattributes!=null && expr.includes("#{name}")){
+            //console.log("has name");
+            expr=expr.replace(/\#{name}/g,itemattributes.name);
         }
 
         //console.log(expr);
@@ -472,7 +486,7 @@ export class auxMeth {
                     let ceilExpr = ceilResult[i];
                     let tochange = "ceil(" + ceilExpr+ ")";
 
-                    let maxpresent = /\if\[|\bmax\(|\bmin\(|\bsum\(|\%\[|\bfloor\(|\bceil\(|\bcount[E|L|H]\(|\?\[/g;
+                    let maxpresent = /\if\[|\bmax\(|\bmin\(|\bsum\(|\%\[|\bfloor\(|\bceil\(|\bcount[E|L|H]\(|\?\[|[a-zA-Z]/g;
                     let maxpresentcheck = ceilExpr.match(maxpresent);
 
                     if(!maxpresentcheck){
@@ -514,7 +528,7 @@ export class auxMeth {
                     let floorExpr = floorResult[i];
                     let tochange = "floor(" + floorExpr+ ")";
 
-                    let maxpresent = /\if\[|\bmax\(|\bmin\(|\bsum\(|\%\[|\bfloor\(|\bceil\(|\bcount[E|L|H]\(|\?\[/g;
+                    let maxpresent = /\if\[|\bmax\(|\bmin\(|\bsum\(|\%\[|\bfloor\(|\bceil\(|\bcount[E|L|H]\(|\?\[|[a-zA-Z]/g;
                     let maxpresentcheck = floorExpr.match(maxpresent);
 
                     if(!maxpresentcheck){
@@ -522,8 +536,10 @@ export class auxMeth {
                             //                            let roll = new Roll(floorExpr).roll();
                             //                            let finalvalue = roll.total;
                             //                            expr = expr.replace(tochange,parseInt(finalvalue)); 
+                            //console.log(floorExpr);
 
                             let test = eval(floorExpr);
+                            //console.log(test);
                             let finalstring = "floor(" + test+ ")";
                             let roll = new Roll(finalstring).roll();
                             finalstring = roll.total;
@@ -883,24 +899,33 @@ export class auxMeth {
                     let finalvalue=0;
                     let valueIf = Array();
                     let nonumber=false;
+                    let nonumsum = /\if\[|\bmax\(|\bmin\(|\bsum\(|\%\[|\bceil\(|\bfloor\(|\bcount[E|L|H]\(|\?\[/g;
+                    let hassubfunctions = sumResult[i].match(nonumsum);
 
-                    for (let n=0;n<blocks.length;n++){
-                        let nonumsum = /\if\[|\bmax\(|\bmin\(|\bsum\(|\%\[|\bceil\(|\bfloor\(|\bcount[E|L|H]\(|\?\[/g;
-                        let checknonumsum = blocks[n].match(nonumsum);
-                        //console.log(blocks[n])
-                        if((checknonumsum==null)){
-                            let sumExpr = blocks[n];
-                            if(isNaN(blocks[n])){
-                                sumExpr = eval(sumExpr);
+                    if (!hassubfunctions){
+                        for (let n=0;n<blocks.length;n++){
+
+                            let checknonumsum = blocks[n].match(nonumsum);
+                            //console.log(blocks[n])
+                            if((checknonumsum==null)){
+                                let sumExpr = blocks[n];
+                                //console.log(sumExpr);
+                                if(isNaN(blocks[n])){
+                                    sumExpr = eval(sumExpr);
+                                }
+                                finalvalue += parseInt(sumExpr);
                             }
-                            finalvalue += parseInt(sumExpr);
-                        }
-                        else{
-                            //console.log("nonumber");
-                            nonumber=true;
-                        }
+                            else{
+                                //console.log("nonumber");
+                                nonumber=true;
+                            }
 
+                        }
                     }
+                    else{
+                        nonumber=true;
+                    }
+
                     if(!nonumber){
                         //console.log("replacing")
                         let tochange = "sum(" + sumResult[i]+ ")";
@@ -1240,9 +1265,6 @@ export class auxMeth {
             expr = expr.replace(pluszero,"");
             let minuszero = /\-\s\b0|\-\b0/g;
             expr = expr.replace(minuszero,"");
-            //            let zeroplus = /\b0\+|\b0\s\+|\b0\-|\b0\s\-/g;
-            //            expr = expr.replace(zeroplus,"");
-
             //console.log(expr);
 
             safety_break += 1;
@@ -1256,8 +1278,6 @@ export class auxMeth {
         //console.log(expr);
 
         toreturn = expr;
-
-
 
         if(isNaN(expr)){
             //console.log("nonumber");
@@ -1379,20 +1399,20 @@ export class auxMeth {
         }
     }
 
-    static rollToMenu(html=null){
+    static async rollToMenu(html=null){
 
         if(!game.settings.get("sandbox", "showLastRoll"))
             return;
 
         //console.log("rolling to menu");
-        let hotbar = document.getElementById("hotbar");
-        hotbar.className = "flexblock-left-nopad";
+        let hotbar = await document.getElementsByClassName("dcroll-bar");
 
-        let actionbar = document.getElementById("action-bar");
-        if(actionbar!=null)
-            actionbar.className = "action-bar-container";
+        if (hotbar[0]==null)
+            return;
 
-        let prevmenu = hotbar.querySelector(".roll-menu");
+        //hotbar[0].className = "flexblock-left-nopad";
+
+        let prevmenu = $(hotbar).find(".roll-menu");
 
         if(prevmenu!=null)
             prevmenu.remove();
@@ -1427,6 +1447,10 @@ export class auxMeth {
             tester.innerHTML = html;
         }
 
+        let trashcan = await tester.getElementsByClassName("roll-delete-button");
+        if(trashcan!=null)
+            trashcan[0].style.display="none";
+
         let rollextra = tester.querySelector(".roll-extra");
         rollextra.style.display="none";
 
@@ -1435,7 +1459,8 @@ export class auxMeth {
         rollMenu.className = "roll-menu";
         rollMenu.innerHTML = tester.innerHTML;
         //console.log("appending");
-        hotbar.appendChild(rollMenu);
+
+        hotbar[0].appendChild(rollMenu);
     }
 
 }
