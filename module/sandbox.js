@@ -126,6 +126,15 @@ Hooks.once("init", async function() {
         type: String,
     });
 
+    game.settings.register("sandbox", "auxsettext1", {
+        name: "Auxiliary settings text 1",
+        hint: "After editing, please refresh instance",
+        scope: "world",
+        config: false,
+        default: null,
+        type: String,
+    });
+
 
     Combat.prototype.rollInitiative = async function(ids, {formula=null, updateTurn=true, messageOptions={}}={}) {
 
@@ -243,23 +252,15 @@ Hooks.once('ready', async() => {
 
         game.data.rolldc = 3;
 
-        let hotbar = document.getElementById("hotbar");
+        let basedoc = document.getElementsByClassName("vtt game system-sandbox");
+
+        let hotbar = document.createElement("DIV");
+        hotbar.className = "dcroll-bar";
+
+        basedoc[0].appendChild(hotbar);
+
         let backgr = document.createElement("DIV");
         backgr.className = "dc-input";
-
-        //        let compendiumexport = document.getElementsByClassName("directory-footer");
-        //        let sboxcomp = document.createElement("BUTTON");
-        //        sboxcomp.className = "create-sbcompendium";
-        //        sboxcomp.type = "submit";
-        //        sboxcomp.addEventListener("click", async (event) => {
-        //            event.preventDefault();
-        //            event.stopPropagation();
-        //
-        //            const compdata = await fetch("worlds/" + game.data.world.name + "world.json").then(r => r.json()) // Load your JSON data
-        //            const pack = game.packs.find(p => p.collection === "yoursystem.packname"); // Get the created compendium by its name
-        //            await pack.createEntity(compdata);
-        //
-        //        });
 
         let header = document.createElement("DIV");
         header.className = "dc-header";
@@ -267,6 +268,7 @@ Hooks.once('ready', async() => {
 
         let form = document.createElement("FORM");
         let sInput = document.createElement("INPUT");
+        sInput.className = "dcinput-box";
         sInput.setAttribute("type", "text");
         sInput.setAttribute("name", "dc");
         sInput.setAttribute("value", "");
@@ -345,24 +347,7 @@ Hooks.once('ready', async() => {
         }
 
 
-
-
-        let macrosheet = document.getElementById("hotbar");
-
     }
-
-    //    let gamecItems = game.items.filter(y=>y.data.description!="");
-    //    for(let i=0;i<gamecItems.length;i++){
-    //        const mycitem = gamecItems[i];
-    //        await mycitem.update({"data.attributes.description":mycitem.data.data.description});
-    //    }
-
-    //    let gameActors = game.actors;
-    //    //console.log(gameActors);
-    //    for(let j=0;j<gameActors.entities.length;j++){
-    //        const myactor = gameActors.entities[j];
-    //        await myactor.update({"data.attributes.biography":myactor.data.data.biography},{diff:false});
-    //    }
 
 });
 
@@ -406,12 +391,7 @@ Hooks.on("hoverToken", (token, hovered) => {
 });
 
 Hooks.on("createToken", async (scene,token,options,userId) => {
-    //let actor = game.actors.get(token.actorId);
-    //console.log(token);
-    //    token["tokenId"] = token._id;
-    //    let mytoken = canvas.tokens.get(token._id);
-    //await mytoken.update({"actorData.tokenId":token._id});
-    //console.log(token);
+
     if(!hasProperty(token, "data"))
         setProperty(token,"data",{});
     if(!hasProperty(token.data, "effects"))
@@ -440,6 +420,9 @@ Hooks.on("preUpdateToken", async (scene, token, updatedData, options, userId) =>
             setProperty(updatedData.actorData,"data",{});
         updatedData.actorData.data.citems = updatedData["data.citems"];
     }
+    //    
+    //    if (updatedData["effects"]!=null)
+    //        updatedData.actorData.effects = updatedData["effects"];
 
 
 
@@ -448,7 +431,7 @@ Hooks.on("preUpdateToken", async (scene, token, updatedData, options, userId) =>
 Hooks.on("updateToken", async (scene, token, updatedData, options, userId) => {
     //console.log("updatingTokenActor");
     //console.log(token);
-    //console.log(updatedData);
+    //console.log(updatedData.actorData);
     if(!token.owner && !game.user.isGM){
         return;
     }
@@ -458,21 +441,19 @@ Hooks.on("updateToken", async (scene, token, updatedData, options, userId) => {
     //console.log(myToken);
     //console.log(myactor);
 
-    let newdata = updatedData;
     if (updatedData["data.citems"]!=null){
         if(!hasProperty(updatedData,"actorData"))
             setProperty(newdata,"actorData",{});
         if(!hasProperty(newdata.actorData,"data"))
             setProperty(newdata.actorData,"data",{});
-        newdata.actorData.data.citems = updatedData["data.citems"];
+        updatedData.actorData.data.citems = updatedData["data.citems"];
     }
 
 
-    if(!options.stopit && newdata.actorData){
+    if(!options.stopit && updatedData.actorData && !hasProperty(updatedData.actorData,"effects")){
         //console.log("Changing token");
 
         let myData = await myactor.actorUpdater(myToken.actor.data);
-
         await myToken.update(myData,{stopit:true});
 
         myToken.actor.sheet.render();
@@ -486,64 +467,36 @@ Hooks.on("preUpdateActor", async (actor,updateData,options,userId) => {
     //console.log(updateData);
     //console.log(data.data.gtemplate);
     //console.log("preup");
-    if(game.settings.get("sandbox", "tokenOptions")){
 
-        //if(!actor.token)
-        //setProperty(updateData,"token",{})
-        //updateData.token=actor.data.token;
-        let displayName = actor.data.data.displayName; 
-        if(isNaN(displayName))
-            displayName = CONST.TOKEN_DISPLAY_MODES[displayName];
-        if(displayName==null)
-            displayName = 0;
+    //await actor.sheet.setTokenOptions(actor.data);
+    let newname = actor.data.name;
 
-        if(actor.data.token!=null){
-            if(actor.data.token.diplayName==null)
-                if(!updateData.token){
-                    setProperty(updateData,"token",{});
-                }
-        }
-
-        //updateData.token.name = actor.name;
-        if(updateData.token){
-            if(updateData.token.displayName!=displayName)
-                updateData.token.displayName = displayName;
-            if(updateData.token.displayBars!=displayName)
-                updateData.token.displayBars = displayName;
-            if(updateData.token.dimLight==null)
-                updateData.token.dimLight = 0;
-            if(updateData.token.dimSight==null)
-                updateData.token.dimSight = 0;
-            if(updateData.token.brightLight==null)
-                updateData.token.brightLight = 0;
-            if(updateData.token.bar1==null){
-                setProperty(updateData.token,"bar1",{});
-                updateData.token.bar1.attribute = actor.data.data.tokenbar1;
-            }    
-
-        }
-
-        //        updateData["token.displayName"] = displayName;
-        //        updateData["token.displayBars"] = displayName;
-
-
-        if(updateData.name){
-            if(!updateData.token)
-                setProperty(updateData,"token",{})
-            //updateData["token.name"] = updateData.name;
-            updateData.token.name = updateData.name;
-        }
-
-
-        if(updateData.img){
-            if(!updateData.token)
-                setProperty(updateData,"token",{})
-            //updateData["token.img"] = updateData.img;
-            if(!actor.isToken)
-                updateData.token.img = updateData.img;
-        }
-
+    if(updateData.name){
+        newname = updateData.name;
     }
+
+    if(!actor.data.data.istemplate){
+        if(!updateData.token)
+            setProperty(updateData,"token",{});
+
+        setProperty(updateData.token,"bar1",{});
+
+        updateData.token.displayName = actor.data.data.displayName;
+
+        updateData.token.displayBars = actor.data.data.displayName;
+
+        updateData.token.dimLight = 0;
+
+        updateData.token.dimSight = 0;
+
+        updateData.token.brightLight = 0;
+
+        if(actor.data.data.tokenbar1!=null)
+            updateData.token.bar1.attribute = actor.data.data.tokenbar1;
+
+        updateData.token.name = newname;
+    }
+
 
     if(updateData["data.rollmode"]){
         if(!hasProperty(updateData,"data"))
@@ -552,6 +505,7 @@ Hooks.on("preUpdateActor", async (actor,updateData,options,userId) => {
     }
 
     //console.log(updateData);
+
 
 });
 
@@ -591,8 +545,9 @@ Hooks.on("deleteActor", (actor) =>{
 });
 
 Hooks.on("updateActor", async (actor, updateData,options,userId) => {
-    //console.log(actor.data);
-    if(actor.data.permission.default >= CONST.ENTITY_PERMISSIONS.OBSERVER ||  actor.data.permission[game.user._id] >= CONST.ENTITY_PERMISSIONS.OBSERVER){
+    //console.log(updateData);
+    //console.log("updateHook");
+    if(actor.data.permission.default >= CONST.ENTITY_PERMISSIONS.OBSERVER ||  actor.data.permission[game.user._id] >= CONST.ENTITY_PERMISSIONS.OBSERVER || game.user.isGM){
         let myuser = userId;
     }
     else{
@@ -604,7 +559,7 @@ Hooks.on("updateActor", async (actor, updateData,options,userId) => {
     //    console.log(actor.data.flags.lastupdatedBy);
     //console.log("updating actor");
 
-    //console.log("updateHook");
+    //console.log("updateHook2");
 
     if(updateData){
         actor.data.flags.lastupdatedBy = await userId;
@@ -726,17 +681,17 @@ Hooks.on("closesItemSheet", (entity, eventData) => {
 });
 
 Hooks.on("rendersItemSheet", (app, html, data) => {
-    //console.log(html[0].outerHTML);
+    //console.log(app);
 
     if(app.object.data.type == "cItem"){
         app.refreshCIAttributes(html);
     }
 
-    app.scrollBarTest(html);
+    app.scrollBarLoad(html);
 
     html.find('.window-resizable-handle').mouseup(ev => {
         event.preventDefault();
-        app.scrollBarTest(html);
+        app.scrollBarLoad(html);
     });
 
 });
@@ -747,6 +702,7 @@ Hooks.on("rendergActorSheet", async (app, html, data) => {
     //console.log(data);
     const actor = app.actor;
 
+
     if(actor.token==null)
         actor.listSheets();
     //if(!actor.data.data.istemplate && !actor.data.flags.ischeckingauto){
@@ -756,13 +712,15 @@ Hooks.on("rendergActorSheet", async (app, html, data) => {
         app.refreshBadge(html);
         app.populateRadioInputs(html);
         app.setImages(html);
-        app.scrollBarTest(html);
+        await app.setSheetStyle(actor);
+        app.scrollBarLoad(html);
         actor.setInputColor();
 
         html.find('.window-resizable-handle').mouseup(ev => {
             event.preventDefault();
-            app.scrollBarTest(html);
+            app.scrollBarLoad(html);
         });
+
 
 
     }
@@ -913,7 +871,7 @@ Hooks.on("renderChatMessage", async (app, html, data) => {
 
     if(game.user.isGM){
         $(html).find(".roll-message-delete").click(async ev => {
-            msg.delete();
+            msg.delete(html);
         });
         auxMeth.rollToMenu();
     }
