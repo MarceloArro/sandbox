@@ -1,14 +1,9 @@
 <form class="{{cssClass}}" autocomplete="off">
-    <header class="sheet-header">
-        <div class="new-row">
-            <div class="header-left">
-                <img class="profile-img" src="{{item.img}}" data-edit="img" title="{{item.name}}"/>
-                <div class="new-block">
-                    <h1 class="charname"><input name="name" type="text" value="{{item.name}}" placeholder="Name"/></h1>
-                    <h3 class="typelabel">PANEL</h3>
-                </div>
-            </div>
-
+    <header class="item-sheet-header">
+        <img class="profile-img" src="{{item.img}}" data-edit="img" title="{{item.name}}"/>
+        <div class="header-fields">
+            <h1 class="charname"><input name="name" class="itemname" type="text" value="{{item.name}}" placeholder="Name"/></h1>
+            <h3 class="typelabel cItem">PANEL</h3>
         </div>
     </header>
 
@@ -70,6 +65,18 @@
 
                         </div>
                     </div>
+                    <div class="new-row">
+                        <div class="flexblock-left">
+                            <label class="label-medlarge" title="Adds this class to the label's HTML style for ease of edition" >Font Group</label>
+                            <input type="text" name="data.fontgroup" value="{{data.fontgroup}}"/>
+                        </div>
+                    </div>
+                    <div class="new-row">
+                        <div class="flexblock-left">
+                            <label class="label-medlarge" title="Adds this class to the panel header's HTML style for ease of edition" >Header Group</label>
+                            <input type="text" name="data.headergroup" value="{{data.headergroup}}"/>
+                        </div>
+                    </div>
 
                 </div>
 
@@ -108,8 +115,19 @@
                     </div>
                     <div class="new-row">
                         <div class="flexblock-left">
+                            <label class="label-med">* * *</label>
+                        </div>
+                    </div>
+                    <div class="new-row">
+                        <div class="flexblock-left">
                             <label class="label-med">Image Path</label>
                             <input type="text" name="data.imgsrc" value="{{data.imgsrc}}" data-dtype="String"/>
+                        </div>
+                    </div>
+                    <div class="new-row">
+                        <div class="flexblock-left">
+                            <label class="label-medlarge" title="Adds this class to the input's HTML style for ease of edition" >Input Group</label>
+                            <input type="text" name="data.inputgroup" value="{{data.inputgroup}}"/>
                         </div>
                     </div>
 
