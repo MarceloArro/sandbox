@@ -22,7 +22,7 @@ export class gItem extends Item{
 
     //Overrides update method
     async update(data, options={}) {
-        console.log(data);
+        //console.log(data);
         // Get the Actor's data object
         return super.update(data, options);
 
