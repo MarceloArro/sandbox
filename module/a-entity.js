@@ -38,6 +38,18 @@ export class gActor extends Actor{
 
 
         }
+
+        if(!hasProperty(flags,"sandbox")){
+            setProperty(flags,"sandbox", {});
+        }
+
+        if(!hasProperty(flags.sandbox,"scrolls_" + game.user._id + "_" + this.id)){
+            setProperty(flags.sandbox,"scrolls_" + game.user._id + "_" + this.id, 0);
+        }
+
+
+
+
         //console.log(this);
 
     }
@@ -112,10 +124,15 @@ export class gActor extends Actor{
     //Overrides update method
     async update(data, options={}) {
 
-        //        console.log("updating");
+        //console.log("updating");
+        //console.log("alla");
         //console.log(data);
+        //console.log(options);
         let newdata;
+        let scrollTop;
+
         if(data!=null){
+            scrollTop = await this.sheet.scrollbarSet();
             if (data["data.citems"]!=null){
                 newdata = {};
                 setProperty(newdata,"data",{});
@@ -124,18 +141,35 @@ export class gActor extends Actor{
             else{
                 newdata  = data;
             }
+
+            if(data.biovisible!=null){
+                options.diff = false;
+            }
+
+            //newdata["flags.sandbox." + "scrolls_" + game.user._id + "_" + this.id] = await this.sheet.scrollbarSet;
+
+
         }
 
-        if (data.biovisible!=null){
-            options.diff = false;
+        if(!options.stopit){
+
+            if(!newdata.flags){
+                newdata["flags.sandbox." + "scrolls_" + game.user._id + "_" + this.id] = scrollTop;
+            }
+
+            else{
+                newdata.flags.sandbox["scrolls_" + game.user._id + "_" + this.id] = scrollTop;
+            }
         }
+
+        //console.log(newdata);
 
         return super.update(newdata, options);
 
     }
 
     async addcItem(ciTem,addedBy = null){
-        console.log("adding citems");
+        //console.log("adding citems");
         const citems = this.data.data.citems;
         const attributes = this.data.data.attributes;
         let itemKey = "";
@@ -144,73 +178,100 @@ export class gActor extends Actor{
         setProperty(newItem,itemKey,{});
         newItem[itemKey].id=ciTem.data._id;
         newItem[itemKey].ikey=itemKey;
-        newItem[itemKey].name=ciTem.data.name;  
+        newItem[itemKey].name=ciTem.data.name;
 
-        newItem[itemKey].number = 1;
-        newItem[itemKey].isactive = false;
-        newItem[itemKey].isreset = true;
+        if(!this.data.data.istemplate){
+            newItem[itemKey].number = 1;
+            newItem[itemKey].isactive = false;
+            newItem[itemKey].isreset = true;
 
-        let isunik = ciTem.data.data.isUnique;
+            let isunik = ciTem.data.data.isUnique;
 
-        for(let j=0;j<ciTem.data.data.groups.length;j++){
+            for(let j=0;j<ciTem.data.data.groups.length;j++){
 
-            let _groupcheck = await game.items.get(ciTem.data.data.groups[j].id);
-            let groupID = ciTem.data.data.groups[j].id;
-            if (_groupcheck.data.data.isUnique){
-                for(let i=citems.length-1;i>=0;i--){
-                    let citemObj = game.items.get(citems[i].id);
-                    let hasgroup = citemObj.data.data.groups.some(y=>y.id==groupID);
-                    if(hasgroup){
-                        await this.deletecItem(citems[i].id, true);
-                        //await  citems.splice(i,1);
+                let _groupcheck = await game.items.get(ciTem.data.data.groups[j].id);
+                let groupID = ciTem.data.data.groups[j].id;
+                if (_groupcheck.data.data.isUnique){
+                    for(let i=citems.length-1;i>=0;i--){
+                        let citemObj = game.items.get(citems[i].id);
+                        let hasgroup = citemObj.data.data.groups.some(y=>y.id==groupID);
+                        if(hasgroup){
+                            await this.deletecItem(citems[i].id, true);
+                            //await  citems.splice(i,1);
+                        }
+
                     }
-
                 }
+
             }
 
+            //newItem[itemKey].attributes = ciTem.data.data.attributes;
+            //newItem[itemKey].attributes = {};
+            newItem[itemKey].attributes = await duplicate(ciTem.data.data.attributes);
+            newItem[itemKey].attributes.name = ciTem.data.name;
+            newItem[itemKey].rolls = {};
+            newItem[itemKey].lastroll = 0;
+
+            newItem[itemKey].groups = ciTem.data.data.groups;
+            newItem[itemKey].usetype = ciTem.data.data.usetype;
+            newItem[itemKey].ispermanent = ciTem.data.data.ispermanent;
+            newItem[itemKey].rechargable = ciTem.data.data.rechargable;
+            let maxuses = ciTem.data.data.maxuses;
+            if(isNaN(maxuses))
+                maxuses = await auxMeth.autoParser(maxuses,attributes,ciTem.data.data.attributes,false);
+            newItem[itemKey].maxuses = maxuses;
+            newItem[itemKey].uses = parseInt(maxuses);
+            newItem[itemKey].icon = ciTem.data.data.icon;
+            newItem[itemKey].selfdestruct = ciTem.data.data.selfdestruct;
+            newItem[itemKey].mods = [];
+            for(let i=0;i<ciTem.data.data.mods.length;i++){
+                let _mod = ciTem.data.data.mods[i];
+                await newItem[itemKey].mods.push({
+                    index:_mod.index,
+                    citem: ciTem.data._id,
+                    once:_mod.once,
+                    exec:false,
+                    attribute:_mod.attribute,
+                    expr:_mod.value,
+                    value:null
+                });
+            }
+
+
+            newItem[itemKey].disabledmods = [];
+
+            if(addedBy){
+                newItem[itemKey].addedBy = addedBy;
+            }
         }
 
-        //newItem[itemKey].attributes = ciTem.data.data.attributes;
-        //newItem[itemKey].attributes = {};
-        newItem[itemKey].attributes = await duplicate(ciTem.data.data.attributes);
-        newItem[itemKey].attributes.name = ciTem.data.name;
-        newItem[itemKey].rolls = {};
-        newItem[itemKey].lastroll = 0;
 
-        newItem[itemKey].groups = ciTem.data.data.groups;
-        newItem[itemKey].usetype = ciTem.data.data.usetype;
-        newItem[itemKey].ispermanent = ciTem.data.data.ispermanent;
-        newItem[itemKey].rechargable = ciTem.data.data.rechargable;
-        let maxuses = ciTem.data.data.maxuses;
-        if(isNaN(maxuses))
-            maxuses = await auxMeth.autoParser(maxuses,attributes,ciTem.data.data.attributes,false);
-        newItem[itemKey].maxuses = maxuses;
-        newItem[itemKey].uses = parseInt(maxuses);
-        newItem[itemKey].icon = ciTem.data.data.icon;
-        newItem[itemKey].selfdestruct = ciTem.data.data.selfdestruct;
-        newItem[itemKey].mods = [];
-        for(let i=0;i<ciTem.data.data.mods.length;i++){
-            let _mod = ciTem.data.data.mods[i];
-            await newItem[itemKey].mods.push({
-                index:_mod.index,
-                citem: ciTem.data._id,
-                once:_mod.once,
-                exec:false,
-                attribute:_mod.attribute,
-                expr:_mod.value,
-                value:null
-            });
-        }
-
-
-        newItem[itemKey].disabledmods = [];
-
-        if(addedBy){
-            newItem[itemKey].addedBy = addedBy;
-        }
 
         await citems.push(newItem[itemKey]);
         this.data.flags.haschanged = true;
+
+    //TODO
+//        if(ciTem.data.data.effectpath!=""){
+//            let effectData = {
+//                label: ciTem.name,
+//                icon: ciTem.data.data.effectpath,
+//                // changes: [{
+//                // "key": "flags.dnd5e.weaponCriticalThreshold",
+//                // "mode": 2,
+//                // "value": "19",
+//                // "priority": "20"
+//                // }],
+//                // duration: {
+//                // "seconds": 5000,
+//                // }
+//                // flags: {
+//                // dae:{
+//                // specialDuration: "DamageDealt",
+//                // }
+//                // }
+//            }
+//            await this.createEmbeddedEntity("ActiveEffect", effectData);
+//        }
 
         if(this.isToken){
 
@@ -626,6 +687,29 @@ export class gActor extends Actor{
         return jumpmod;
     }
 
+    async setdefcItems(actorData){
+        //ADDS defauls CITEMS
+        const citemIDs = actorData.data.citems;
+
+        let mytemplate = actorData.data.gtemplate;
+        if(mytemplate!="Default"){
+            let _template = await game.actors.find(y=>y.data.data.istemplate && y.data.data.gtemplate==mytemplate);
+
+            for(let k=0;k<_template.data.data.citems.length;k++){
+                let mycitemId = _template.data.data.citems[k].id;
+                let mycitem = game.items.get(mycitemId);
+                let citeminActor = await citemIDs.find(y=>y.id == mycitemId);
+
+                if(!citeminActor && mycitem!=null){
+                    await this.addcItem(mycitem);
+                }
+            }
+
+        }
+
+        return citemIDs;
+    }
+
     async checkPropAuto(actorData,repeat=false){
         //console.log("checking auto properties");
         //        await this.update({"flags.ischeckingauto":true});
@@ -637,6 +721,7 @@ export class gActor extends Actor{
         //console.log(actorData);
 
         const attributes = actorData.data.attributes;
+
 
         //console.log(this.data.data.attributes);
         //console.log(actorData);
@@ -665,7 +750,10 @@ export class gActor extends Actor{
         }
 
         //CHECKING CI ITEMS
+        actorData.data.citems = await this.setdefcItems(actorData);
+
         const citemIDs = actorData.data.citems;
+
         let mods=[];
         if(citemIDs!=null){
             let initlength =citemIDs.length;
@@ -699,6 +787,7 @@ export class gActor extends Actor{
                 setProperty(attributes[modAtt],"autoadd",0);
                 setProperty(attributes[modAtt],"isset",false);
                 setProperty(attributes[modAtt],"created",true);
+                setProperty(attributes[modAtt],"hastotals",false);
             }
 
         }
@@ -969,7 +1058,7 @@ export class gActor extends Actor{
                     if((_citem.usetype=="PAS" || citem.isactive) && !jumpmod){
 
                         if(!_mod.exec || (myAtt[modvable] && !mod.once)){
-                            console.log("executing " + mod.name + "=" + myAtt[attProp] + " + " + finalvalue);
+                            //console.log("executing " + mod.name + "=" + myAtt[attProp] + " + " + finalvalue);
                             myAtt.prev= myAtt[attProp];
                             myAtt[attProp] = parseInt(Number(myAtt[attProp]) + finalvalue);
 
@@ -1012,35 +1101,6 @@ export class gActor extends Actor{
 
         //AUTO PROPERTIES PRE CALCULATIONS
         //ithaschanged = await this.autoCalculateAttributes(actorData,attributearray,attributes,true);
-
-
-        //TABLE TOTALS CALCULATION
-        for(var tabAProp in attributes){
-            if(attributes[tabAProp].istable){
-
-                let t_Prop = attributes[tabAProp];
-                let tableObj = game.items.get(t_Prop.id);
-                let totalGroupID = tableObj.data.data.group.id;
-                let gcitems = await citemIDs.filter(y=>y.groups.filter(x=>x.id==totalGroupID));
-
-                for(var propKey in t_Prop.totals){
-                    let newtotal = 0;
-
-                    for(let q=0;q<gcitems.length;q++){
-                        let total_citem = gcitems[q].attributes[propKey];
-                        if(total_citem!=null)
-                            newtotal += Number(total_citem.value);
-                    }
-
-                    t_Prop.totals[propKey].total = newtotal;
-                }
-
-
-
-            }
-
-        }
-
 
         //console.log(addmods);
         //CI ADD TO AUTO ATTR
@@ -1227,7 +1287,6 @@ export class gActor extends Actor{
             }
         }
 
-        //ithaschanged = await this.autoCalculateAttributes(actorData,attributearray,attributes,true);
         ithaschanged = await this.autoCalculateAttributes(actorData,attributearray,attributes,true);
 
         //ADD ROLLS
@@ -1302,11 +1361,17 @@ export class gActor extends Actor{
             const actorAtt = actorData.data.attributes[attribute];
             if(property!=null){
 
-                if(property.data.data.defvalue!="" && property.data.data.auto=="" && actorAtt.value===""){
-                    ithaschanged = true;
-                    actorAtt.value = await auxMeth.autoParser(property.data.data.defvalue,attributes,null,false);
-                }
+                let mydefvalue = 0;
+
+                if((property.data.data.datatype=="simplenumeric" || property.data.data.datatype=="radio") && property.data.data.defvalue!="")
+                    mydefvalue = property.data.data.defvalue;
+
                 if(property.data.data.datatype=="simplenumeric" || property.data.data.datatype=="radio"){
+
+                    if(property.data.data.auto=="" && actorAtt.value===""){
+                        ithaschanged = true;
+                        actorAtt.value = await auxMeth.autoParser(mydefvalue,attributes,null,false);
+                    }
 
                     actorAtt.value = parseInt(actorAtt.value);
                     actorAtt.max = parseInt(actorAtt.max);
@@ -1359,6 +1424,7 @@ export class gActor extends Actor{
             for(let n=citemIDs.length-1;n>=0;n--){
                 let citemObj = game.items.get(citemIDs[n].id).data.data;
                 let citmAttr = citemIDs[n].attributes;
+                let citmNum = citemIDs[n].number;
 
                 //Calculate autos of citems  *** TEST **********************************
                 let citemGroups = citemObj.groups;
@@ -1379,10 +1445,10 @@ export class gActor extends Actor{
                         //                        }
 
                         if(propauto!=""){
-                            let rawvalue = await auxMeth.autoParser(propauto,attributes,citmAttr,false);
+                            let rawvalue = await auxMeth.autoParser(propauto,attributes,citmAttr,false,false,citmNum);
 
                             if(isNaN(rawvalue) && propdata.data.data.datatype != "simpletext"){
-                                console.log(rawvalue);
+                                //console.log(rawvalue);
                                 let afinal = new Roll(rawvalue).roll();
                                 if(!isNaN(afinal.total))
                                     rawvalue = afinal.total;
@@ -1435,6 +1501,37 @@ export class gActor extends Actor{
             }  
         }
 
+        //TABLE TOTALS CALCULATION
+        for(var tabAProp in attributes){
+            if(attributes[tabAProp].istable){
+
+                let t_Prop = attributes[tabAProp];
+                let tableObj = game.items.get(t_Prop.id);
+                let totalGroupID = tableObj.data.data.group.id;
+                let gcitems = await citemIDs.filter(y=>y.groups.filter(x=>x.id==totalGroupID));
+
+                for(var propKey in t_Prop.totals){
+                    let newtotal = 0;
+
+                    for(let q=0;q<gcitems.length;q++){
+                        let total_citem = gcitems[q].attributes[propKey];
+                        if(total_citem!=null)
+                            newtotal += Number(total_citem.value);
+                    }
+
+                    t_Prop.totals[propKey].total = newtotal;
+                }
+
+
+
+            }
+
+        }
+
+        //CHECK FINAL AUTO VALUES -- IS THERE A BETTER WAY???
+        //console.log("aqui");
+        ithaschanged = await this.autoCalculateAttributes(actorData,attributearray,attributes,true);
+
         let checkmods = await this.getMods(actorData);
 
         if(checkmods.length != mods.length && !repeat){
@@ -1463,7 +1560,7 @@ export class gActor extends Actor{
 
 
         var form = await parser.parseFromString(htmlcode, 'text/html').querySelector('form');
-        var inputs = await form.querySelectorAll('input,select,textarea');
+        var inputs = await form.querySelectorAll('input,select,textarea,.radio-input');
         let sheetAtts =[];
         for(let i = 0; i < inputs.length; i++){
             let newAtt = inputs[i];
@@ -1481,9 +1578,15 @@ export class gActor extends Actor{
         for (let i=0;i<attributearray.length;i++) {
             let attribute = attributearray[i];
             let findme = sheetAtts.filter(y=>y==attribute);
-            let attID = actorData.data.attributes[attribute].id;
             //console.log("setting: " + attribute);
-            ithaschanged = await this.setAutoProp(attID,attributes,attribute,findme,ithaschanged);
+            if(actorData.data.attributes[attribute]!=null){
+                let attID = actorData.data.attributes[attribute].id;
+                //console.log("setting: " + attribute);
+                ithaschanged = await this.setAutoProp(attID,attributes,attribute,findme,ithaschanged);
+            }
+            else{
+                ui.notifications.warn("Please rebuild/reload template, attribute " + attribute + " not found in actor");
+            }
 
         }
 
@@ -1491,7 +1594,8 @@ export class gActor extends Actor{
     }
 
     async setAutoProp(attID,attributes,attribute,findme,ithaschanged){
-        //console.log(attributes);
+        //console.log(attribute);
+        //console.log(findme);
         if((attribute!=null || attribute!=undefined)&&findme.length>0){
             let attdata = attributes[attribute];
             let rawexp="";
@@ -1507,6 +1611,10 @@ export class gActor extends Actor{
                 }
 
                 rawexp = property.data.data.auto;
+
+                if(rawexp.includes(".totals")){
+                    actorAtt.hastotals = true;
+                }
 
                 //console.log("autochecking " + attribute + " isset:" + actorAtt.isset + " rawexp: " + rawexp);
                 //console.log("PNUMD= " + attributes["pnum_d"].value);
@@ -1574,7 +1682,7 @@ export class gActor extends Actor{
                     //console.log("defaulting " + attribute + " to " + actorAtt.value + " isset: " + actorAtt.isset);
                 }
 
-                if(property.data.data.automax !==""  && !actorAtt.maxset){
+                if(property.data.data.automax !=="" && !actorAtt.maxset){
                     rawexp = property.data.data.automax;
 
                     rawexp = await this.expandPropsP(rawexp,attributes);
@@ -1609,7 +1717,7 @@ export class gActor extends Actor{
         //console.log(attributes);
         var prop_check = rawexp.match(/(?<=\@\{).*?(?=\})/g);
         if(prop_check!=null){
-            //console.log("rawexp: " + rawexp);
+            //console.log("expanding rawexp: " + rawexp);
             for (let n=0;n<prop_check.length;n++){
 
                 let _rawattname = prop_check[n];
@@ -1617,19 +1725,24 @@ export class gActor extends Actor{
                 let _attProp = "value";
                 let _attAuto = "auto";
                 let _attvalue;
-                //console.log("calculating auto " + _rawattname + " " + _attAuto);
+
                 if(_rawattname.includes(".max")){
                     _rawattname = _rawattname.replace(".max","");
                     _attProp = "max";
                     _attAuto = "automax";
                 }
 
+                //console.log("calculating auto " + _rawattname + " " + _attAuto);
+
                 let propertybase = await game.items.filter(y=>y.data.type == "property" && y.data.data.attKey == _rawattname);
                 let property = propertybase[0];
+
+                //console.log(property);
+
                 if(property!=null){
                     let exchanger = attributes[_rawattname][_attProp];
                     let attAutoAdd = Number(attributes[_rawattname]["autoadd"]);
-
+                    //console.log(property);
                     if(property.data.data[_attAuto]!=""){
                         //console.log("expanding: " + _rawattname + " = " + property.data.data[_attAuto]);
                         if(property.data.data[_attAuto].includes("$<"))
@@ -1674,7 +1787,7 @@ export class gActor extends Actor{
                 regobject.index = regblocks[0];
                 regobject.expr = expreg[i].replace(regblocks[0]+";",'');
                 //console.log(regobject.expr);
-                let internalvBle = regobject.expr.match(/(?<=\$)[0-9]/g);
+                let internalvBle = regobject.expr.match(/(?<=\$)[0-9]+/g);
                 if(internalvBle!=null){
                     for (let k=0;k<internalvBle.length;k++){
                         let regindex = internalvBle[k];
@@ -1735,8 +1848,7 @@ export class gActor extends Actor{
         //        if(!this.owner)
         //            return;
 
-        if(data==null)
-            data=this.data;
+        let newData =this.data;
 
         data.flags.ischeckingauto = true;
 
@@ -1745,8 +1857,8 @@ export class gActor extends Actor{
         //            this.data.flags.hasupdated = false;
         //            return; 
         //        }
-
-        let newData = await this.checkPropAuto(data);
+        if(!this.data.data.istemplate)
+            newData = await this.checkPropAuto(data);
         //        if(this.token!=null){
         //            await this.update({data:this.data},{diff: false});
         //
@@ -1775,7 +1887,7 @@ export class gActor extends Actor{
 
         //console.log(rollexp);
         //console.log(rollid);
-        //console.log(citemattributes.name);
+        //console.log(citemattributes);
 
         let initiative=false;
         let rolltotal=0;
@@ -1797,8 +1909,8 @@ export class gActor extends Actor{
 
         //Check roll mode
         let rollmode = this.data.data.rollmode;
-        if (citemattributes!=null)
-            rollname = rollname.replace("#{name}",citemattributes.name);
+        if(citemattributes!=null)
+            rollname = rollname.replace(/\#{name}/g,citemattributes.name);
 
         //Parse roll difficulty in name, and general atts
         rollname = rollname.replace(/\#{diff}/g,diff);
@@ -1806,10 +1918,13 @@ export class gActor extends Actor{
 
         //Parse roll difficulty
         rollexp = rollexp.replace(/\#{diff}/g,diff);
-        if (citemattributes!=null)
-            rollexp = rollexp.replace("#{name}",citemattributes.name);
+        if(citemattributes!=null){
+            rollexp = await rollexp.replace(/\#{name}/g,citemattributes.name);
+        }
+
 
         //Parse target attribute
+        //console.log(rollexp);
         //console.log(target);
         let targetexp = rollexp.match(/(?<=\#{target\|)\S*?(?=\})/g);
         if(targetexp!=null){
@@ -2333,10 +2448,43 @@ export class gActor extends Actor{
 
                     let finaleval = "%[" + mycondition + "," + myeval + "]";
                     //console.log(finaleval);
+
+
+
+
                     let finalevalvalue = await auxMeth.autoParser(finaleval,actorattributes,citemattributes,false,false,number);
                     //console.log(finalevalvalue);
 
-                    convalue += await auxMeth.autoParser(finaleval,actorattributes,citemattributes,false,false,number) + " ";
+                    //REMOVES ARITHMETICAL EXPRESSION IN CONDITIONAL TEXTS!!!
+                    var parmatch = /\(/g;
+                    var parArray;
+                    var parresult = [];
+
+                    while (parArray = parmatch.exec(finalevalvalue)) {
+                        let suba = finalevalvalue.substring(parmatch.lastIndex, finalevalvalue.length);
+                        let subb = auxMeth.getParenthesString(suba);
+                        parresult.push(subb);
+                    }
+
+                    if(parresult!=null){
+                        //Substitute string for current value        
+                        for (let i=0;i<parresult.length;i++){
+                            let hasletters= /[A-Za-z]+/g;
+                            let hassubfunctions = parresult[i].match(hasletters);
+
+                            if (!hassubfunctions){
+                                let parsedres = eval(parresult[i]);
+                                let tochax = "(" + parresult[i] + ")";
+                                finalevalvalue = finalevalvalue.replace(tochax,parsedres);
+                            }
+                        }
+                    }
+
+                    finalevalvalue = await auxMeth.autoParser(finalevalvalue,actorattributes,citemattributes,false,false,number);
+
+                    //console.log(parresult);
+
+                    convalue += finalevalvalue + " ";
                     //console.log(convalue);
                 }
 
