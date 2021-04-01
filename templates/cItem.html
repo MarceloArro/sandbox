@@ -1,15 +1,11 @@
 <form class="{{cssClass}}" autocomplete="off">
-    <header class="sheet-header">
-        <div class="new-row">
-            <div class="header-left">
-                <img class="profile-img" src="{{item.img}}" data-edit="img" title="{{item.name}}"/>
-                <div class="new-block">
-                    <h1 class="charname"><input name="name" type="text" value="{{item.name}}" placeholder="Name"/></h1>
-                    <h3 class="typelabel cItem">cITEM</h3>
-                </div>
-            </div>
-
+    <header class="item-sheet-header">
+        <img class="profile-img" src="{{item.img}}" data-edit="img" title="{{item.name}}"/>
+        <div class="header-fields">
+            <h1 class="charname"><input name="name" class="itemname" type="text" value="{{item.name}}" placeholder="Name"/></h1>
+            <h3 class="typelabel cItem">cITEM</h3>
         </div>
+
     </header>
 
     {{!-- Sheet Tab Navigation --}}
@@ -72,6 +68,12 @@
                         <label class="label-free">Self-destruct</label>
                         <input class="check-selfdestruct" name="data.selfdestruct" id="check-selfdestruct" type="checkbox" {{checked item.data.selfdestruct}}/>
                     </div>
+<!--
+                    <div class="flexblock-center-nopad">
+                        <label class="label-free">Effect Icon</label>
+                        <input class="input-medlarge" type="text" name="data.effectpath" value="{{data.effectpath}}"/>
+                    </div>
+-->
                     {{#ifNot data.usetype "PAS"}}
                     <div class="flexblock-center-nopad">
                         {{#ifCond data.usetype "CON"}}
@@ -124,29 +126,30 @@
 
                                         <div class="mod-row">
                                             <a class="mod-delete" title="Delete Mod" name="{{id}}.delete"><i class="fas fa-times-circle"></i></a>
-                                            {{#ifCond mod.type "ITEM"}}
+                                            {{#ifNot mod.type "ROLL"}}
                                             <label class="label-free">once</label>
                                             <input class="check-once" index={{id}} name="{{id}}.once" id="{{id}}" type="checkbox" {{checked mod.once}}/>
-                                            {{/ifCond}}
+                                            {{/ifNot}}
                                         </div>
 
                                         <div class="mod-row-block">
 
-                                            <div class="col-1-6  mod-row-header">
+                                            <div class="col-1-8  mod-row-header">
                                                 MOD
                                             </div>
                                             <div class="col-1-2  mod-row-input">
                                                 <input class="mod-input" type="text" name="{{id}}.name" value="{{mod.name}}"/>
                                             </div>
-                                            <div class="col-1-6  mod-row-header">
+                                            <div class="col-1-8  mod-row-header">
                                                 TYPE
                                             </div>
-                                            <div class="col-1-6  mod-row-input">
+                                            <div class="col-1-4  mod-row-input">
                                                 <div class="mod-row-block">
                                                     <select  class="mod-input"  name="{{id}}.type"  data-type="String">
                                                         {{#select mod.type}}
                                                         <option  value="ADD">ADD</option>
                                                         <option  value="SET">SET</option>
+                                                        <option  value="CREATE">CREATE</option>
                                                         <option  value="ITEM">ITEM</option>
                                                         <option  value="ROLL">ROLL</option>
                                                         {{/select}}
@@ -154,6 +157,7 @@
                                                 </div>
                                             </div>
                                         </div>
+                                        {{#ifNot mod.type "CREATE"}}
                                         <div class="mod-row-block">
                                             <div class="col-1-6  mod-row-header">
                                                 IF
@@ -178,6 +182,7 @@
                                                 <input class="mod-input" type="text" name="{{id}}.condvalue" value="{{mod.condvalue}}" placeholder="VALUE"/>
                                             </div>
                                         </div>
+                                        {{/ifNot}}
                                         {{#ifNot mod.type "ITEM"}}
                                         {{#ifNot mod.type "ROLL"}}
                                         <div class="mod-row-block">
