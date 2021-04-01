@@ -672,6 +672,7 @@ export class sItemSheet extends ItemSheet {
 
         //await this.item.update({[`data.attributes.${name}.value`]:setvalue});
         //await this.item.update({"data.attributes":this.item.data.data.attributes},{diff:false});
+        await this.scrollbarSet(false);
         this.item.update(this.item.data);
     }
 
@@ -701,16 +702,18 @@ export class sItemSheet extends ItemSheet {
         await mods.push(newMod);
 
         //await this.item.update({"data.mods": mods}, {diff: false});
+        await this.scrollbarSet(false);
         this.item.update(this.item.data);
 
         //console.log(mods);
     }
 
-    editmodInput(index,name,value){
+    async editmodInput(index,name,value){
         const mods = this.item.data.data.mods;
         const obj = mods[index];
         obj[name] = value;
         this.item.data.data.mods = mods;
+        await this.scrollbarSet(false);
         this.item.update(this.item.data);
 
         //this.item.update({"data.mods": mods}, {diff: false});
@@ -722,10 +725,11 @@ export class sItemSheet extends ItemSheet {
         await this.scrollbarSet();
 
         //this.item.update({"data.mods": mods}, {diff: false});
+        await this.scrollbarSet(false);
         this.item.update(this.item.data);
     }
 
-    addItemToMod(modId,citemId){
+    async addItemToMod(modId,citemId){
         const mods = this.item.data.data.mods;
         const mod = mods[modId];
         let citem = game.items.get(citemId);
@@ -736,28 +740,39 @@ export class sItemSheet extends ItemSheet {
         if(!mod.items.includes(citemId))
             mod.items.push(arrayItem);
         //this.item.update({"data.mods": mods}, {diff: false});
+        await this.scrollbarSet(false);
         this.item.update(this.item.data);
     }
 
-    async scrollBarTest(basehtml){
-        const wcontent = await this._element[0].getElementsByClassName("window-content");
-        let newheight = parseInt(wcontent[0].offsetHeight) - 152;
+    async scrollBarLoad(basehtml){
+        let html = $(this._element[0]);
+        let wcontent = html.find(".window-content").height();
+        let sheader = html.find(".item-sheet-header").height();
+        let atabs = html.find(".atabs").height();
+        let sbodyheight = html.find(".sheet-body").height();
+        let newheight = wcontent - (sheader + atabs);
 
-        const html = await basehtml.find(".scrollable");
-        for(let i=0;i<html.length;i++){
-            let scrollNode = html[i];
-            scrollNode.style.height = newheight + "px";
+        const htmltab = html.find(".scrollable");
+        for(let i=0;i<htmltab.length;i++){
+            let scrollNode = htmltab[i];
+            $(scrollNode).height(newheight);
 
             if(scrollNode.classList.contains("active")){
-                let thisuser = game.user._id;
-                scrollNode.scrollTop = this.item.data.flags.scrolls[thisuser];
+                //console.log(scrollNode.style.height);
+                let myuser = game.user._id;
+                let newscrollTop = 0;
+                if(hasProperty(this.item.data.flags.sandbox,"scrolls_" + myuser + "_" + this.item.id))
+                    newscrollTop =this.item.data.flags.sandbox["scrolls_" + myuser + "_" + this.item.id]
+
+                $(scrollNode).scrollTop(newscrollTop);
+
             }
 
         }
 
     }
 
-    async scrollbarSet(){
+    async scrollbarSet(noupdate = true){
         let scrolls = this._element[0].getElementsByClassName("scrollable");
         let scrollTop = 0;
         for(let i=0;i<scrolls.length;i++){
@@ -767,7 +782,14 @@ export class sItemSheet extends ItemSheet {
 
         }
 
-        setProperty(this.item.data.flags.scrolls,game.user._id,scrollTop);
+        let myuser = game.user._id;
+
+        if(noupdate){
+            await this.item.setFlag('sandbox', "scrolls_" + myuser, scrollTop);
+        }
+        else{
+            this.item.data.flags.sandbox["scrolls_" + myuser] = scrollTop;
+        }
     }
 
     /** @override */
