@@ -3,14 +3,16 @@
     <header class="sheet-header">
         <img class="profile-img" src="{{actor.img}}" title="{{actor.name}}" data-edit="img" height="100" width="100"/>
         <div class="header-fields">
-            <h1 class="charname"><input name="name" type="text" value="{{actor.name}}" placeholder="Name"/></h1>
-            <div class="flexblock-left ">
+            <h1 class="charname"><input name="name" class="entityname" type="text" value="{{actor.name}}" placeholder="Name"/></h1>
+            <div class="flexblock-left charsetup">
                 <div class="col-1-2">
                     {{#if actor.data.istemplate}}
                     {{else}}
                     <div class="flexblock-left">
-                        <label class="label-free boldtext">MOD</label>
-                        <input class="input-min" type="text" name="data.mod" value="{{data.mod}}"/>
+                        <!--
+<label class="label-free boldtext">MOD</label>
+<input class="input-min" type="text" name="data.mod" value="{{data.mod}}"/>
+-->
 
                         {{#advShow}}
                         <a class="roll-mode boldtext" title="Roll mode"><i>{{data.rollmode}}</i></a>
@@ -31,14 +33,8 @@
                     {{#if actor.data.istemplate}}
                     {{else}}
                     {{#isGM}}
+                    <a class="sheet-reload" title="Reload Template"><i class="fas fa-arrow-alt-circle-down fa-2x"></i></a>
                     <select  class="selectsheet"  name="data.gtemplate"  data-type="String">
-                        <!--
-{{#select actor.data.gtemplate}}
-{{#each data.sheets as |gtemplate id|}}
-<option  value="{{gtemplate}}">{{gtemplate}}</option>
-{{/each}}
-{{/select}}
--->
                     </select>
                     {{/isGM}}
                     {{/if}}
@@ -62,7 +58,7 @@
 
     {{!-- Sheet Tab Navigation --}}
     <div class="atabs">
-        <a class="tab-prev" id="tab-prev">&#171;</a>
+        <a class="tab-prev" id="tab-prev"><i class="leftarrow"></i></a>
         <nav class="sheet-tabs tabs" data-group="primary" id="tabs" tabs="0">
 
             <a class="item tab-button" data-tab="description" id="tab-0">Bio</a>          
@@ -71,13 +67,12 @@
             {{#if actor.data.istemplate}}
             <a class="item tab-button" data-tab="token" id="tab-token">Config</a>
             <a class="item tab-button" data-tab="config" id="tab-tabs">Tabs</a>
-            {{else}}
-            <a class="item tab-button" data-tab="citems" id="tab-citems">cItems</a>
             {{/if}}
+            <a class="item tab-button" data-tab="citems" id="tab-citems">cItems</a>
             {{/isGM}}
 
         </nav>
-        <a class="tab-next" id="tab-next">&#187;</a>
+        <a class="tab-next" id="tab-next"><i class="rightarrow"></i></a>
     </div>
 
     {{!-- Sheet Body --}}
@@ -162,6 +157,32 @@
                                 <option  value="5">5</option>
                                 {{/select}}
                             </select>
+                        </div>
+                    </div>
+
+                </div>
+                <div class="col-1-2">
+                    <div class="new-row">
+                        <div class="panelheader">
+                            <label class="label-medlarge">SHEET STYLES</label>
+                        </div>
+                    </div>
+                    <div class="new-row">
+                        <div class="flexblock-left">
+                            <label class="label-medlarge">Background</label>
+                            <input class ="gsheet-backg" type="text" name="data.backg" value="{{data.backg}}"/>
+                        </div>
+                    </div>
+                    <div class="new-row">
+                        <div class="flexblock-left">
+                            <label class="label-medlarge">Height</label>
+                            <input class ="gsheet-setheight" type="text" name="data.setheight" value="{{data.setheight}}"/>
+                        </div>
+                    </div>
+                    <div class="new-row">
+                        <div class="flexblock-left">
+                            <label class="label-medlarge">Resizable</label>
+                            <input class="check-resizable" name="data.resizable" id="check-resizable" type="checkbox" resizable="false" {{checked actor.data.resizable}}/>
                         </div>
                     </div>
 
