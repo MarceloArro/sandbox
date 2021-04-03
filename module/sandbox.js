@@ -394,8 +394,7 @@ Hooks.on("createToken", async (scene,token,options,userId) => {
 
     if(!hasProperty(token, "data"))
         setProperty(token,"data",{});
-    if(!hasProperty(token.data, "effects"))
-        setProperty(token.data,"effects",[]);
+
 });
 
 Hooks.on("deleteToken", (scene, token) => {
@@ -406,25 +405,25 @@ Hooks.on("preUpdateToken", async (scene, token, updatedData, options, userId) =>
     //console.log("updatingTokenActor");
     //console.log(token);
     //console.log(updatedData);
-    if(!token.owner){
+    if(!token.owner && !game.user.isGM){
         return;
     }
     let myToken = canvas.tokens.get(token._id);
     let myactor = game.actors.get(token.actorId);
 
-    let newdata = updatedData;
-    if (updatedData["data.citems"]!=null){
+    if (updatedData["data.citems"]){
         if(!hasProperty(updatedData,"actorData"))
             setProperty(updatedData,"actorData",{});
         if(!hasProperty(updatedData.actorData,"data"))
             setProperty(updatedData.actorData,"data",{});
+        setProperty(updatedData.actorData.data,"citems",[]);
         updatedData.actorData.data.citems = updatedData["data.citems"];
     }
     //    
-    //    if (updatedData["effects"]!=null)
-    //        updatedData.actorData.effects = updatedData["effects"];
+    if (updatedData["effects"]!=null)
+        updatedData.actorData.effects = updatedData["effects"];
 
-
+    //console.log(updatedData);
 
 });
 
@@ -441,11 +440,12 @@ Hooks.on("updateToken", async (scene, token, updatedData, options, userId) => {
     //console.log(myToken);
     //console.log(myactor);
 
-    if (updatedData["data.citems"]!=null){
+    if (updatedData["data.citems"]){
         if(!hasProperty(updatedData,"actorData"))
             setProperty(updatedData,"actorData",{});
         if(!hasProperty(updatedData.actorData,"data"))
             setProperty(updatedData.actorData,"data",{});
+        setProperty(updatedData.actorData.data,"citems",[]);
         updatedData.actorData.data.citems = updatedData["data.citems"];
     }
 
@@ -453,8 +453,19 @@ Hooks.on("updateToken", async (scene, token, updatedData, options, userId) => {
     if(!options.stopit && updatedData.actorData && !hasProperty(updatedData.actorData,"effects")){
         //console.log("Changing token");
 
-        let myData = await myactor.actorUpdater(myToken.actor.data);
-        await myToken.update(myData,{stopit:true});
+        //let myData = await myactor.actorUpdater(myToken.actor.data);
+
+        //await myToken.update(myData,{stopit:true});
+        //myToken.actor.sheet.render();
+
+        let adata = await myactor.actorUpdater(myToken.actor.data);
+
+        //await actor.update(actor.data,{stopit:true});
+        if(updatedData.actorData.data.attributes)
+            await myToken.update({"actor.data.attributes": adata.data.attributes},{stopit:true});
+
+        if(updatedData.actorData.data.citems)
+            await myToken.update({"actor.data.citems": adata.data.citems},{stopit:true});
 
         myToken.actor.sheet.render();
 
@@ -567,11 +578,18 @@ Hooks.on("updateActor", async (actor, updateData,options,userId) => {
     }
 
     if(updateData.data!=null){
-        if(!options.stopit && (updateData.data.attributes || updateData.data.citems || updateData.data.mod)){
-            //console.log(actor.data);
-            actor.data = await actor.actorUpdater(actor.data);
+        if(!options.stopit && (updateData.data.attributes || updateData.data.citems)){
+            console.log("sbox updating");
+            //actor.data = await actor.actorUpdater(actor.data);
+            let adata = await actor.actorUpdater(actor.data);
+            console.log(adata);
 
-            await actor.update(actor.data,{stopit:true});
+            //await actor.update(actor.data,{stopit:true});
+            if(updateData.data.attributes)
+                await actor.update({"data.attributes": adata.data.attributes},{stopit:true});
+
+            if(updateData.data.citems)
+                await actor.update({"data.citems": adata.data.citems},{stopit:true});
 
         }
     }
