@@ -267,6 +267,7 @@ export class gActor extends Actor{
         let citems = newdata.data.citems;
         let toRemove = citems.find(y=>y.id==itemID);
         let remObj = game.items.get(itemID);
+        //console.log(remObj);
 
         if(remObj!=null){
             let toRemoveObj = remObj.data.data;
@@ -293,8 +294,10 @@ export class gActor extends Actor{
                         if(actorAtt!=null){
                             if(addsetmods[i].type=="ADD"){
                                 let jumpmod = await this.checkModConditional(this.data,addsetmods[i]);
-                                if(((toRemove.isactive && !toRemoveObj.ispermanent) || (toRemoveObj.usetype=="PAS" && !toRemoveObj.selfdestruct)) && !jumpmod)
+                                if(((toRemove.isactive && !toRemoveObj.ispermanent) || (toRemoveObj.usetype=="PAS" && !toRemoveObj.selfdestruct)) && !jumpmod){
                                     actorAtt[attProp] -= myAttValue;
+                                }
+
                             }
                         }
 
@@ -328,13 +331,13 @@ export class gActor extends Actor{
         citems.splice(citems.indexOf(toRemove),1);
         this.data.flags.haschanged = true;
 
-//        if(this.isToken){
-//
-//            let tokenId = this.token.id;
-//            let mytoken = canvas.tokens.get(tokenId);
-//            //console.log(mytoken);
-//            await mytoken.update({"data.citems":citems},{diff:false});
-//        }
+        //        if(this.isToken){
+        //
+        //            let tokenId = this.token.id;
+        //            let mytoken = canvas.tokens.get(tokenId);
+        //            //console.log(mytoken);
+        //            await mytoken.update({"data.citems":citems},{diff:false});
+        //        }
 
         return newdata;
 
@@ -692,16 +695,10 @@ export class gActor extends Actor{
         var result = {};
         var keys = Object.keys(data1);
         for (var key in data2) {
-            if (!keys.includes(key)) {
+            //console.log(data1[key].value + " vs " + data2[key].value);
+            if (!keys.includes(key) || data1[key].value!== data2[key].value) {
                 result[key] = {};
                 result[key].value = data2[key].value;
-            }
-            else{
-                if(data1[key].value!= data2[key].value){
-                    result[key] = {};
-                    result[key].value = data2[key].value;
-                }
-
             }
         }
 
@@ -1859,34 +1856,16 @@ export class gActor extends Actor{
         //        if(!this.owner)
         //            return;
 
-        let newData =this.data;
+        let newData = data;
 
-        data.flags.ischeckingauto = true;
+        if(newData == null)
+            newData = this.data;
 
-        //        if(this.data.flags.ischeckingauto){
-        //            console.log("still checking");
-        //            this.data.flags.hasupdated = false;
-        //            return; 
-        //        }
-        if(!this.data.data.istemplate)
+        newData.flags.ischeckingauto = true;
+
+        if(!newData.data.istemplate)
             newData = await this.checkPropAuto(data);
-        //        if(this.token!=null){
-        //            await this.update({data:this.data},{diff: false});
-        //
-        //        }
-        //        if(!this.data.flags.hasupdated){
-        //            console.log("updating after auto check");
-        //            data.flags.ischeckingauto=false;
-        //            data.flags.hasupdated=false;
-        //            await this.update({data:data.data});
-        //
-        //        }
-        //        this.data.flags.ischeckingauto=false;
-        //        this.data.flags.hasupdated=true;
-        //        await this.update({data:data.data});
-        //
-        //        this.data.flags.haschanged=false;
-        //console.log("check auto finished");
+
         newData.flags.ischeckingauto = false;
         //console.log(newData);
         return newData;
