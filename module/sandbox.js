@@ -446,6 +446,10 @@ Hooks.on("updateToken", async (scene, token, updatedData, options, userId) => {
     }
     let myToken = canvas.tokens.get(token._id);
     let myactor = game.actors.get(token.actorId);
+
+    //console.log(myToken.actor.data);
+    //    console.log(myactor.data);
+
     let actorData = false;
     if(updatedData.data!=null)
         if(updatedData.data.citems!=null)
@@ -474,17 +478,26 @@ Hooks.on("updateToken", async (scene, token, updatedData, options, userId) => {
         //await myToken.update(myData,{stopit:true});
         //myToken.actor.sheet.render();
 
-        let mydata = await duplicate(myactor);
+        let mydata = await duplicate(myToken.actor.data);
         let adata = await myactor.actorUpdater(myToken.actor.data);
 
         let newattributes = await myactor.compareValues(mydata.data.attributes,adata.data.attributes);
         let newcitems = await myactor.comparecItems(mydata.data.citems,adata.data.citems);
 
-        if(updatedData.actorData.data.attributes)
-            await myToken.update({"actorData.data.attributes": newattributes},{stopit:true});
+        //console.log(newattributes);
+        //console.log(newcitems);
 
-        if(updatedData.actorData.data.citems)
-            await myToken.update({"actorData.data.citems": newcitems},{stopit:true});
+        let newdata = {};
+        newdata.attributes = newattributes;
+        newdata.citems = newcitems;
+
+        await myToken.update({"actorData.data": newdata},{stopit:true});
+
+        //        if(updatedData.actorData.data.attributes)
+        //            await myToken.update({"actorData.data.attributes": newattributes},{"actorData.data.citems": newcitems},{stopit:true});
+        //
+        //        if(updatedData.actorData.data.citems)
+        //            await myToken.update({"actorData.data.citems": newcitems},{stopit:true});
 
         myToken.actor.sheet.render();
 
