@@ -410,14 +410,24 @@ Hooks.on("preUpdateToken", async (scene, token, updatedData, options, userId) =>
     }
     let myToken = canvas.tokens.get(token._id);
     let myactor = game.actors.get(token.actorId);
+    let actorData = false;
+    if(updatedData.data!=null)
+        if(updatedData.data.citems!=null)
+            actorData = true;
 
-    if (updatedData["data.citems"]){
+    if (updatedData["data.citems"] || actorData){
         if(!hasProperty(updatedData,"actorData"))
             setProperty(updatedData,"actorData",{});
         if(!hasProperty(updatedData.actorData,"data"))
             setProperty(updatedData.actorData,"data",{});
         setProperty(updatedData.actorData.data,"citems",[]);
-        updatedData.actorData.data.citems = updatedData["data.citems"];
+        if(updatedData["data.citems"])
+            updatedData.actorData.data.citems = updatedData["data.citems"];
+        if(actorData){
+            updatedData.actorData.data.citems = updatedData.data.citems;
+            await delete updatedData.data.citems;
+        }
+
     }
     //    
     if (updatedData["effects"]!=null)
@@ -436,21 +446,27 @@ Hooks.on("updateToken", async (scene, token, updatedData, options, userId) => {
     }
     let myToken = canvas.tokens.get(token._id);
     let myactor = game.actors.get(token.actorId);
+    let actorData = false;
+    if(updatedData.data!=null)
+        if(updatedData.data.citems!=null)
+            actorData = true;
 
-    //console.log(myToken);
-    //console.log(myactor);
-
-    if (updatedData["data.citems"]){
+    if (updatedData["data.citems"] || actorData){
         if(!hasProperty(updatedData,"actorData"))
             setProperty(updatedData,"actorData",{});
         if(!hasProperty(updatedData.actorData,"data"))
             setProperty(updatedData.actorData,"data",{});
         setProperty(updatedData.actorData.data,"citems",[]);
-        updatedData.actorData.data.citems = updatedData["data.citems"];
+        if(updatedData["data.citems"])
+            updatedData.actorData.data.citems = updatedData["data.citems"];
+        if(actorData){
+            updatedData.actorData.data.citems = updatedData.data.citems;
+            await delete updatedData.data.citems;
+        }
+
     }
 
-
-    if(!options.stopit && updatedData.actorData && !hasProperty(updatedData.actorData,"effects")){
+    if(!options.stopit && (updatedData.actorData) && !hasProperty(updatedData.actorData,"effects")){
         //console.log("Changing token");
 
         //let myData = await myactor.actorUpdater(myToken.actor.data);
@@ -458,14 +474,17 @@ Hooks.on("updateToken", async (scene, token, updatedData, options, userId) => {
         //await myToken.update(myData,{stopit:true});
         //myToken.actor.sheet.render();
 
+        let mydata = await duplicate(myactor);
         let adata = await myactor.actorUpdater(myToken.actor.data);
 
-        //await actor.update(actor.data,{stopit:true});
+        let newattributes = await myactor.compareValues(mydata.data.attributes,adata.data.attributes);
+        let newcitems = await myactor.comparecItems(mydata.data.citems,adata.data.citems);
+
         if(updatedData.actorData.data.attributes)
-            await myToken.update({"actor.data.attributes": adata.data.attributes},{stopit:true});
+            await myToken.update({"actorData.data.attributes": newattributes},{stopit:true});
 
         if(updatedData.actorData.data.citems)
-            await myToken.update({"actor.data.citems": adata.data.citems},{stopit:true});
+            await myToken.update({"actorData.data.citems": newcitems},{stopit:true});
 
         myToken.actor.sheet.render();
 
@@ -579,10 +598,10 @@ Hooks.on("updateActor", async (actor, updateData,options,userId) => {
 
     if(updateData.data!=null){
         if(!options.stopit && (updateData.data.attributes || updateData.data.citems)){
-            console.log("sbox updating");
+            //console.log("sbox updating");
             //actor.data = await actor.actorUpdater(actor.data);
             let adata = await actor.actorUpdater(actor.data);
-            console.log(adata);
+            //console.log(adata);
 
             //await actor.update(actor.data,{stopit:true});
             if(updateData.data.attributes)
