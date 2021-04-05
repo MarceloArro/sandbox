@@ -168,10 +168,16 @@ export class gActor extends Actor{
 
     }
 
-    async addcItem(ciTem,addedBy = null){
+    async addcItem(ciTem,addedBy = null,data = null){
         //console.log("adding citems");
-        const citems = this.data.data.citems;
-        const attributes = this.data.data.attributes;
+
+        if(data == null){
+            data = this.data;
+        }
+
+        const citems = data.data.citems;
+        const attributes = data.data.attributes;
+
         let itemKey = "";
         let newItem={};
         //console.log(ciTem.data.data.groups);
@@ -180,7 +186,7 @@ export class gActor extends Actor{
         newItem[itemKey].ikey=itemKey;
         newItem[itemKey].name=ciTem.data.name;
 
-        if(!this.data.data.istemplate){
+        if(!data.data.istemplate){
             newItem[itemKey].number = 1;
             newItem[itemKey].isactive = false;
             newItem[itemKey].isreset = true;
@@ -248,38 +254,8 @@ export class gActor extends Actor{
 
 
         await citems.push(newItem[itemKey]);
-        this.data.flags.haschanged = true;
 
-    //TODO
-//        if(ciTem.data.data.effectpath!=""){
-//            let effectData = {
-//                label: ciTem.name,
-//                icon: ciTem.data.data.effectpath,
-//                // changes: [{
-//                // "key": "flags.dnd5e.weaponCriticalThreshold",
-//                // "mode": 2,
-//                // "value": "19",
-//                // "priority": "20"
-//                // }],
-//                // duration: {
-//                // "seconds": 5000,
-//                // }
-//                // flags: {
-//                // dae:{
-//                // specialDuration: "DamageDealt",
-//                // }
-//                // }
-//            }
-//            await this.createEmbeddedEntity("ActiveEffect", effectData);
-//        }
-
-        if(this.isToken){
-
-            let tokenId = this.token.id;
-            let mytoken = canvas.tokens.get(tokenId);
-            await mytoken.update({"data.citems":citems},{diff:false});
-        }
-
+        data.flags.haschanged = true;
 
     }
 
@@ -352,13 +328,13 @@ export class gActor extends Actor{
         citems.splice(citems.indexOf(toRemove),1);
         this.data.flags.haschanged = true;
 
-        if(this.isToken){
-
-            let tokenId = this.token.id;
-            let mytoken = canvas.tokens.get(tokenId);
-            //console.log(mytoken);
-            await mytoken.update({"data.citems":citems},{diff:false});
-        }
+//        if(this.isToken){
+//
+//            let tokenId = this.token.id;
+//            let mytoken = canvas.tokens.get(tokenId);
+//            //console.log(mytoken);
+//            await mytoken.update({"data.citems":citems},{diff:false});
+//        }
 
         return newdata;
 
@@ -523,7 +499,9 @@ export class gActor extends Actor{
                             if(!ispresent && !_mod.exec){
                                 //console.log("adding " + toadd.name);
                                 let newItem= game.items.get(itemtoadd.id);
-                                await this.addcItem(newItem,mod.citem);
+                                await this.addcItem(newItem,mod.citem,data);
+
+
 
                                 newcitem = true;
                                 if(mod.once)
@@ -708,6 +686,39 @@ export class gActor extends Actor{
         }
 
         return citemIDs;
+    }
+
+    async compareValues(data1,data2){
+        var result = {};
+        var keys = Object.keys(data1);
+        for (var key in data2) {
+            if (!keys.includes(key)) {
+                result[key] = {};
+                result[key].value = data2[key].value;
+            }
+            else{
+                if(data1[key].value!= data2[key].value){
+                    result[key] = {};
+                    result[key].value = data2[key].value;
+                }
+
+            }
+        }
+
+        return result;
+    }
+    async comparecItems(data1,data2){
+        var result = [];
+        var keys = Object.keys(data1);
+
+        for (let i = 0; i<data2.length; i++) {
+            if (!data1.includes(data2[i])) {
+                result.push(data2[i]);
+            }
+
+        }
+
+        return result;
     }
 
     async checkPropAuto(actorData,repeat=false){
