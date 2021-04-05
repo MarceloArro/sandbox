@@ -2998,7 +2998,12 @@ export class gActorSheet extends ActorSheet {
 
         if(this.actor.isToken){
             let myToken = canvas.tokens.get(this.actor.token.id);
-            await myToken.update({"data.citems": this.actor.data.data.citems});
+            let newdata = {};
+            newdata.attributes = this.actor.data.data.attributes;
+            newdata.citems = this.actor.data.data.citems;
+
+            await myToken.update({"actorData.data": newdata});
+            //await myToken.update({"data.citems": this.actor.data.data.citems});
         }
 
         else{
