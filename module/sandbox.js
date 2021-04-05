@@ -600,15 +600,15 @@ Hooks.on("updateActor", async (actor, updateData,options,userId) => {
         if(!options.stopit && (updateData.data.attributes || updateData.data.citems)){
             //console.log("sbox updating");
             //actor.data = await actor.actorUpdater(actor.data);
+
             let adata = await actor.actorUpdater(actor.data);
-            //console.log(adata);
 
-            //await actor.update(actor.data,{stopit:true});
-            if(updateData.data.attributes)
-                await actor.update({"data.attributes": adata.data.attributes},{stopit:true});
-
-            if(updateData.data.citems)
-                await actor.update({"data.citems": adata.data.citems},{stopit:true});
+            await actor.update(actor.data,{stopit:true});
+            //            if(updateData.data.attributes)
+            //                await actor.update({"data.attributes": adata.data.attributes},{stopit:true});
+            //
+            //            if(updateData.data.citems)
+            //                await actor.update({"data.citems": adata.data.citems},{stopit:true});
 
         }
     }
