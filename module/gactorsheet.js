@@ -1874,7 +1874,7 @@ export class gActorSheet extends ActorSheet {
                                     //console.log(templatecItem.name + " is fucked in " + myactor.name);
                                     await myactor.deletecItem(templatecItem.id,true);
                                     await myactor.addcItem(templatecItem);
-                                    await myactor.update(myactor.data);
+                                    //await myactor.update(myactor.data);
                                 }
 
                             }
@@ -2171,6 +2171,8 @@ export class gActorSheet extends ActorSheet {
         if(dropitem.data.type == "cItem"){
 
             await this.actor.addcItem(dropitem);
+
+
             //await this.scrollbarSet(false);
         }
         else{
@@ -2204,11 +2206,20 @@ export class gActorSheet extends ActorSheet {
         }
 
         else {
-            //await this.actor.update({"data.citems": subitems}, {diff: false});
-            this.actor.data.data.citems= subitems;
+
+            //this.actor.data.data.citems= subitems;
+            //await this.actor.update(this.actor.data);
+            if(this.actor.isToken){
+                let myToken = canvas.tokens.get(this.actor.token.id);
+                await myToken.update({"data.citems": subitems});
+            }
+
+            else{
+                await this.actor.update({"data.citems": subitems});
+            }
         }
         //console.log("updating after drop");
-        await this.actor.update(this.actor.data);
+
 
         return subitems;
     }
@@ -2985,9 +2996,18 @@ export class gActorSheet extends ActorSheet {
         //get Item
         await this.actor.deletecItem(itemID, cascading);
 
-        //await this.scrollbarSet(false);
+        if(this.actor.isToken){
+            let myToken = canvas.tokens.get(this.actor.token.id);
+            await myToken.update({"data.citems": this.actor.data.data.citems});
+        }
 
-        await this.actor.update(this.actor.data);
+        else{
+            //await this.actor.update({"data.citems": subitems});
+            await this.actor.update(this.actor.data);
+        }
+
+
+        //await this.actor.update(this.actor.data);
 
     }
 
@@ -3432,10 +3452,11 @@ export class gActorSheet extends ActorSheet {
         //console.log(event);
         //console.log(event.target.name);
         //console.log(formData);
+        //console.log(formData["data.biography"]);
 
         //await this.scrollbarSet();
 
-        if(event.target == null && !game.user.isGM)
+        if(event.target == null && !game.user.isGM && !formData["data.biography"])
             return;
 
         if(event.target)
@@ -3443,6 +3464,7 @@ export class gActorSheet extends ActorSheet {
                 return;
 
 
+        //console.log(event);
 
         if(formData["data.gtemplate"]=="")
             formData["data.gtemplate"]=this.actor.data.data.gtemplate;
