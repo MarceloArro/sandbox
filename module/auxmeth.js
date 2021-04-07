@@ -1449,7 +1449,8 @@ export class auxMeth {
 
         let trashcan = await tester.getElementsByClassName("roll-delete-button");
         if(trashcan!=null)
-            trashcan[0].style.display="none";
+            if(trashcan.style!=null)
+                trashcan[0].style.display="none";
 
         let rollextra = tester.querySelector(".roll-extra");
         rollextra.style.display="none";
