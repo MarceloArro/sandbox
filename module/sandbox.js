@@ -412,7 +412,7 @@ Hooks.on("preUpdateToken", async (scene, token, updatedData, options, userId) =>
     let myactor = game.actors.get(token.actorId);
     let actorData = false;
     if(updatedData.data!=null)
-        if(updatedData.data.citems!=null)
+        if(updatedData.data.citems!=null || updatedData.data.rolls!=null)
             actorData = true;
 
     if (updatedData["data.citems"] || actorData){
@@ -421,6 +421,9 @@ Hooks.on("preUpdateToken", async (scene, token, updatedData, options, userId) =>
         if(!hasProperty(updatedData.actorData,"data"))
             setProperty(updatedData.actorData,"data",{});
         setProperty(updatedData.actorData.data,"citems",[]);
+        if(updatedData.data.rolls!=null){
+            setProperty(updatedData.actorData.data,"rolls",updatedData.data.rolls);
+        }
         if(updatedData["data.citems"])
             updatedData.actorData.data.citems = updatedData["data.citems"];
         if(actorData){
@@ -483,6 +486,7 @@ Hooks.on("updateToken", async (scene, token, updatedData, options, userId) => {
 
         let newattributes = await myactor.compareValues(mydata.data.attributes,adata.data.attributes);
         let newcitems = await myactor.comparecItems(mydata.data.citems,adata.data.citems);
+        let newrolls = await myactor.compareValues(mydata.data.rolls,adata.data.rolls);
 
         //console.log(newattributes);
         //console.log(newcitems);
@@ -490,6 +494,7 @@ Hooks.on("updateToken", async (scene, token, updatedData, options, userId) => {
         let newdata = {};
         newdata.attributes = newattributes;
         newdata.citems = newcitems;
+        newdata.rolls = newrolls;
 
         await myToken.update({"actorData.data": newdata},{stopit:true});
 
