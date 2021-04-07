@@ -1116,12 +1116,22 @@ export class gActorSheet extends ActorSheet {
 
             if(propertybase==null){
                 ui.notifications.warn("The property " + rawproperty.name + " in panel " + tabpanel.name + " does not exist anymore. Please remove the reference to it");
-                throw new Error("Something went badly wrong!");
+                throw new Error("No property!");
+                return "noproperty";
             }
 
             else{
 
+
+
                 let property = propertybase.data;
+
+                if(property.data.attKey==null || property.data.attKey==""){
+                    ui.notifications.warn("The property " + rawproperty.name + " in panel " + tabpanel.name + " does not have a key");
+                    throw new Error("No property Key!");
+                    return "noproperty";
+                }
+
 
                 fontgroup = tabpanel.data.fontgroup;
                 inputgroup = tabpanel.data.inputgroup;
@@ -1908,6 +1918,7 @@ export class gActorSheet extends ActorSheet {
 
     async buildHTML(tabs){
         console.log("building HTML");
+        let newpanel;
 
         if(game.settings.get("sandbox", "consistencycheck")!=""){
             await this.checkConsistency();
@@ -1927,11 +1938,16 @@ export class gActorSheet extends ActorSheet {
 
             flags.maxrows = 0;
 
+
             for (let i = 0; i < tabitempanels.length; i++) {
                 let tabpanel = game.items.get(tabitempanels[i].id);
 
+
                 if(tabpanel.data.type=="panel")
-                    await this.addNewPanel(tabpanel.data,titem.data.tabKey,tabname,true);
+                    newpanel = await this.addNewPanel(tabpanel.data,titem.data.tabKey,tabname,true);
+
+                if(newpanel!=null)
+                    break;
 
                 if(tabpanel.data.type=="multipanel"){
                     console.log("hay multi!");
@@ -1959,7 +1975,11 @@ export class gActorSheet extends ActorSheet {
                 }
 
             }
+            if(newpanel!=null)
+                break;
         }
+        if(newpanel!=null)
+            return;
 
         await this.hideTabsinTemplate();
         await this.registerHTML(SBOX.sheethtml.getElementById("sheet").outerHTML);
@@ -2203,6 +2223,7 @@ export class gActorSheet extends ActorSheet {
         if(isTab){
             //await this.actor.update({"data.tabs": subitems}, {diff: false});
             this.actor.data.data.tabs= subitems;
+            await this.actor.update({"data.tabs": subitems});
         }
 
         else {
