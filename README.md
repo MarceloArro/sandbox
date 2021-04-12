@@ -53,6 +53,7 @@ Do you have questions? Join my discord server and head to SANDBOX ENGLISH, I wil
 6. Modifiers (MODs)
 7. Roll Expressions
 8. Folder structure best practices
+9. CSS Styling
 
 ## 1.Basic Sheet Structure
 So you want to create your favourite ttrpg on Foundry to play online? Uh, let's see what we can do to help you. First, you need an idea of your character sheet, a sketch would do, something simple on a piece of paper. Lets assume we want something like this:
