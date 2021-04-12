@@ -39,9 +39,10 @@ Do you have questions? Join my discord server and head to SANDBOX ENGLISH, I wil
 
 ## Frequent issues
 - Do not insert data in the Template actor. Template Actors are not for sheet building, just create regular actors for that!
-- After rebuilding a sheet, any previous character will require changing its sheet to Default, and back again to the current sheet, in order to display the new changes
+- After rebuilding a sheet, any previous character will require pressing the reload template button, left of the template selector, in order to display the new changes
 - Never forget to include a key to a Sandbox element, or it won't let you drag it anywhere. Also, make sure keys are unique and do not contain spaces!
-- Whenever you change a template, your existing actors won't register the changes correctly. This is intentional, until sandbox is more stable so any mistakes in the template don't destroy your world. In order to apply changes to existing actors: reassign the actor template to Default, then close it, and then open it again and select the right template.
+- Whenever you change a template, your existing actors won't register the changes correctly. This is intentional, until sandbox is more stable so any mistakes in the template don't destroy your world. You just need to reload the template as mentioned above
+![Reload](docs/images/tuto46.png)
 
 ## Index
 1. Basic Sheet Structure
@@ -411,9 +412,58 @@ In the _TEMPLATE folder I create 3 folders: _TABS, _PANELS, _PROPERTIES. On some
 
 ![Folder Structure](docs/images/tuto43.png)
 
-Well, that's all. It can feel like chaotic and a mess, but it works. I have been creating systems, playing, and streaming them in my channel for these past 3 months, and it works great. I will do my bust to update the tool and create English tutorials as frequently as possible. Thanks for your understanding and enjoy!!
+## 9.CSS Styling
+If you want to style your sheet, you need to learn a bit of CSS. It is not that complicated, and there are plenty of tutorials out there, so I will assume that you understand the basics.
 
-## ADDITIONS
+The first thing you need is a CSS file, create one, let's say style.css, and upload it to your world's folder. Then, open Sandbox settings and write past the path in the custom CSS field:
+
+![Custom CSS](docs/images/tuto51.png)
+
+Now, let's say we want to change the font of a panel's labels. Let's then download an opensource font as an example, the Inter font. Create a new folder in your world's folder, called "fonts", and upload the font there. Then open your css file and write:
+
+@font-face {
+    font-family: InterFont;
+    src:url(fonts/Inter-VariableFont.ttf);
+}
+
+.sandbox.sheet .style1{
+    color:blue;
+	font-size: 18px;
+	font-family: InterFont;
+}
+
+Now open your panel, and fill the Font Group field with "style1". This way all the elements belonging to this panel will have this style applied:
+
+![Creating a CSS style](docs/images/tuto45.png)
+
+Finally, rebuild your template, and you will be able to see the changes.
+![Applying a CSS style](docs/images/tuto47.png)
+
+If you want to change the input field create a style and write it in the Input Group field of the panel. Let's do it, but in a specific property of this panel. To the css file add the following lines:
+
+.sandbox.sheet .inputstyle1{
+    background: green;
+}
+
+Apply it to the property and rebuild template:
+![Applying a CSS style to an input group](docs/images/tuto48.png)
+
+Aaand voila!
+![Applying a CSS style to an input group, results](docs/images/tuto49.png)
+
+You can also change the style of a panel header this way. Write this in the css file and include the style in the Header Group field of the panel:
+
+.sandbox.sheet .headerstyle1{
+    background: red;
+}
+
+This is the result after rebuilding template:
+![Applying a CSS style to a header group](docs/images/tuto50.png)
+
+
+Well, that's all. It can feel like chaotic and a mess, but it works. I have been creating systems, playing, and streaming them in my channel for these past months, and it works great. I will do my bust to update the tool and create English tutorials as frequently as possible. Thanks for your understanding and enjoy!!
+
+## SETTINGS MENU
 
 Check on Game Settings>Configure Settings>System Settings
 - Show Roll with Advantage option: the 1d20 text below the Actor name will appear or not
