@@ -29,7 +29,7 @@
                     <div class="new-row">
                         <div class="flexblock-left">
                             <label class="label-medlarge">Group Key</label>
-                            <input type="text" name="data.groupKey" value="{{data.groupKey}}" data-dtype="String"/>
+                            <input type="text" name="data.groupKey" value="{{data.data.groupKey}}" data-dtype="String"/>
                         </div>
                     </div>
                 </div>
@@ -38,7 +38,7 @@
                     <div class="new-row">
                         <div class="flexblock-left">
                             <label class="label-med">Unique</label>
-                            <input class="check-haslabel" name="data.isUnique" id="check-haslabel" type="checkbox" {{checked item.data.isUnique}}/>
+                            <input class="check-haslabel" name="data.isUnique" id="check-haslabel" type="checkbox" {{checked item.data.data.isUnique}}/>
                         </div>
                     </div>
                 </div>
@@ -52,7 +52,7 @@
             </div>
             <ol class="properties-list">
 
-                {{#each data.properties as |property id|}}
+                {{#each data.data.properties as |property id|}}
                 <li class="property group-row-block" data-item-id="{{id}}">
                     <h4 class="group-name">{{property.name}}</h4>
                     <div class="groupblock">
