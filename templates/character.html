@@ -87,7 +87,7 @@
         {{!-- SheetTabs Tab --}}
         <div class="tab properties" data-group="primary" data-tab="config">
             <ol class="properties-list">
-                {{#each data.tabs as |tab id|}}
+                {{#each data.data.tabs as |tab id|}}
                 <li class="property flexrow" data-item-id="{{id}}">
                     <h4 class="property-name">{{tab.name}}</h4>
                     <div class="property-row">
@@ -112,20 +112,20 @@
                     <div class="new-row">
                         <div class="flexblock-left">
                             <label class="label-medlarge">Bar 1</label>
-                            <input class ="token-bar1" type="text" name="data.tokenbar1" value="{{data.tokenbar1}}"/>
+                            <input class ="token-bar1" type="text" name="data.tokenbar1" value="{{data.data.tokenbar1}}"/>
                         </div>
                     </div>
                     <div class="new-row">
                         <div class="flexblock-left">
                             <label class="label-medlarge">Shield Stat</label>
-                            <input class ="token-shieldstat" type="text" name="data.shieldstat" value="{{data.shieldstat}}"/>
+                            <input class ="token-shieldstat" type="text" name="data.shieldstat" value="{{data.data.shieldstat}}"/>
                         </div>
                     </div>
                     <div class="new-row">
                         <div class="flexblock-left">
                             <label class="label-medlarge">Display Name</label>
                             <select  class ="token-displayName" name="data.displayName"  data-type="String">
-                                {{#select actor.data.displayName}}
+                                {{#select actor.data.data.displayName}}
                                 <option  value="NONE">NONE</option>
                                 <option  value="CONTROL">CONTROL</option>
                                 <option  value="OWNER_HOVER">OWNER HOVER</option>
@@ -150,7 +150,7 @@
                         <div class="flexblock-left">
                             <label class="label-medlarge">Max visible Tabs</label>
                             <select  class ="token-visitabs" name="data.visitabs"  data-type="String">
-                                {{#select actor.data.visitabs}}
+                                {{#select actor.data.data.visitabs}}
                                 <option  value="2">2</option>
                                 <option  value="3">3</option>
                                 <option  value="4">4</option>
@@ -170,13 +170,13 @@
                     <div class="new-row">
                         <div class="flexblock-left">
                             <label class="label-medlarge">Background</label>
-                            <input class ="gsheet-backg" type="text" name="data.backg" value="{{data.backg}}"/>
+                            <input class ="gsheet-backg" type="text" name="data.backg" value="{{data.data.backg}}"/>
                         </div>
                     </div>
                     <div class="new-row">
                         <div class="flexblock-left">
                             <label class="label-medlarge">Height</label>
-                            <input class ="gsheet-setheight" type="text" name="data.setheight" value="{{data.setheight}}"/>
+                            <input class ="gsheet-setheight" type="text" name="data.setheight" value="{{data.data.setheight}}"/>
                         </div>
                     </div>
                     <div class="new-row">
@@ -194,7 +194,7 @@
         {{!-- cItems Tab --}}
         <div class="tab citems scrollable" data-group="primary" data-tab="citems">
             <ol class="properties-list">
-                {{#each data.citems as |citem cid|}}
+                {{#each data.data.citems as |citem cid|}}
                 <li class="property flexrow" data-item-id="{{cid}}">
                     <h4 class="property-name">{{citem.name}}</h4>
                     <div class="property-row">
