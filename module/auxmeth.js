@@ -23,32 +23,31 @@ export class auxMeth {
 
     }
 
-    static async getTempHTML(gtemplate){
+    static async getTempHTML(gtemplate,istemplate=false){
 
         let html="";
 
-        //console.log(this.actor.data.data.gtemplate);
         let mytemplate = gtemplate;
         if(gtemplate!="Default"){
+
             let _template = await game.actors.find(y=>y.data.data.istemplate && y.data.data.gtemplate==gtemplate);
-            //console.log(_template);
+
             if(_template!=null){
                 html=_template.data.data._html;
             }
 
-            if(html==null || html=="")
+            if((html==null || html=="") && !istemplate)
                 ui.notifications.warn("Please rebuild template actor");
 
         }
 
-        if(html==null || html==""){
+        if(html===null || html===""){
             //console.log("defaulting template");
             gtemplate="Default";
             html = await fetch(this.getHTMLPath(gtemplate)).then(resp => resp.text());
 
         }
 
-        //console.log(html);
         return html;
     }
 
@@ -82,7 +81,8 @@ export class auxMeth {
         console.log("building base html");
         var parser = new DOMParser();
         var htmlcode = await auxMeth.retrieveBTemplate();
-        SBOX.sheethtml = parser.parseFromString(htmlcode, 'text/html');
+        let html = parser.parseFromString(htmlcode, 'text/html');
+        return html;
     }
 
     static async registerIfHelper(){
@@ -486,7 +486,7 @@ export class auxMeth {
                     let ceilExpr = ceilResult[i];
                     let tochange = "ceil(" + ceilExpr+ ")";
 
-                    let maxpresent = /\if\[|\bmax\(|\bmin\(|\bsum\(|\%\[|\bfloor\(|\bceil\(|\bcount[E|L|H]\(|\?\[|[a-zA-Z]/g;
+                    let maxpresent = /\bif\[|\bmax\(|\bmin\(|\bsum\(|\%\[|\bfloor\(|\bceil\(|\bcount[E|L|H]\(|\?\[|[a-zA-Z]/g;
                     let maxpresentcheck = ceilExpr.match(maxpresent);
 
                     if(!maxpresentcheck){
@@ -528,7 +528,7 @@ export class auxMeth {
                     let floorExpr = floorResult[i];
                     let tochange = "floor(" + floorExpr+ ")";
 
-                    let maxpresent = /\if\[|\bmax\(|\bmin\(|\bsum\(|\%\[|\bfloor\(|\bceil\(|\bcount[E|L|H]\(|\?\[|[a-zA-Z]/g;
+                    let maxpresent = /\bif\[|\bmax\(|\bmin\(|\bsum\(|\%\[|\bfloor\(|\bceil\(|\bcount[E|L|H]\(|\?\[|[a-zA-Z]/g;
                     let maxpresentcheck = floorExpr.match(maxpresent);
 
                     if(!maxpresentcheck){
@@ -603,7 +603,7 @@ export class auxMeth {
                 //Substitute string for current value        
                 for (let i=0;i<maxResult.length;i++){
                     //console.log(maxResult[i]);
-                    let ifpresent = /\if\[|\bmax\(|\bmin\(|\bsum\(|\%\[|\bceil\(|\bfloor\(|\bcount[E|L|H]\(|\?\[/g;
+                    let ifpresent = /\bif\[|\bmax\(|\bmin\(|\bsum\(|\%\[|\bceil\(|\bfloor\(|\bcount[E|L|H]\(|\?\[/g;
                     let ifpresentcheck = maxResult[i].match(ifpresent);
 
                     if(!ifpresentcheck){
@@ -665,7 +665,7 @@ export class auxMeth {
             if(minResult!=null){
                 //Substitute string for current value        
                 for (let i=0;i<minResult.length;i++){
-                    let ifpresent = /\if\[|\bmax\(|\bmin\(|\bsum\(|\%\[|\bceil\(|\bfloor\(|\bcount[E|L|H]\(|\?\[/g;
+                    let ifpresent = /\bif\[|\bmax\(|\bmin\(|\bsum\(|\%\[|\bceil\(|\bfloor\(|\bcount[E|L|H]\(|\?\[/g;
                     let ifpresentcheck = minResult[i].match(ifpresent);
 
                     if(!ifpresentcheck){
@@ -899,7 +899,7 @@ export class auxMeth {
                     let finalvalue=0;
                     let valueIf = Array();
                     let nonumber=false;
-                    let nonumsum = /\if\[|\bmax\(|\bmin\(|\bsum\(|\%\[|\bceil\(|\bfloor\(|\bcount[E|L|H]\(|\?\[/g;
+                    let nonumsum = /\bif\[|\bmax\(|\bmin\(|\bsum\(|\%\[|\bceil\(|\bfloor\(|\bcount[E|L|H]\(|\?\[/g;
                     let hassubfunctions = sumResult[i].match(nonumsum);
 
                     if (!hassubfunctions){
@@ -959,7 +959,7 @@ export class auxMeth {
                 //console.log(expr);
                 //Substitute string for current value
                 for (let i=scaleresult.length-1;i>=0;i--){
-                    let nonvalidscale = /\if\[|\bmax\(|\bmin\(|\bsum\(|\%\[|\bceil\(|\bfloor\(|\bcount[E|L|H]\(|\?\[/g;
+                    let nonvalidscale = /\bif\[|\bmax\(|\bmin\(|\bsum\(|\%\[|\bceil\(|\bfloor\(|\bcount[E|L|H]\(|\?\[/g;
                     let nonvalidscalecheck = scaleresult[i].match(nonvalidscale);
                     //console.log(scaleresult[i]);
                     if(!nonvalidscalecheck){
@@ -979,7 +979,16 @@ export class auxMeth {
                             let splitter = limits[j].split(":");
                             let scale = splitter[0];
                             //console.log(scale);
-                            if(isNaN(scale)  && !scale.includes("$") && !scale.includes("min") && !scale.includes("max") ){
+
+                            let noncondition = /\bif\[|\bmax\(|\bmin\(|\bsum\(|\%\[|\bfloor\(|\bceil\(|\bcount[E|L|H]\(|\?\[|[\+\-\*\/]/g;
+                            let nonconditioncheck = scale.match(noncondition);
+
+                            if(nonconditioncheck){
+                                //console.log("no number");
+                                //
+                                //                            }
+                                //
+                                //                            if(isNaN(scale)  && !scale.includes("$") && !scale.includes("min") && !scale.includes("max") ){
                                 //if(isNaN(scale) || scale.includes('+')|| scale.includes('-')|| scale.includes('/')|| scale.includes('*')){
                                 let newroll = new Roll(scale).roll();
                                 //expr = expr.replace(scale,newroll.total);
