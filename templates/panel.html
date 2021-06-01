@@ -29,21 +29,21 @@
                     <div class="new-row">
                         <div class="flexblock-left">
                             <label class="label-medlarge">Panel Key</label>
-                            <input type="text" name="data.panelKey" value="{{data.panelKey}}" data-dtype="String"/>
+                            <input type="text" name="data.panelKey" value="{{data.data.panelKey}}" data-dtype="String"/>
                         </div>
                     </div>
                     <div class="new-row">
                         <div class="flexblock-left">
                             <label class="label-medlarge">Title</label>
-                            <input type="text" name="data.title" value="{{data.title}}" data-dtype="String"/>
+                            <input type="text" name="data.title" value="{{data.data.title}}" data-dtype="String"/>
                         </div>
                     </div>
                     <div class="new-row">
                         <div class="flexblock-left">
                             <label class="label-med">Content Alignment</label>
                             <select name="data.contentalign"  data-type="String">
-                                {{#select item.data.contentalign}}
-                                {{#each item.data.atypes as |atype key|}}
+                                {{#select item.data.data.contentalign}}
+                                {{#each item.data.data.atypes as |atype key|}}
                                 <option  value="{{key}}">{{key}}</option> {{/each}} {{/select}}
                             </select>
                         </div>
@@ -52,8 +52,8 @@
                         <div class="flexblock-left">
                             <label class="label-med">Label Alignment</label>
                             <select name="data.alignment"  data-type="String">
-                                {{#select item.data.alignment}}
-                                {{#each item.data.atypes as |atype key|}}
+                                {{#select item.data.data.alignment}}
+                                {{#each item.data.data.atypes as |atype key|}}
                                 <option  value="{{key}}">{{key}}</option> {{/each}} {{/select}}
                             </select>
                         </div>
@@ -61,20 +61,20 @@
                     <div class="new-row">
                         <div class="flexblock-left">
                             <label class="label-med">Is Image</label>
-                            <input class="check-isimg" name="data.isimg" id="check-isimg" type="checkbox" {{checked item.data.isimg}}/>
+                            <input class="check-isimg" name="data.isimg" id="check-isimg" type="checkbox" {{checked item.data.data.isimg}}/>
 
                         </div>
                     </div>
                     <div class="new-row">
                         <div class="flexblock-left">
                             <label class="label-medlarge" title="Adds this class to the label's HTML style for ease of edition" >Font Group</label>
-                            <input type="text" name="data.fontgroup" value="{{data.fontgroup}}"/>
+                            <input type="text" name="data.fontgroup" value="{{data.data.fontgroup}}"/>
                         </div>
                     </div>
                     <div class="new-row">
                         <div class="flexblock-left">
                             <label class="label-medlarge" title="Adds this class to the panel header's HTML style for ease of edition" >Header Group</label>
-                            <input type="text" name="data.headergroup" value="{{data.headergroup}}"/>
+                            <input type="text" name="data.headergroup" value="{{data.data.headergroup}}"/>
                         </div>
                     </div>
 
@@ -85,8 +85,8 @@
                         <div class="flexblock-left">
                             <label class="label-med">Width</label>
                             <select name="data.width"  data-type="String">
-                                {{#select item.data.width}}
-                                {{#each item.data.wtypes as |wtype key|}}
+                                {{#select item.data.data.width}}
+                                {{#each item.data.data.wtypes as |wtype key|}}
                                 <option  value="{{wtype.value}}">{{wtype.value}}</option> {{/each}} {{/select}}
                             </select>
                         </div>
@@ -95,8 +95,8 @@
                         <div class="flexblock-left">
                             <label class="label-med">Columns</label>
                             <select name="data.columns"  data-type="String">
-                                {{#select item.data.columns}}
-                                {{#each item.data.ctypes as |ctype key|}}
+                                {{#select item.data.data.columns}}
+                                {{#each item.data.data.ctypes as |ctype key|}}
                                 <option  value="{{ctype.value}}">{{ctype.value}}</option> {{/each}} {{/select}}
                             </select>
                         </div>
@@ -105,7 +105,7 @@
                         <div class="flexblock-left">
                             <label class="label-med">Title Background</label>
                             <select  name="data.backg"  data-type="String">
-                                {{#select item.data.backg}}
+                                {{#select item.data.data.backg}}
                                 <option  value="D">DEFAULT</option>
                                 <option  value="T">TRANSP</option>
                                 <option  value="G">GREY</option>
@@ -121,13 +121,13 @@
                     <div class="new-row">
                         <div class="flexblock-left">
                             <label class="label-med">Image Path</label>
-                            <input type="text" name="data.imgsrc" value="{{data.imgsrc}}" data-dtype="String"/>
+                            <input type="text" name="data.imgsrc" value="{{data.data.imgsrc}}" data-dtype="String"/>
                         </div>
                     </div>
                     <div class="new-row">
                         <div class="flexblock-left">
                             <label class="label-medlarge" title="Adds this class to the input's HTML style for ease of edition" >Input Group</label>
-                            <input type="text" name="data.inputgroup" value="{{data.inputgroup}}"/>
+                            <input type="text" name="data.inputgroup" value="{{data.data.inputgroup}}"/>
                         </div>
                     </div>
 
@@ -140,11 +140,11 @@
                             VISIBLE IF
                         </div>
                         <div class="col-1-3">
-                            <input type="text" name="data.condat" value="{{data.condat}}" placeholder="COND ATTRIBUTE"/>
+                            <input type="text" name="data.condat" value="{{data.data.condat}}" placeholder="COND ATTRIBUTE"/>
                         </div>
                         <div class="col-1-6">
                             <select  name="data.condop"  data-type="String">
-                                {{#select item.data.condop}}
+                                {{#select item.data.data.condop}}
                                 <option  value="NON">NONE</option>
                                 <option  value="EQU">=</option>
                                 <option  value="HIH">&gt;</option>
@@ -154,7 +154,7 @@
 
                         </div>
                         <div class="col-1-3">
-                            <input type="text" name="data.condvalue" value="{{data.condvalue}}" placeholder="VALUE"/>
+                            <input type="text" name="data.condvalue" value="{{data.data.condvalue}}" placeholder="VALUE"/>
                         </div>
                     </div>
                 </div>
@@ -164,7 +164,7 @@
         {{!-- Properties Tab --}}
         <div class="tab properties scrollable" data-group="primary" data-tab="properties">
             <ol class="properties-list">
-                {{#each data.properties as |property id|}}
+                {{#each data.data.properties as |property id|}}
                 <li class="property flexrow" data-item-id="{{id}}">
                     <h4 class="property-name">{{property.name}}</h4>
                     <div class="property-row">
