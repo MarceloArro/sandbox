@@ -46,18 +46,18 @@ export class gActorSheet extends ActorSheet {
     }
 
     async _renderInner(data, options) {
-        let templateHTML = await auxMeth.getTempHTML(this.actor.data.data.gtemplate);
-        //console.log(templateHTML);
+        let templateHTML = await auxMeth.getTempHTML(this.actor.data.data.gtemplate,this.actor.data.data.istemplate);
+
         //IMPORTANT!! ANY CHECKBOX IN TEMPLATE NEEDS THIS!!!
         templateHTML = templateHTML.replace('{{checked="" actor.data.biovisible}}=""','{{checked actor.data.biovisible}}');
         templateHTML = templateHTML.replace('{{checked="" actor.data.resizable}}=""','{{checked actor.data.resizable}}');
-        //templateHTML = templateHTML.replace('}}=','}}');
+        templateHTML = templateHTML.replace('{{checked="" actor.data.istemplate}}=""','{{checked actor.data.istemplate}}');
 
         const template = await Handlebars.compile(templateHTML);
-        //console.log(templateHTML);
-        const html = template(data);
+
+        const html = template(duplicate(data));
         this.form = $(html)[0];
-        //console.log(html);
+
         if ( html === "" ) throw new Error(`No data was returned from template`);
         return $(html);
     }
@@ -244,7 +244,7 @@ export class gActorSheet extends ActorSheet {
 
         });
 
-        html.find('.mod-selector').click(ev => {
+        html.find('.mod-selector').click(async (ev) => {
             event.preventDefault();
 
             //Get items
@@ -263,15 +263,16 @@ export class gActorSheet extends ActorSheet {
             //Right Content
             let newList = document.createElement("DIV");
             newList.className = "item-dialog";
-            newList.setAttribute("actorId",this.actor._id);
+            newList.setAttribute("actorId",this.actor.id);
 
             //Fill options
             if(mod.type=="ITEM"){
-
-                newList.setAttribute("selectnum",mod.selectnum);
+                let finalnum = await auxMeth.autoParser(mod.selectnum,this.actor.data.data.attributes,acitem.attributes,false);
+                newList.setAttribute("selectnum",finalnum);
                 let text = document.createElement("DIV");
+
                 text.className = "centertext";
-                text.textContent = "Please select " + mod.selectnum + " items:";
+                text.textContent = "Please select " + finalnum + " items:";
                 newList.appendChild(text);
 
                 for(let n=0;n<mod.items.length;n++){
@@ -309,14 +310,15 @@ export class gActorSheet extends ActorSheet {
                         label: "OK",
                         callback: async (html) => {
                             const flags = this.actor.data.flags;
+                            let subitems;
                             for(let i=0;i<flags.selection.length;i++){
                                 let citemId = this.actor.data.flags.selection[i];
                                 acitem.selected = true;
                                 let selcitem = game.items.get(citemId);
-                                await this.actor.addcItem(selcitem,selectcitems.id);
+                                let subitems = await this.actor.addcItem(selcitem,selectcitems.id);
                             }
-
-                            this.updateSubItems(false, this.actor.data.data.citems);
+                            if(subitems)
+                                this.updateSubItems(false, subitems);
                         }
                     },
                     two: {
@@ -494,11 +496,13 @@ export class gActorSheet extends ActorSheet {
     }
 
     async setTemplate(gtemplate,actorData){
-        //console.log("setting sheet");
+        console.log("setting sheet");
+        //console.log(actorData);
+
         const propitems = game.items.filter(y=>y.data.type=="property");
 
         if(actorData==null)
-            actorData=this.actor.data;
+            actorData=duplicate(this.actor.data);
 
         const attData = actorData.data.attributes;
         if(gtemplate=="" || gtemplate==null)
@@ -523,7 +527,7 @@ export class gActorSheet extends ActorSheet {
         var inputs = await form.querySelectorAll('input,select,textarea');
         for(let i = 0; i < inputs.length; i++){
             let newAtt = inputs[i];
-            //console.log(newAtt);
+
             let attId = newAtt.getAttribute("attId");
             if(attId!=null)
                 await this.setAttributeValues(attId,attData);
@@ -588,9 +592,10 @@ export class gActorSheet extends ActorSheet {
         actorData.data.biovisible = biovisible;
         actorData.data.resizable = resizable;
         actorData.data.visitabs = parseInt(visitabs);
+        console.log(actorData);
+        let mytoken = await this.setTokenOptions(actorData);
 
-        await this.setTokenOptions(actorData);
-        await this.actor.update({"data": actorData.data});
+        await this.actor.update({"data":actorData.data,"token":mytoken});
     }
 
     async setAttributeValues(attID,attData){
@@ -598,7 +603,8 @@ export class gActorSheet extends ActorSheet {
         //reference to attribute
         //console.log(attID);
         //const attData = this.actor.data.data.attributes;
-        const property = game.items.get(attID);
+        const property = await game.items.get(attID);
+        console.log(property);
         const attribute = property.data.data.attKey;
         let idkey = attData[attribute];
         let populate = false;
@@ -616,11 +622,12 @@ export class gActorSheet extends ActorSheet {
         }
 
 
-        //console.log(property.data.data.attKey + " " + property.data.data.datatype + " " + populate);
+        console.log(property.data.data.attKey + " " + property.data.data.datatype + " " + populate);
         if(!hasProperty(attData,attribute) || Object.keys(attData[attribute]).length == 0 || populate){
-            //console.log("setting");
+            console.log("populating prop");
             attData[attribute] = {};
-            setProperty(attData[attribute],"id", property._id);
+            setProperty(attData[attribute],"id", "");
+            attData[attribute].id =  attID;
 
             //Sets id and auto
             if(property.data.data.datatype!="table"){
@@ -677,7 +684,7 @@ export class gActorSheet extends ActorSheet {
 
         if(tabs!=null){
             for (let i = 0; i < tabs.length; i++) {
-                if (!game.items.get(tabs[i]._id)) {
+                if (!game.items.get(tabs[i].id)) {
                     let index = tabs.indexOf(tabs[i]);
                     if (index > -1) {
                         tabs.splice(index, 1);
@@ -698,20 +705,33 @@ export class gActorSheet extends ActorSheet {
    * HTML Editors
    */
 
-    async addNewTab(tabitem,index){
+    async addNewTab(newHTML,tabitem,index){
+        console.log("adding Tabs");
 
-        const deftemplate  = SBOX.sheethtml;
+        var wrapper= document.createElement('div');
+
+        if(newHTML==null){
+            wrapper.innerHTML= this.actor.data.data._html;
+        }
+
+        else{
+            wrapper.innerHTML= newHTML;
+        }
+
+        let deftemplate= wrapper;
+        //console.log(deftemplate);
 
         let tabname = tabitem.data.title;
         let tabKey = tabitem.data.tabKey;
 
         //Tab selector
-        let p = deftemplate.getElementById("tabs");
-        let c = deftemplate.getElementById("tab-last");
+        let p = deftemplate.querySelector("#tabs");
+
+        let c = deftemplate.querySelector("#tab-last");
 
         let cindex = Array.from(p.children).indexOf(c);
         let totaltabs = parseInt(p.getAttribute("tabs"));
-        let newElement = deftemplate.createElement('a');
+        let newElement = document.createElement('a');
         newElement.className = 'item tab-button';
         newElement.setAttribute('id', "tab-"+index);
         newElement.setAttribute("data-tab", tabKey);
@@ -758,15 +778,15 @@ export class gActorSheet extends ActorSheet {
         }
 
         //Tab content
-        let parentNode = deftemplate.getElementById("sheet-body");
-        let div5 = deftemplate.createElement("DIV");
+        let parentNode = deftemplate.querySelector('#sheet-body');
+        let div5 = document.createElement("DIV");
         div5.className = "tab scrollable " + tabKey + "_tab";
         div5.setAttribute('id', tabKey + "_Def");
         div5.setAttribute("data-group", "primary");
         div5.setAttribute("data-tab", tabKey);
         parentNode.appendChild(div5);
 
-        let div9 = deftemplate.createElement("DIV");
+        let div9 = document.createElement("DIV");
         div9.className = "new-column";
         div9.setAttribute('id', tabKey + "Body");
         div5.appendChild(div9);
@@ -777,6 +797,7 @@ export class gActorSheet extends ActorSheet {
         let tokenname = deftemplate.getElementsByClassName("token-displayName");
 
         let displayName = this.actor.data.data.displayName;
+        console.log(displayName);
         if(displayName==null)
             displayName ="NONE";
 
@@ -792,15 +813,30 @@ export class gActorSheet extends ActorSheet {
 
         let visitabfield = deftemplate.getElementsByClassName("token-visitabs");
         visitabfield[0].setAttribute("visitabs",this.actor.data.data.visitabs);
+
+        let finalreturn = new XMLSerializer().serializeToString(deftemplate);
+        return finalreturn;
     }
 
-    async addNewPanel(tabpanel,tabKey,tabname,firstmrow, multiID=null,multiName=null,_paneldata=null){
+    async addNewPanel(newHTML,tabpanel,tabKey,tabname,firstmrow, multiID=null,multiName=null,_paneldata=null){
         //Variables
         console.log("adding Panel");
-        const deftemplate = SBOX.sheethtml;
+        var wrapper= document.createElement('div');
+        if(newHTML==null){
+            wrapper.innerHTML= this.actor.data.data._html;
+        }
+
+        else{
+            wrapper.innerHTML= newHTML;
+        }
+
+        //let deftemplate= wrapper;
+        let deftemplate = new DOMParser().parseFromString(newHTML, "text/html")
         const actor = this.actor;
         const flags = this.actor.data.flags;        
-        const parentNode = deftemplate.getElementById(tabKey + "Body");
+        const parentNode = deftemplate.querySelector('#' + tabKey + 'Body');
+        //console.log(tabpanel);
+        //console.log(deftemplate);
         let fontgroup = tabpanel.data.fontgroup;
         let inputgroup = tabpanel.data.inputgroup;
 
@@ -1284,7 +1320,7 @@ export class gActorSheet extends ActorSheet {
                     sInput.className = "badge-block centertext";
                     sInput.setAttribute("name", property.data.attKey);
 
-                    let badgelabel = document.createElement("LABEL");
+                    let badgelabel = deftemplate.createElement("LABEL");
                     badgelabel.className = "badgelabel";
                     badgelabel.textContent = property.data.tag;
 
@@ -1298,11 +1334,11 @@ export class gActorSheet extends ActorSheet {
                     let extraDiv = deftemplate.createElement("DIV");
                     extraDiv.className = "badge-container";
 
-                    let badgea = document.createElement('a');
+                    let badgea = deftemplate.createElement('a');
                     badgea.className = "badge-image";
                     badgea.className += " badge-" + property.data.attKey;
 
-                    let badgei = document.createElement('i');
+                    let badgei = deftemplate.createElement('i');
                     badgei.className = "badge-click";
                     badgei.setAttribute("attKey",property.data.attKey);
                     badgei.setAttribute("attId", property._id);
@@ -1311,12 +1347,12 @@ export class gActorSheet extends ActorSheet {
                     extraDiv.appendChild(badgea);
 
                     if(game.user.isGM){
-                        let gmbadgea = document.createElement('a');
+                        let gmbadgea = deftemplate.createElement('a');
                         gmbadgea.setAttribute("attKey",property.data.attKey);
                         gmbadgea.setAttribute("attId", property._id);
                         gmbadgea.className = "badge-clickgm";
 
-                        let gmbadgei = document.createElement('i');
+                        let gmbadgei = deftemplate.createElement('i');
                         gmbadgei.className = "fas fa-plus-circle";
 
                         gmbadgea.appendChild(gmbadgei);
@@ -1369,7 +1405,7 @@ export class gActorSheet extends ActorSheet {
 
                     sInput.setAttribute("name", "data.attributes." + property.data.attKey);
                     sInput.setAttribute("inputgroup", inputgroup);
-                    sInput.setAttribute("value", "{{data.attributes." + property.data.attKey + ".value}}");
+                    sInput.setAttribute("value", "{{data.data.attributes." + property.data.attKey + ".value}}");
 
                     sInput.innerHTML = '';
 
@@ -1491,7 +1527,7 @@ export class gActorSheet extends ActorSheet {
                     sInput = deftemplate.createElement("INPUT");
 
                     sInput.setAttribute("name", "data.attributes." + property.data.attKey  + ".value");
-                    sInput.setAttribute("value", "{{data.attributes." + property.data.attKey + ".value}}");
+                    sInput.setAttribute("value", "{{data.data.attributes." + property.data.attKey + ".value}}");
 
                     if(property.data.datatype==="simplenumeric"){
 
@@ -1512,7 +1548,7 @@ export class gActorSheet extends ActorSheet {
                             sInput.className = "input-ahalf ";
                             sInputMax.className = "input-bhalf input-disabled inputGM " + property.data.attKey + ".max";
                             sInputMax.setAttribute("name", "data.attributes." + property.data.attKey  + ".max");
-                            sInputMax.setAttribute("value", "{{data.attributes." + property.data.attKey + ".max}}");
+                            sInputMax.setAttribute("value", "{{data.data.attributes." + property.data.attKey + ".max}}");
                         }
 
 
@@ -1560,6 +1596,7 @@ export class gActorSheet extends ActorSheet {
                 sInput.className += " " + property.data.attKey;
                 if(property.data.datatype!="table")
                     sInput.className += " " + inputgroup;
+                console.log(property);
                 sInput.setAttribute("attId", property._id);
 
                 if(!property.data.editable)
@@ -1622,7 +1659,7 @@ export class gActorSheet extends ActorSheet {
 
                 //If has header:
                 if(multiName!=null && multiName!=""){
-                    let new_header = deftemplate.createElement("DIV");
+                    let new_header = document.createElement("DIV");
 
                     if(tabpanel.data.backg=="T"){
                         new_header.className = "panelheader-t";
@@ -1641,7 +1678,7 @@ export class gActorSheet extends ActorSheet {
                 parentRow.setAttribute('id', multiID + "multirow" + flags.maxrows);
 
                 if(flags.rwidth==0){
-                    parentRoot = deftemplate.createElement("DIV");
+                    parentRoot = document.createElement("DIV");
                     parentRoot.className = 'new-block';
                     console.log("creating row: " + flags.rows );
                     parentRoot.setAttribute('id', tabname + "row" + flags.rows );
@@ -1696,14 +1733,15 @@ export class gActorSheet extends ActorSheet {
         }
 
         else{
-            //console.log("getting row");
+
             if(multiID==null){
+                console.log("getting existing row id " + tabname + "row" + flags.rows);
                 parentRow = deftemplate.getElementById(tabname + "row" + flags.rows);
             }
             else{
                 if(initial){
                     //parentRow = deftemplate.getElementById(multiID + "multi");
-                    parentRow = deftemplate.createElement("DIV");
+                    parentRow = document.createElement("DIV");
                     parentRow.className = 'new-multiblock';
 
                     let parentRoot;
@@ -1713,7 +1751,7 @@ export class gActorSheet extends ActorSheet {
                     parentRow.setAttribute('id', multiID + "multirow" + flags.maxrows);
 
                     if(flags.rwidth==0){
-                        parentRoot = deftemplate.createElement("DIV");
+                        parentRoot = docudeftemplatement.createElement("DIV");
                         parentRoot.className = 'new-block';
                         console.log("creating row: " + flags.rows );
                         parentRoot.setAttribute('id', tabname + "row" + flags.rows );
@@ -1735,8 +1773,9 @@ export class gActorSheet extends ActorSheet {
             }
 
         }
-
+        console.log("almost there");
         await parentRow.appendChild(div6);
+        //console.log(parentRow);
 
         //ADD VISIBILITY RULES TO PANEL
         if(tabpanel.data.condop!="NON"){
@@ -1780,8 +1819,10 @@ export class gActorSheet extends ActorSheet {
                 div6.className += " centertext";
         }
 
-
-        //console.log(flags.rwidth + " / row: " + flags.rows + " " + tabpanel.name);
+        console.log("almost there 2");
+        let finalreturn = new XMLSerializer().serializeToString(deftemplate);
+        return finalreturn;
+        //this.actor.data.data._html = deftemplate.innerHTML;
 
     }
 
@@ -1809,7 +1850,10 @@ export class gActorSheet extends ActorSheet {
         const tabs = actor.data.data.tabs;
         const flags = this.actor.data.flags;
 
-        auxMeth.buildSheetHML();
+        let newhtml = await auxMeth.buildSheetHML();
+        let stringHTML = new XMLSerializer().serializeToString(newhtml)
+        //console.log(stringHTML);
+        await this.actor.update({"data._html": stringHTML});
 
         setProperty(flags,"rows",0);
         setProperty(flags,"rwidth",0);
@@ -1818,7 +1862,11 @@ export class gActorSheet extends ActorSheet {
         setProperty(flags,"maxrows",0);
         setProperty(flags,"multiwclass","");
 
+        console.log(actor);
+
         await this.buildHTML(tabs);
+        //console.log("sheet built");
+
         this.actor.update({"data.flags": flags},{diff:false});
 
     }
@@ -1831,7 +1879,7 @@ export class gActorSheet extends ActorSheet {
             const mycitemmods = mycitem.data.data.mods;
             for(let j=0;j<mycitemmods.length;j++){
                 let mymod = mycitemmods[j];
-                setProperty(mymod,"citem",mycitem.data._id);
+                setProperty(mymod,"citem",mycitem.data.id);
                 if(!hasProperty(mymod,"index"))
                     setProperty(mymod,"index",j);
 
@@ -1882,8 +1930,11 @@ export class gActorSheet extends ActorSheet {
                                 //MOD change consistency checker
                                 if(!isconsistent){
                                     //console.log(templatecItem.name + " is fucked in " + myactor.name);
-                                    await myactor.deletecItem(templatecItem.id,true);
-                                    await myactor.addcItem(templatecItem);
+                                    let newData = await myactor.deletecItem(templatecItem.id,true);
+                                    await this.actor.update({"data": newData.data});
+                                    let subitems = await myactor.addcItem(templatecItem);
+                                    if(subitems)
+                                        this.updateSubItems(false, subitems);
                                     //await myactor.update(myactor.data);
                                 }
 
@@ -1918,7 +1969,8 @@ export class gActorSheet extends ActorSheet {
 
     async buildHTML(tabs){
         console.log("building HTML");
-        let newpanel;
+
+        let newHTML;
 
         if(game.settings.get("sandbox", "consistencycheck")!=""){
             await this.checkConsistency();
@@ -1927,27 +1979,32 @@ export class gActorSheet extends ActorSheet {
 
         const flags = this.actor.data.flags;
         for (let y = 0; y < tabs.length; y++){
+
             const titem = game.items.get(tabs[y].id).data;
-            //console.log(titem);
+
             flags.rwidth=0;
-            await this.addNewTab(titem,y+1);
+            newHTML = await this.addNewTab(newHTML,titem,y+1);
+            //console.log(newHTML);
             let tabname = titem.data.tabKey;
 
             //let gtabitem = JSON.parse(titem.data.panels);
             let tabitempanels = titem.data.panels;
+            //console.log(tabitempanels);
 
             flags.maxrows = 0;
 
 
             for (let i = 0; i < tabitempanels.length; i++) {
                 let tabpanel = game.items.get(tabitempanels[i].id);
+                //console.log(tabpanel);
 
 
-                if(tabpanel.data.type=="panel")
-                    newpanel = await this.addNewPanel(tabpanel.data,titem.data.tabKey,tabname,true);
+                if(tabpanel.type=="panel")
+                    newHTML = await this.addNewPanel(newHTML,tabpanel.data,titem.data.tabKey,tabname,true);
 
-                if(newpanel!=null)
-                    break;
+                //                if(newpanelHTML!=null)
+                //                    break;
+                //console.log(newHTML);
 
                 if(tabpanel.data.type=="multipanel"){
                     console.log("hay multi!");
@@ -1965,6 +2022,7 @@ export class gActorSheet extends ActorSheet {
                     let ismulti =true;
                     for (let j = 0; j < multipanels.length; j++){
                         let singlepanel = game.items.get(multipanels[j].id);
+                        //console.log(multipanels[j]);
                         //LAst argument is only to pass the conditionals. Poorly done, to fix in the future.
                         await this.addNewPanel(singlepanel.data,titem.data.tabKey,tabname,firstmrow,tabpanel.data.data.panelKey,tabpanel.data.data.title,tabpanel.data.data);
                         if(firstmrow)
@@ -1975,25 +2033,38 @@ export class gActorSheet extends ActorSheet {
                 }
 
             }
-            if(newpanel!=null)
-                break;
+            //            if(newpanelHTML!=null)
+            //                break;
         }
-        if(newpanel!=null)
-            return;
+        //        if(newpanelHTML!=null)
+        //            return;
 
+        console.log("panels built");
         await this.hideTabsinTemplate();
-        await this.registerHTML(SBOX.sheethtml.getElementById("sheet").outerHTML);
+        //console.log(newHTML);
+
+        var wrapper= document.createElement('div');
+        wrapper.innerHTML= newHTML;
+        this.actor.data.data._html = newHTML;
+        let deftemplate= wrapper;
+        //console.log(deftemplate);
+
+        await this.registerHTML(deftemplate.querySelector("#sheet").outerHTML);
     }
 
     hideTabsinTemplate(){
-        const deftemplate  = SBOX.sheethtml;
+        var wrapper= document.createElement('div');
+        wrapper.innerHTML= this.actor.data.data._html;
+        let deftemplate= wrapper;
 
         //Tab selector
-        let p = deftemplate.getElementById("tab-0");
-        let c = deftemplate.getElementById("tab-last");
+        let p = deftemplate.querySelector("#tab-0");
+        let c = deftemplate.querySelector("#tab-last");
         p.insertAdjacentHTML( 'beforebegin', "{{#if actor.data.istemplate}}" );
         p.insertAdjacentHTML( 'beforebegin', "{{else}}" );
         c.insertAdjacentHTML( 'afterend', "{{/if}}" );
+
+
     }
 
     freezeMultiwidth(tabpanel){
@@ -2096,24 +2167,27 @@ export class gActorSheet extends ActorSheet {
         return wclass;
     }
 
+
+
     async registerHTML(htmlObject){
         console.log("registering HTML");
-        //Correction for checkboxes
+
         let stringed = htmlObject.replace('=""','');
-        //stringed = stringed.replaceAll('toparse="','');
+
         stringed = stringed.replace(/toparse="/g,'');
         stringed = stringed.replace(/~~"/g,'');
-        //stringed = stringed.replaceAll('**"','');
+
+        //this.actor.data.data.gtemplate = this.actor.name;
+        this.refreshSheet(this.actor.name);
+        //this.actor.data.data._html = stringed;
+
+        await this.actor.update({"data._html": stringed});
         //console.log(stringed);
-        this.actor.data.data.gtemplate = this.actor.name;
-        this.actor.data.data._html = stringed;
-        //await this.exportHTML(stringed,this.actor.name);
-        //TODO DELETE ON NEXT REVISION
-        //setProperty(this.actor.data.flags,"template",stringed);
-        //setProperty(this.actor.data.data,"_html","");
-        //await this.actor.update({"data.gtemplate": this.actor.name},{diff:false});
-        await this.actor.update(this.actor.data);
-        //await this.actor.update({"data._html": stringed},{diff:false});
+
+        //THIS IS THE LIMITANT CHANGE:
+        //await this.actor.update(this.actor.data);
+
+        await this.actor.update();
 
         await auxMeth.getSheets();
 
@@ -2168,11 +2242,11 @@ export class gActorSheet extends ActorSheet {
         }
 
         //Add tab id to panel
-        const subitems = this.actor.data.data[subitemsTag];
-
+        let subitems = duplicate(this.actor.data.data[subitemsTag]);
+        let increaseNum = false;
 
         for (let i=0;i<subitems.length;i++) {
-            if (subitems[i].id == dropitem.data._id) {
+            if (subitems[i].id == dropitem.id) {
                 if(isUnique){
                     console.log("item is unique, can not double");
                     return;
@@ -2180,39 +2254,38 @@ export class gActorSheet extends ActorSheet {
                 else{
                     subitems[i].number = parseInt(subitems[i].number) + 1;
                     subitems[i].uses = parseInt(subitems[i].uses) + parseInt(dropitem.data.data.maxuses);
-                    await this.updateSubItems(isTab,subitems);
+                    increaseNum = true;
+                    //await this.updateSubItems(isTab,subitems);
                     //await this.actor.actorUpdater();
-                    return;
+                    //return;
                 }
 
             }
         }
 
-        if(dropitem.data.type == "cItem"){
+        if(!increaseNum){
+            if(dropitem.data.type == "cItem"){
+                //console.log("adding cItem");
+                subitems = await this.actor.addcItem(dropitem);
+            }
+            else{
+                let itemKey = dropitem.data.data[subiDataKey];
+                let newItem={};
+                console.log(dropitem);
+                setProperty(newItem,itemKey,{});
+                newItem[itemKey].id=dropitem.id;
+                newItem[itemKey].ikey=itemKey;
+                newItem[itemKey].name=dropitem.data.name;
+                console.log(newItem);
 
-            await this.actor.addcItem(dropitem);
 
-
-            //await this.scrollbarSet(false);
+                subitems.push(newItem[itemKey]);
+                //await this.scrollbarSet();
+            }
         }
-        else{
-            let itemKey = dropitem.data.data[subiDataKey];
-            let newItem={};
-            //console.log(itemKey + " " + subiDataKey);
-            setProperty(newItem,itemKey,{});
-            newItem[itemKey].id=dropitem.data._id;
-            newItem[itemKey].ikey=itemKey;
-            newItem[itemKey].name=dropitem.data.name;  
 
-
-            subitems.push(newItem[itemKey]);
-            //await this.scrollbarSet();
-        }
-
+        //console.log(subitems);
         await this.updateSubItems(isTab,subitems);
-
-
-
 
     }
 
@@ -2232,10 +2305,11 @@ export class gActorSheet extends ActorSheet {
             //await this.actor.update(this.actor.data);
             if(this.actor.isToken){
                 let myToken = canvas.tokens.get(this.actor.token.id);
-                await myToken.update({"data.citems": subitems});
+                await myToken.update({"actorData.data.citems": subitems});
             }
 
             else{
+                //console.log(subitems);
                 await this.actor.update({"data.citems": subitems});
             }
         }
@@ -2314,9 +2388,9 @@ export class gActorSheet extends ActorSheet {
                 inputgroup = table.getAttribute("inputgroup");
             }
 
-            const propTable = await propitems.find(y=>y._id == tableID);
+            const propTable = await propitems.find(y=>y.id == tableID);
 
-            //const propTable = await propitems.find(y=>y._id == html[i].getAttribute("attid"));
+            //const propTable = await propitems.find(y=>y.id == html[i].getAttribute("attid"));
             let group;
             let groupID;
             let tableKey;
@@ -2837,7 +2911,7 @@ export class gActorSheet extends ActorSheet {
                             let propObj = game.items.get(groupprops[k].id);
                             let propdata = propObj.data.data;
                             let propKey = propObj.data.data.attKey;
-                            if(propdata.totalize){
+                            if(propdata.totalize && !propdata.ishidden){
                                 let total_cell = document.createElement("TD");
                                 let newtotal;
                                 if(myactor.attributes[tableKey]!=null){
@@ -2863,7 +2937,8 @@ export class gActorSheet extends ActorSheet {
 
                         if(propTable.data.data.editable || game.user.isGM){
                             let empty_cell = document.createElement("TD");
-                            empty_cell.className = lastRow.children[cellcounter].className;
+                            if(lastRow.children[cellcounter])
+                                empty_cell.className = lastRow.children[cellcounter].className;
                             new_row.appendChild(empty_cell);
                             cellcounter +=1;
                         }
@@ -2923,7 +2998,8 @@ export class gActorSheet extends ActorSheet {
 
     async saveNewCIAtt(ciId,propId, value){
         console.log("changing citem");
-        let citem = this.actor.data.data.citems.find(y=>y.id==ciId);
+        let cItemsID = duplicate(this.actor.data.data.citems);
+        let citem = cItemsID.find(y=>y.id==ciId);
         let propObj = game.items.get(propId);
         //console.log(value);
 
@@ -2941,12 +3017,12 @@ export class gActorSheet extends ActorSheet {
         }
 
         if(!this.actor.isToken){
-            this.actor.update({"data.citems":this.actor.data.data.citems},{diff:false});
+            this.actor.update({"data.citems":cItemsID});
         }
         else{
             let tokenId = this.id.split("-")[2];
             let mytoken = canvas.tokens.get(tokenId);
-            await mytoken.update({"data.citems":this.actor.data.data.citems},{diff:false});
+            await mytoken.update({"data.citems":cItemsID});
         }
 
 
@@ -2959,7 +3035,8 @@ export class gActorSheet extends ActorSheet {
     }
 
     async activateCI(itemId,value,iscon=false){
-        const citems = this.actor.data.data.citems;
+        const actorData = duplicate(this.actor.data.data);
+        const citems = actorData.citems;
         const citem = citems.find(y=>y.id==itemId);
         const attributes = this.actor.data.data.attributes;
         const citemObj = game.items.get(itemId).data.data;
@@ -2997,11 +3074,11 @@ export class gActorSheet extends ActorSheet {
 
         //await this.scrollbarSet(false);
 
-        await this.actor.update(this.actor.data);
+        await this.actor.update({"data.citems": citems});
     }
 
     async rechargeCI(itemId){
-        const citems = this.actor.data.data.citems;
+        const citems = duplicate(this.actor.data.data.citems);
         const citem = citems.find(y=>y.id==itemId);
         const citemObj = game.items.get(itemId).data.data;
 
@@ -3010,26 +3087,24 @@ export class gActorSheet extends ActorSheet {
             totalnumber = 1;
 
         citem.uses = parseInt(citemObj.maxuses * totalnumber);
-        await this.actor.update(this.actor.data);
+        await this.actor.update({"data.citems": citems});
     }
 
     async deleteCItem(itemID, cascading=false){
         //get Item
-        await this.actor.deletecItem(itemID, cascading);
 
+        let subitems = await this.actor.deletecItem(itemID, cascading);
+        //console.log(subitems);
         if(this.actor.isToken){
             let myToken = canvas.tokens.get(this.actor.token.id);
-            let newdata = {};
-            newdata.attributes = this.actor.data.data.attributes;
-            newdata.citems = this.actor.data.data.citems;
 
-            await myToken.update({"actorData.data": newdata});
+            await myToken.actor.update({"data": subitems.data});
             //await myToken.update({"data.citems": this.actor.data.data.citems});
         }
 
         else{
-            //await this.actor.update({"data.citems": subitems});
-            await this.actor.update(this.actor.data);
+            await this.actor.update({"data": subitems.data});
+            //await this.actor.update(this.actor.data);
         }
 
 
@@ -3050,7 +3125,9 @@ export class gActorSheet extends ActorSheet {
 
     async changeCINum(itemID, value){
 
+        let citemIDs = duplicate(this.actor.data.data.citems);
         let citem = this.actor.data.data.citems.find(y=>y.id==itemID);
+        let citemNew = citemIDs.find(y=>y.id==itemID);
 
         if(value==0){
             value=1;
@@ -3060,15 +3137,20 @@ export class gActorSheet extends ActorSheet {
             value = citem.number;
         }
 
-        citem.number = value; 
+
+
+        citemNew.number = value; 
         //await this.scrollbarSet(false);
-        this.actor.update(this.actor.data);
+        //this.actor.update(this.actor.data);
+
+        await this.actor.update({"data.citems":citemIDs});
 
     }
 
     async changeCIUses(itemID, value){
-        let citem = this.actor.data.data.citems.find(y=>y.id==itemID);
-        let myindex = this.actor.data.data.citems.indexOf(citem);
+        let citemIDs = duplicate(this.actor.data.data.citems);
+        let citem = citemIDs.find(y=>y.id==itemID);
+        let myindex = citemIDs.indexOf(citem);
 
         citem.uses = value;
         console.log("changing");
@@ -3077,8 +3159,8 @@ export class gActorSheet extends ActorSheet {
         }
 
         //await this.scrollbarSet(false);
-        await this.actor.update(this.actor.data);
-        //this.actor.update({"data.citems":this.actor.data.data.citems}, {diff: false});
+        //await this.actor.update(this.actor.data);
+        await this.actor.update({"data.citems":citemIDs});
 
     }
 
@@ -3111,7 +3193,7 @@ export class gActorSheet extends ActorSheet {
 
             if(scrollNode.classList.contains("active")){
                 //console.log(scrollNode.style.height);
-                let myuser = game.user._id;
+                let myuser = game.user.id;
                 let newscrollTop = 0;
                 if(hasProperty(this.actor.data.flags.sandbox,"scrolls_" + myuser + "_" + this.actor.id))
                     newscrollTop =this.actor.data.flags.sandbox["scrolls_" + myuser + "_" + this.actor.id]
@@ -3142,7 +3224,7 @@ export class gActorSheet extends ActorSheet {
 
         }
 
-        let userScrollId = "scrolls_" + game.user._id + "_" + this.actor.id;
+        let userScrollId = "scrolls_" + game.user.id + "_" + this.actor.id;
         //this.actor.setFlag("sandbox",userScrollId,scrollTop);
         //console.log(scrollTop);
         return scrollTop;
@@ -3361,6 +3443,8 @@ export class gActorSheet extends ActorSheet {
     }
 
     async setSheetStyle(){
+        //console.log(this.actor.data.data.gtemplate);
+
         let _mytemplate = await game.actors.find(y=>y.data.data.istemplate && y.data.data.gtemplate==this.actor.data.data.gtemplate);
         let basehtml = this.element;
 
@@ -3419,17 +3503,19 @@ export class gActorSheet extends ActorSheet {
         new FilePicker({
             type: "image",
             current: current,
-            callback: path => {
+            callback: async (path) => {
                 event.currentTarget.src = path;
                 //manual overwrite of src
                 let imageform = this.form.getElementsByClassName("profile-img");
                 imageform[0].setAttribute("src",path);
-                myactor.data.img = path;
+                //myactor.data.img = path;
 
                 //myactor.update(myactor.data);
-                this.setTokenOptions(myactor.data);
 
-                myactor.update(myactor.data);
+                let mytoken = await this.setTokenOptions(myactor.data,path);
+
+                if(mytoken)
+                    await myactor.update({"token":mytoken,"img":path});
 
                 this._onSubmit(event);
             },
@@ -3439,36 +3525,52 @@ export class gActorSheet extends ActorSheet {
 
     }
 
-    async setTokenOptions(myactorData){
+    async setTokenOptions(myactorData,path=null){
 
-        if(myactorData.data.istemplate)
-            return;
+        console.log(myactorData.token);
 
-        let path = myactorData.img;
+        if(path==null)
+            path = myactorData.img;
 
-        if(game.settings.get("sandbox", "tokenOptions")){
+        let mytoken = await duplicate(myactorData.token);
 
-            let displayName = myactorData.data.displayName; 
+        if(!myactorData.data.istemplate){
+            if(mytoken.dimLight==null)
+                mytoken.dimLight = 0;
 
-            if(myactorData.token){
+            if(mytoken.dimSight==null)
+                mytoken.dimSight = 0;
 
-                myactorData.token.displayName = displayName;
+            if(mytoken.brightLight==null)
+                mytoken.brightLight = 0;
 
-                myactorData.token.displayBars = displayName;
+            mytoken.img = path;
 
-                myactorData.token.dimLight = 0;
+            mytoken.name = myactorData.name;
 
-                myactorData.token.dimSight = 0;
+            if(game.settings.get("sandbox", "tokenOptions")){
 
-                myactorData.token.brightLight = 0;
+                let displayName = myactorData.data.displayName;
+                console.log(displayName);
 
-                myactorData.token.bar1.attribute = myactorData.data.tokenbar1;
+                if(myactorData.token){
 
-                myactorData.token.img = path;
+                    console.log("getting token");
+
+                    mytoken.displayName = displayName;
+
+                    mytoken.displayBars = displayName;
+
+                    if(myactorData.data.tokenbar1!=null)
+                        mytoken.bar1.attribute = myactorData.data.tokenbar1;
+
+                }
+
 
             }
-
         }
+
+        return mytoken;
 
     }
 
@@ -3499,7 +3601,7 @@ export class gActorSheet extends ActorSheet {
         formData = await this.checkAttributes(formData);
 
 
-        //console.log("User: " + game.user._id + " is updating actor: " + this.actor.name + " target: " + event.target.name);
+        //console.log("User: " + game.user.id + " is updating actor: " + this.actor.name + " target: " + event.target.name);
 
         if(event.target!=null){
             let target = event.target.name;
