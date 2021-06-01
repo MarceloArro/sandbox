@@ -39,7 +39,7 @@
         {{!-- Groups Tab --}}
         <div class="tab groups" data-group="primary" data-tab="groups">
             <ol class="properties-list">
-                {{#each data.groups as |group id|}}
+                {{#each data.data.groups as |group id|}}
                 <li class="property flexrow" data-item-id="{{id}}">
                     <h4 class="property-name">{{group.name}}</h4>
                     <div class="property-row">
@@ -59,55 +59,55 @@
                 <div class="col-1-1">
                     <div class="flexblock-center-nopad">
                         <select  name="data.usetype"  data-type="String">
-                            {{#select item.data.usetype}}
+                            {{#select item.data.data.usetype}}
                             <option  value="PAS">PASSIVE</option>
                             <option  value="ACT">ACTIVATION</option>
                             <option  value="CON">CONSUMABLE</option>
                             {{/select}}
                         </select>
                         <label class="label-free">Self-destruct</label>
-                        <input class="check-selfdestruct" name="data.selfdestruct" id="check-selfdestruct" type="checkbox" {{checked item.data.selfdestruct}}/>
+                        <input class="check-selfdestruct" name="data.selfdestruct" id="check-selfdestruct" type="checkbox" {{checked item.data.data.selfdestruct}}/>
                     </div>
-<!--
-                    <div class="flexblock-center-nopad">
-                        <label class="label-free">Effect Icon</label>
-                        <input class="input-medlarge" type="text" name="data.effectpath" value="{{data.effectpath}}"/>
-                    </div>
+                    <!--
+<div class="flexblock-center-nopad">
+<label class="label-free">Effect Icon</label>
+<input class="input-medlarge" type="text" name="data.effectpath" value="{{data.effectpath}}"/>
+</div>
 -->
-                    {{#ifNot data.usetype "PAS"}}
+                    {{#ifNot data.data.usetype "PAS"}}
                     <div class="flexblock-center-nopad">
-                        {{#ifCond data.usetype "CON"}}
+                        {{#ifCond data.data.usetype "CON"}}
                         <label class="label-free">Permanent</label>
-                        <input class="check-ispermanent" name="data.ispermanent" id="check-ispermanent" type="checkbox" {{checked item.data.ispermanent}}/>
+                        <input class="check-ispermanent" name="data.ispermanent" id="check-ispermanent" type="checkbox" {{checked item.data.data.ispermanent}}/>
 
                         <label class="label-small">Icon</label>
                         <select  name="data.icon"  data-type="String">
-                            {{#select item.data.icon}}
+                            {{#select item.data.data.icon}}
                             <option  value="BOOK">BOOK</option>
                             <option  value="VIAL">VIAL</option>
                             <option  value="STAR">STAR</option>
                             {{/select}}
                         </select>
                         <label class="label-med righttext">Rechargable</label>
-                        <input class="check-rechargable" name="data.rechargable" id="check-rechargable" type="checkbox" {{checked item.data.rechargable}}/>
+                        <input class="check-rechargable" name="data.rechargable" id="check-rechargable" type="checkbox" {{checked item.data.data.rechargable}}/>
                         {{/ifCond}}
                     </div>
                     <div class="flexblock-center-nopad">
-                        {{#ifCond data.usetype "CON"}}
+                        {{#ifCond data.data.usetype "CON"}}
                         <label class="label-small">Uses</label>
-                        <input class="input-medlarge" type="text" name="data.maxuses" value="{{data.maxuses}}"/>
+                        <input class="input-medlarge" type="text" name="data.maxuses" value="{{data.data.maxuses}}"/>
                         {{/ifCond}}
                     </div>
                     <div class="new-row">
                         <div class="flexblock-simple">
                             <label class="label-large">Roll Name</label>
-                            <input class="input-medlarge" type="text" name="data.rollname" value="{{data.rollname}}"/>
+                            <input class="input-medlarge" type="text" name="data.rollname" value="{{data.data.rollname}}"/>
                             <label class="label-large righttext">Roll ID</label>
-                            <input class="input-free" type="text" name="data.rollid" value="{{data.rollid}}"/>
+                            <input class="input-free" type="text" name="data.rollid" value="{{data.data.rollid}}"/>
                         </div>
                         <div class="flexblock-simple">
                             <label class="label-small">ROLL</label>
-                            <input class="input-free" type="text" name="data.roll" value="{{data.roll}}"/>
+                            <input class="input-free" type="text" name="data.roll" value="{{data.data.roll}}"/>
                         </div>
                     </div>
                     {{/ifNot}}
@@ -120,7 +120,7 @@
                     <div class="new-row">
                         <div class="flexblock-center">
                             <ol class="mods-list">
-                                {{#each item.data.mods as |mod id|}}
+                                {{#each item.data.data.mods as |mod id|}}
                                 <li class="mod-block" data-item-id="{{id}}">
                                     <div class="mod-row">
 
