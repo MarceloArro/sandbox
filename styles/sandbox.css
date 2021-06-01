@@ -389,7 +389,7 @@
 
 .sandbox.sheet .col-1-1 {
     width: 100%;
-    max-width:608px;
+    max-width:600px;
     padding: 0px 3px;
 }
 
@@ -458,7 +458,7 @@
 }
 .sandbox.sheet .col-3-4 {
     width: 75%;
-    max-width:400px;
+    max-width:450px;
     padding: 0px 3px;
     display:inline-block;
     vertical-align:top;
