@@ -3461,6 +3461,8 @@ export class gActorSheet extends ActorSheet {
         //console.log(this.actor.data.data.gtemplate);
 
         let _mytemplate = await game.actors.find(y=>y.data.data.istemplate && y.data.data.gtemplate==this.actor.data.data.gtemplate);
+        if(_mytemplate==null)
+            return;
         let basehtml = this.element;
 
         if(this.actor.data.data.gtemplate == "Default")
