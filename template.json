@@ -200,6 +200,8 @@
             "isLocked":false,
             "condat":"",
             "condop":"NON",
+            "fontgroup":"",
+            "inputgroup":"",
             "condvalue":"",
             "panels":[]
         },
