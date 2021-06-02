@@ -67,8 +67,8 @@ Hooks.once("init", async function() {
         name: "Check cItem Consistency",
         hint: "If checked, when rebuilding template, every cItem will be evaluated for consistency. WARNING: May take several minutes in big systems",
         scope: "world",
-        config: true,
-        default: true,
+        config: false,
+        default: false,
         type: Boolean,
     });
 
