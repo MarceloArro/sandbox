@@ -821,9 +821,10 @@ export class gActorSheet extends ActorSheet {
     async addNewPanel(newHTML,tabpanel,tabKey,tabname,firstmrow, multiID=null,multiName=null,_paneldata=null){
         //Variables
         console.log("adding Panel");
+        console.log(tabpanel);
 
-        if(tabpanel.data==null)
-            return;
+        //        if(tabpanel.data==null)
+        //            return;
 
         var wrapper= document.createElement('div');
         if(newHTML==null){
@@ -2038,7 +2039,7 @@ export class gActorSheet extends ActorSheet {
                         let singlepanel = game.items.get(multipanels[j].id);
                         //console.log(multipanels[j]);
                         //LAst argument is only to pass the conditionals. Poorly done, to fix in the future.
-                        await this.addNewPanel(singlepanel.data,titem.data.tabKey,tabname,firstmrow,tabpanel.data.data.panelKey,tabpanel.data.data.title,tabpanel.data.data);
+                        newHTML = await this.addNewPanel(newHTML,singlepanel.data,titem.data.tabKey,tabname,firstmrow,tabpanel.data.data.panelKey,tabpanel.data.data.title,tabpanel.data.data);
                         if(firstmrow)
                             flags.rwidth += multiwidth;
                         firstmrow = false;
