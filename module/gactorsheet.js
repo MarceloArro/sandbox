@@ -821,6 +821,10 @@ export class gActorSheet extends ActorSheet {
     async addNewPanel(newHTML,tabpanel,tabKey,tabname,firstmrow, multiID=null,multiName=null,_paneldata=null){
         //Variables
         console.log("adding Panel");
+
+        if(tabpanel.data==null)
+            return;
+
         var wrapper= document.createElement('div');
         if(newHTML==null){
             wrapper.innerHTML= this.actor.data.data._html;
@@ -837,8 +841,18 @@ export class gActorSheet extends ActorSheet {
         const parentNode = deftemplate.querySelector('#' + tabKey + 'Body');
         //console.log(tabpanel);
         //console.log(deftemplate);
-        let fontgroup = tabpanel.data.fontgroup;
-        let inputgroup = tabpanel.data.inputgroup;
+
+        let fontgroup ="";
+        let inputgroup="";
+
+        if(tabpanel.data.fontgroup!=null)
+            fontgroup = tabpanel.data.fontgroup;
+
+        if(tabpanel.data.inputgroup!=null)
+            inputgroup = tabpanel.data.inputgroup;
+
+        //        let fontgroup = tabpanel.data.fontgroup;
+        //        let inputgroup = tabpanel.data.inputgroup;
 
         let initial = false;
         let div6;
