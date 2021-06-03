@@ -592,7 +592,7 @@ export class gActorSheet extends ActorSheet {
         actorData.data.biovisible = biovisible;
         actorData.data.resizable = resizable;
         actorData.data.visitabs = parseInt(visitabs);
-        console.log(actorData);
+        //console.log(actorData);
         let mytoken = await this.setTokenOptions(actorData);
 
         await this.actor.update({"data":actorData.data,"token":mytoken});
@@ -1324,8 +1324,8 @@ export class gActorSheet extends ActorSheet {
                         sInput.className = "texteditor-med";
                     }
 
-                    sInput.setAttribute("name", "data.attributes." + property.data.attKey + ".value");
-                    sInput.textContent = "{{" + "data.attributes." + property.data.attKey + ".value}}";
+                    sInput.setAttribute("name", "data.data.attributes." + property.data.attKey + ".value");
+                    sInput.textContent = "{{" + "data.data.attributes." + property.data.attKey + ".value}}";
 
                 }
 
@@ -3545,7 +3545,7 @@ export class gActorSheet extends ActorSheet {
 
     async setTokenOptions(myactorData,path=null){
 
-        console.log(myactorData.token);
+        //console.log(myactorData.token);
 
         if(path==null)
             path = myactorData.img;
