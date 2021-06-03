@@ -35,9 +35,9 @@ export class auxMeth {
             if(_template!=null){
                 html=_template.data.data._html;
             }
-
-            if((html==null || html=="") && !istemplate)
-                ui.notifications.warn("Please rebuild template actor");
+//
+//            if((html==null || html=="") && !istemplate)
+//                ui.notifications.warn("Please rebuild template actor");
 
         }
 
