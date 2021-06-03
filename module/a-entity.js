@@ -69,7 +69,8 @@ export class gActor extends Actor{
     }
 
     async _preUpdate(updateData, options, userId) {
-        //console.log(updateData);
+        //        let upclon = duplicate(updateData);
+        //        console.log(updateData);
         if(this.data.permission.default >= CONST.ENTITY_PERMISSIONS.OBSERVER ||  this.data.permission[game.user.id] >= CONST.ENTITY_PERMISSIONS.OBSERVER || game.user.isGM){
             let myuser = userId;
         }
@@ -138,6 +139,7 @@ export class gActor extends Actor{
         let attKeys = Object.keys(actorData.attributes);
         if(updateData.attributes)
             attributes = updateData.attributes;
+
         for (var key in attributes) {
             if (attKeys.includes(key)) {
                 actorData.attributes[key].value = attributes[key].value;
@@ -1980,9 +1982,12 @@ export class gActor extends Actor{
                 let propertybase = await game.items.filter(y=>y.data.type == "property" && y.data.data.attKey == _rawattname);
                 let property = propertybase[0];
 
+                //                if(attributes[_rawattname]==null)
+                //                    ui.notifications.warn("Attribute " + _rawattname + " used in expression not found in actor");
+
                 //console.log(property);
 
-                if(property!=null){
+                if(property!=null && attributes[_rawattname]!=null){
                     let exchanger = attributes[_rawattname][_attProp];
                     let attAutoAdd = Number(attributes[_rawattname]["autoadd"]);
                     //console.log(property);
