@@ -1382,7 +1382,7 @@ export class gActorSheet extends ActorSheet {
                     sInput = deftemplate.createElement("SELECT");
                     sInput.className = "input-med";
                     sInput.setAttribute("name", "data.attributes." + property.data.attKey + ".value");
-                    sInput.insertAdjacentHTML( 'beforeend', "{{#select data.attributes." + property.data.attKey + ".value}}" );
+                    sInput.insertAdjacentHTML( 'beforeend', "{{#select data.data.attributes." + property.data.attKey + ".value}}" );
 
                     //IM ON IT
                     var rawlist = property.data.listoptions;
@@ -2051,8 +2051,9 @@ export class gActorSheet extends ActorSheet {
             //            if(newpanelHTML!=null)
             //                break;
         }
-        //        if(newpanelHTML!=null)
-        //            return;
+
+        if(newHTML==null)
+            newHTML = this.actor.data.data._html;
 
         console.log("panels built");
         await this.hideTabsinTemplate();
