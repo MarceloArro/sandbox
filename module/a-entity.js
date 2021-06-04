@@ -77,16 +77,17 @@ export class gActor extends Actor{
         else{
             return;
         }
+
         if(!this.data.data.istemplate && updateData.data!=null){
 
             let actor = duplicate(this.data);
             let newtoken;
+            //console.log(actor);
 
             //I AM TRYING TO MERGE UPDATE DATA TO A DUPLICATE ACTOR, TO RETURN THE RESULTING ACTOR
             let uData = await this.getFinalActorData(actor,updateData.data);
 
             //console.log(uData);
-
 
             //HERE I APPLY THE AUTO CALCULATIONS TO THE RETURNED ACTOR
             let adata = await this.actorUpdater(uData);
@@ -166,7 +167,7 @@ export class gActor extends Actor{
 
         if(updateData.citems){
             citems = updateData.citems;
-            setProperty(actorData,"citems",citems);
+            actorData.citems = citems;
         }
 
         return actor;
@@ -890,25 +891,24 @@ export class gActor extends Actor{
     async setdefcItems(actorData){
         //ADDS defauls CITEMS
         const citemIDs = actorData.data.citems;
+
         let citems;
 
         let mytemplate = actorData.data.gtemplate;
         if(mytemplate!="Default"){
             let _template = await game.actors.find(y=>y.data.data.istemplate && y.data.data.gtemplate==mytemplate);
 
-            if(_template==null)
-                return citemIDs;
+            if(_template!=null){
+                for(let k=0;k<_template.data.data.citems.length;k++){
+                    let mycitemId = _template.data.data.citems[k].id;
+                    let mycitem = game.items.get(mycitemId);
+                    let citeminActor = await citemIDs.find(y=>y.id == mycitemId);
 
-            for(let k=0;k<_template.data.data.citems.length;k++){
-                let mycitemId = _template.data.data.citems[k].id;
-                let mycitem = game.items.get(mycitemId);
-                let citeminActor = await citemIDs.find(y=>y.id == mycitemId);
-
-                if(!citeminActor && mycitem!=null){
-                    citems = await this.addcItem(mycitem);
+                    if(!citeminActor && mycitem!=null){
+                        citems = await this.addcItem(mycitem,null,actorData);
+                    }
                 }
             }
-
         }
 
         if(citems ==null)
