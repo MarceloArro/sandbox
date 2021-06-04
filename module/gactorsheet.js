@@ -1324,7 +1324,7 @@ export class gActorSheet extends ActorSheet {
                         sInput.className = "texteditor-med";
                     }
 
-                    sInput.setAttribute("name", "data.data.attributes." + property.data.attKey + ".value");
+                    sInput.setAttribute("name", "data.attributes." + property.data.attKey + ".value");
                     sInput.textContent = "{{" + "data.data.attributes." + property.data.attKey + ".value}}";
 
                 }
@@ -3108,7 +3108,7 @@ export class gActorSheet extends ActorSheet {
 
     async deleteCItem(itemID, cascading=false){
         //get Item
-
+        //console.log("deleting");
         let subitems = await this.actor.deletecItem(itemID, cascading);
         //console.log(subitems);
         if(this.actor.isToken){
