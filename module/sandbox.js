@@ -733,8 +733,9 @@ Hooks.on("renderChatMessage", async (app, html, data) => {
     //console.log(data);
     //console.log(html);
     let hide=false;
-    let messageId = app.data.id;
+    let messageId = app.id;
     let msg = game.messages.get(messageId);
+    //await console.log(app);
     let msgIndex = game.messages.entities.indexOf(msg);
 
     let _html = await html[0].outerHTML;
