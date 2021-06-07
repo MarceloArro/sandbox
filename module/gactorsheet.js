@@ -820,7 +820,7 @@ export class gActorSheet extends ActorSheet {
 
     async addNewPanel(newHTML,tabpanel,tabKey,tabname,firstmrow, multiID=null,multiName=null,_paneldata=null){
         //Variables
-        console.log("adding Panel");
+        console.log("adding Panel " + tabpanel.name + " in " + tabKey);
         console.log(tabpanel);
 
         //        if(tabpanel.data==null)
