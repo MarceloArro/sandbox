@@ -481,7 +481,7 @@ export class gActor extends Actor{
         let remObj = game.items.get(itemID);
         //console.log(remObj);
 
-        if(remObj!=null){
+        if(remObj!=null && citems.length>0){
             let toRemoveObj = remObj.data.data;
 
             //Remove values added to attributes
