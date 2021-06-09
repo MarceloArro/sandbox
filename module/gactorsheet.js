@@ -315,10 +315,10 @@ export class gActorSheet extends ActorSheet {
                                 let citemId = this.actor.data.flags.selection[i];
                                 acitem.selected = true;
                                 let selcitem = game.items.get(citemId);
-                                let subitems = await this.actor.addcItem(selcitem,selectcitems.id);
+                                subitems = await this.actor.addcItem(selcitem,selectcitems.id);
                             }
                             if(subitems)
-                                this.updateSubItems(false, subitems);
+                                await this.updateSubItems(false, subitems);
                         }
                     },
                     two: {
@@ -357,6 +357,7 @@ export class gActorSheet extends ActorSheet {
             const li = $(ev.currentTarget).parents(".property");
             let todelete = li.data("itemId");
             const prop = stabs.splice(todelete,1);
+            this.actor.update({"data.tabs":prop});
             li.slideUp(200, () => this.render(false));
         });
 
@@ -2329,7 +2330,7 @@ export class gActorSheet extends ActorSheet {
                 await this.actor.update({"data.citems": subitems});
             }
         }
-        //console.log("updating after drop");
+        console.log("updating after drop");
 
 
         return subitems;
@@ -3564,16 +3565,13 @@ export class gActorSheet extends ActorSheet {
 
             mytoken.img = path;
 
-            mytoken.name = myactorData.name;
+            //mytoken.name = myactorData.name;
 
             if(game.settings.get("sandbox", "tokenOptions")){
 
                 let displayName = myactorData.data.displayName;
-                console.log(displayName);
 
                 if(myactorData.token){
-
-                    console.log("getting token");
 
                     mytoken.displayName = displayName;
 
