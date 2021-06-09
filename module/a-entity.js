@@ -100,6 +100,8 @@ export class gActor extends Actor{
 
             let maindata= updateData.data;
 
+            setProperty(maindata,"selector",adata.data.selector);
+
             if(newattributes)
                 setProperty(maindata,"attributes",newattributes);
             if(newcitems.length>0)
@@ -780,6 +782,7 @@ export class gActor extends Actor{
 
         result.citems = citemIDs;
         result.selector = selector;
+        //console.log(result);
 
         return result;
     }
@@ -983,11 +986,12 @@ export class gActor extends Actor{
             mods = await this.getMods(actorData.data.citems);
             let newmodcitems = await this.execITEMmods(mods,actorData);
             resMods = newmodcitems.iterate;
-            //console.log(resMods);
+
+            actorData.data.selector = newmodcitems.selector;
             if(resMods){
                 newcitem=true;
                 ithaschanged = true;
-                actorData.selector = newmodcitems.selector;
+
                 actorData.data.citems = newmodcitems.citems;
             }
             // console.log(resMods.citems);
