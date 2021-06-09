@@ -340,7 +340,7 @@ export class gActorSheet extends ActorSheet {
         //Drop Event TEST
         this.form.ondrop = ev => this._onDrop(ev);
 
-        let stabs = actor.data.data.tabs;
+        let stabs = duplicate(actor.data.data.tabs);
         let citems = actor.data.data.citems;
         let istemplate = actor.data.data.istemplate;
 
@@ -357,7 +357,8 @@ export class gActorSheet extends ActorSheet {
             const li = $(ev.currentTarget).parents(".property");
             let todelete = li.data("itemId");
             const prop = stabs.splice(todelete,1);
-            this.actor.update({"data.tabs":prop});
+
+            this.actor.update({"data.tabs":stabs});
             li.slideUp(200, () => this.render(false));
         });
 
