@@ -510,9 +510,11 @@ Hooks.on("preUpdateActor", async (actor,updateData,options,userId) => {
     //await actor.sheet.setTokenOptions(actor.data);
     //    let newname = actor.data.name;
     //
-    //    if(updateData.name){
-    //        newname = updateData.name;
-    //    }
+    if(updateData.name){
+        if(!updateData.token)
+            setProperty(updateData,"token",{});
+        updateData.token.name = updateData.name;
+    }
     //
     //    if(!actor.data.data.istemplate){
     //        if(!updateData.token)
@@ -552,8 +554,6 @@ Hooks.on("preUpdateActor", async (actor,updateData,options,userId) => {
 });
 
 Hooks.on("preCreateToken", async (scene, tokenData, options, userId) =>{
-    console.log(scene);
-    console.log(tokenData);
 
     if(game.settings.get("sandbox", "tokenOptions")){
         const sameTokens = game.scenes.get(scene.parent.id).data.tokens.filter(e => e.data.actorId === tokenData.actorId) || [];
