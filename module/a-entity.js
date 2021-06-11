@@ -2852,22 +2852,22 @@ export class gActor extends Actor{
     }
 
     async setInit(roll){
-        console.log("setting init");
+        //console.log("setting init");
         const tokens = canvas.tokens.ownedTokens;
 
         for(let i=0;i<tokens.length;i++){
             let token = tokens[i];
-            const actor = token.actor;
+            let tokenactor = token.actor;
+            let myactor = this;
 
-            if(this.data.id == actor.id){
+            if(myactor.id == tokenactor.id){
                 //The following is for initiative
-                const combatants = game.combat.combatants;
-                for(let j=0;j<combatants.length;j++){
-                    let _combatant = game.combat.combatants[j];
-
-                    if(_combatant.tokenId == token.data.id){
-
+                let combatants = game.combat.combatants;
+                for(let combatKey of combatants.keys()){
+                    let _combatant = await combatants.get(combatKey);
+                    if(_combatant.token. id == token.id){
                         game.combat.updateCombatant({_id: _combatant.id, initiative: roll});
+                        //_combatant.rollInitiative(roll);
                     }
 
                 }
