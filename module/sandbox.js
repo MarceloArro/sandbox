@@ -11,6 +11,7 @@ import { gActor } from "./a-entity.js";
 import { gItem } from "./i-entity.js";
 import { SBOX } from "./config.js";
 import { auxMeth } from "./auxmeth.js";
+import { sToken } from "./sandboxtoken.js";
 
 /* -------------------------------------------- */
 /*  Hooks                 */
@@ -27,6 +28,7 @@ Hooks.once("init", async function() {
     CONFIG.debug.hooks = true;
     CONFIG.Actor.documentClass = gActor;
     CONFIG.Item.documentClass = gItem;
+    CONFIG.Token.documentClass = sToken;
 
     auxMeth.buildSheetHML();
     auxMeth.registerIfHelper();
@@ -141,50 +143,46 @@ Hooks.once("init", async function() {
         // Structure input data
         ids = typeof ids === "string" ? [ids] : ids;
         const currentId = this.combatant.id;
+        const rollMode = messageOptions.rollMode || game.settings.get("core", "rollMode");
 
         // Iterate over Combatants, performing an initiative roll for each
-        const [updates, messages] = await ids.reduce(async(results, id, i) => {
-            //console.log(results);
-            let [updates, messages] = await results;
+        const updates = [];
+        const messages = [];
+        for ( let [i, id] of ids.entries() ) {
 
-            // Get Combatant data
-            const c = this.getCombatant(id);
-            if ( !c || !c.owner ) return results;
+            // Get Combatant data (non-strictly)
+            const combatant = this.combatants.get(id);
+            if ( !combatant?.isOwner ) return results;
 
-            // Roll initiative
-            const cf = await this._getInitiativeFormula(c);
-            //console.log(cf);
-            const roll = this._getInitiativeRoll(c, cf);
-            updates.push({_id: id, initiative: roll.total});
-
-            // Determine the roll mode
-            let rollMode = messageOptions.rollMode || game.settings.get("core", "rollMode");
-            if (( c.token.hidden || c.hidden ) && (rollMode === "roll") ) rollMode = "gmroll";
+                // Produce an initiative roll for the Combatant
+                const roll = await combatant.getInitiativeRoll(formula);
+                console.log(roll);
+                updates.push({_id: id, initiative: roll.total});
 
             // Construct chat message data
-            let messageData = mergeObject({
+            let messageData = foundry.utils.mergeObject({
                 speaker: {
-                    scene: canvas.scene.id,
-                    actor: c.actor ? c.actor.id : null,
-                    token: c.token.id,
-                    alias: c.token.name
+                    scene: this.scene.id,
+                    actor: combatant.actor?.id,
+                    token: combatant.token?.id,
+                    alias: combatant.name
                 },
-                flavor: `${c.token.name} rolls for Initiative!`,
+                flavor: game.i18n.format("COMBAT.RollsInitiative", {name: combatant.name}),
                 flags: {"core.initiativeRoll": true}
             }, messageOptions);
-            const chatData = roll.toMessage(messageData, {create:false, rollMode});
+            const chatData = await roll.toMessage(messageData, {
+                create: false,
+                rollMode: combatant.hidden && (rollMode === "roll") ? "gmroll" : rollMode
+            });
 
             // Play 1 sound for the whole rolled set
             if ( i > 0 ) chatData.sound = null;
             messages.push(chatData);
-
-            // Return the Roll and the chat data
-            return results;
-        }, [[], []]);
+        }
         if ( !updates.length ) return this;
 
         // Update multiple combatants
-        await this.updateEmbeddedEntity("Combatant", updates);
+        await this.updateEmbeddedDocuments("Combatant", updates);
 
         // Ensure the turn order remains with the same combatant
         if ( updateTurn ) {
@@ -192,14 +190,21 @@ Hooks.once("init", async function() {
         }
 
         // Create multiple chat messages
-        await CONFIG.ChatMessage.entityClass.create(messages);
-
-        // Return the updated Combat
+        await ChatMessage.implementation.create(messages);
         return this;
 
     };
 
-    Combat.prototype._getInitiativeFormula = async function(combatant) {
+    Combatant.prototype.getInitiativeRoll = async function(formula){
+
+        formula = formula || await this._getInitiativeFormula();
+        const rollData = await this.actor.getRollData() || {};
+        const roll = Roll.create(formula, rollData);
+        return roll.evaluate({async: false}); 
+    };
+
+
+    Combatant.prototype._getInitiativeFormula = async function() {
 
         let initF = await game.settings.get("sandbox", "initKey");
         let formula = "1d20";
@@ -207,11 +212,14 @@ Hooks.once("init", async function() {
             formula = "@{" + initF + "}"
         }
 
-        formula = await auxMeth.autoParser(formula,combatant.actor.data.data.attributes,null,true,false);
-        formula = await auxMeth.autoParser(formula,combatant.actor.data.data.attributes,null,true,false);
+        formula = await auxMeth.autoParser(formula,this.actor.data.data.attributes,null,true,false);
+        formula = await auxMeth.autoParser(formula,this.actor.data.data.attributes,null,true,false);
+
+        console.log("aqui1");
 
         CONFIG.Combat.initiative.formula = formula;
 
+        console.log(formula);
 
         return CONFIG.Combat.initiative.formula || game.system.data.initiative;
 
@@ -623,38 +631,41 @@ Hooks.on("closegActorSheet", (entity, eventData) => {
 });
 
 Hooks.on("preCreateItem", (entity, options, userId) => {
-    let image="";
-    if(!entity.img){
-        if(entity.type=="cItem"){
-            image="systems/sandbox/docs/icons/sh_citem_icon.png";
-
-
-        }
-
-        if(entity.type=="sheettab"){
-            image="systems/sandbox/docs/icons/sh_tab_icon.png";
-        }
-
-        if(entity.type=="group"){
-            image="systems/sandbox/docs/icons/sh_group_icon.png";
-        }
-
-        if(entity.type=="panel"){
-            image="systems/sandbox/docs/icons/sh_panel_icon.png";
-        }
-
-        if(entity.type=="multipanel"){
-            image="systems/sandbox/docs/icons/sh_panel_icon.png";
-        }
-
-        if(entity.type=="property"){
-            image="systems/sandbox/docs/icons/sh_prop_icon.png";
-        }
-
-        if(image!="")
-            entity.img = image;
-    }
-
+    //    let image="";
+    //    console.log(entity.img);
+    //    if(entity.img == "icons/svg/item-bag.svg"){
+    //        console.log("aqui");
+    //        if(entity.type=="cItem"){
+    //            image="systems/sandbox/docs/icons/sh_citem_icon.png";
+    //
+    //
+    //        }
+    //
+    //        if(entity.type=="sheettab"){
+    //            image="systems/sandbox/docs/icons/sh_tab_icon.png";
+    //        }
+    //
+    //        if(entity.type=="group"){
+    //            image="systems/sandbox/docs/icons/sh_group_icon.png";
+    //        }
+    //
+    //        if(entity.type=="panel"){
+    //            image="systems/sandbox/docs/icons/sh_panel_icon.png";
+    //        }
+    //
+    //        if(entity.type=="multipanel"){
+    //            image="systems/sandbox/docs/icons/sh_panel_icon.png";
+    //        }
+    //
+    //        if(entity.type=="property"){
+    //            image="systems/sandbox/docs/icons/sh_prop_icon.png";
+    //        }
+    //
+    //        if(image!="")
+    //            entity.img = image;
+    //    }
+    //
+    //    console.log(image);
 
 
 });
@@ -736,7 +747,7 @@ Hooks.on("renderChatMessage", async (app, html, data) => {
     let messageId = app.id;
     let msg = game.messages.get(messageId);
     //await console.log(app);
-    let msgIndex = game.messages.entities.indexOf(msg);
+    let msgIndex = game.messages.contents.indexOf(msg);
 
     let _html = await html[0].outerHTML;
     let realuser = game.users.get(data.message.user);
