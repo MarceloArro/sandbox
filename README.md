@@ -351,7 +351,7 @@ The roll functions are the following:
 
 - if[expression:compared_value,return_iftrue,return_iffalse]: very useful expression especially for text attributes. Let's say you have a system in which you want to check if the attribute called "ismagical" of a specific cItem is true, and in case it is you want to return 2 to the roll chat. So the expression you need is [#{ismagical}:true,2,0]
 
-NOTE: Thanks to our friend @H3ls1 now If can accept nested expressions. The following are the expressions:
+If can accept nested expressions, a maximum of 8. Below are the expressions:
 + Single IF with no ANDs no ORs --> if\[Field:condition,true_value, false_value\]
 + Single IF with ORs only --> if\[FIELD1:COND1 OR FIELD2:COND2 OR....FIELDn:CONDn,true_value, false_value\] 
 + Single IF with ANDs only --> if\[FIELD1:COND1 AND FIELD2:COND2 AND....FIELDn:CONDn,true_value, false_value\]
@@ -359,6 +359,8 @@ NOTE: Thanks to our friend @H3ls1 now If can accept nested expressions. The foll
 + Nested IFs with or without ANDs and ORs (it works with the same logic as before)
 Example without ANDs and ORs if\[F:C,true_value,ELSE if\[F:C, true_value, ELSE if\[F:C,true_value,false_Value\]\]\].....
 Example with ANDs and ORs if\[F1:C1 OR F2:C2 AND F3:C3,true_value,ELSE if\[F:C, true_value,ELSE if\[F:C AND F4:C4,true_value,false_Value\]\]\]
+
+IMPORTANT: IF can only accept 8 ELSE expressions!
 
 - --cItem_attribute_name--: This function returns the value of a cItem attribute if you pase the attribute's Key to it. Lets imagine we set Torch (the cItem created earlier as an example) as a CONSUMABLE MOD and fill the Roll Options fields. If we set its roll expression as "1d6 + --weight--" it will roll to chat 1d6 plus the value of its Weight attribute (remember we defined it as part of the Group object).
 - __ Actor_attribute_name __: This function returns the value of an Actor attribute if you pase the attribute's Key to it. Imagine you have a list type Property of Key "selectedskill" on your character sheet, and this list has as options all the available skills in the system (i.e: climb, deception, swim, etc). You want to make this property rollable, and when clicked you want the sheet to roll 1d6+the value of the selected skill. You need then to reference the skills (which are attributes), so you can do this with "1d6 + __ @{selectedskill} __" . How does this work? When you select, let's say the "climb" option, this function will return __ climb __, that is equivalent to @{climb}. By the way, no spaces, I just included them to avoid bold formatting here...
