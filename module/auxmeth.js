@@ -35,9 +35,9 @@ export class auxMeth {
             if(_template!=null){
                 html=_template.data.data._html;
             }
-//
-//            if((html==null || html=="") && !istemplate)
-//                ui.notifications.warn("Please rebuild template actor");
+            //
+            //            if((html==null || html=="") && !istemplate)
+            //                ui.notifications.warn("Please rebuild template actor");
 
         }
 
@@ -1433,7 +1433,7 @@ export class auxMeth {
             let found = false;
 
             for(let i=game.messages.size-1;i>=0;i--){
-                let amessage = game.messages.entities[i];
+                let amessage = game.messages.contents[i];
                 if(!found){
                     if(amessage.data.content.includes("roll-template")){
                         found=true;
