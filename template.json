@@ -17,6 +17,7 @@
             "backg":"",
             "resizable":true,
             "setheight":600,
+            "buildlog":"",
             "selector":false,
             "attributes":{},
             "citems":[],
