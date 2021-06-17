@@ -512,42 +512,26 @@ Hooks.on("preUpdateToken", async (scene, token, updatedData, options, userId) =>
 Hooks.on("preUpdateActor", async (actor,updateData,options,userId) => {
     //console.log(actor);
     //console.log(updateData);
-    //console.log(data.data.gtemplate);
+    //console.log(data.data.istemplate);
     //console.log("preup");
 
     //await actor.sheet.setTokenOptions(actor.data);
     //    let newname = actor.data.name;
     //
     if(updateData.name){
-        if(!updateData.token)
-            setProperty(updateData,"token",{});
-        updateData.token.name = updateData.name;
+
+        if(!actor.data.data.istemplate){
+            if(!updateData.token)
+                setProperty(updateData,"token",{});
+            updateData.token.name = updateData.name;
+        }
+
+        else{
+            delete updateData.name;
+        }
+
+
     }
-    //
-    //    if(!actor.data.data.istemplate){
-    //        if(!updateData.token)
-    //            setProperty(updateData,"token",{});
-    //
-    //        setProperty(updateData.token,"bar1",{});
-    //
-    //        updateData.token.displayName = actor.data.data.displayName;
-    //
-    //        updateData.token.displayBars = actor.data.data.displayName;
-    //
-    //        if(updateData.token.dimLight==null)
-    //            updateData.token.dimLight = 0;
-    //
-    //        if(updateData.token.dimSight==null)
-    //            updateData.token.dimSight = 0;
-    //
-    //        if(updateData.token.brightLight==null)
-    //            updateData.token.brightLight = 0;
-    //
-    //        if(actor.data.data.tokenbar1!=null)
-    //            updateData.token.bar1.attribute = actor.data.data.tokenbar1;
-    //
-    //        updateData.token.name = newname;
-    //    }
 
 
     if(updateData["data.rollmode"]){
@@ -588,6 +572,11 @@ Hooks.on('createCombatant', (combat, combatantId, options) => {
 Hooks.on("preCreateActor", (createData) =>{
     if(createData.token!=null)
         createData.token.name = createData.name;
+
+//    if(createData.data.data.istemplate)
+//        createData.data.data.istemplate = false;
+//
+//    console.log(createData.data.data.istemplate);
 
 });
 
