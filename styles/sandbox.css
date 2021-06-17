@@ -321,6 +321,10 @@
     font-size:13px;
 }
 
+.sandbox.sheet .list-noneditable {
+    pointer-events: none;
+}
+
 .sandbox.sheet .input-small {
 
     padding: 1px 5px;
