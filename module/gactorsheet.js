@@ -606,7 +606,7 @@ export class gActorSheet extends ActorSheet {
         //console.log(attID);
         //const attData = this.actor.data.data.attributes;
         const property = await game.items.get(attID);
-        console.log(property);
+
         const attribute = property.data.data.attKey;
         let idkey = attData[attribute];
         let populate = false;
@@ -1397,6 +1397,8 @@ export class gActorSheet extends ActorSheet {
                         sInput.appendChild(n_option);
                     }
 
+
+
                     sInput.insertAdjacentHTML( 'beforeend', "{{/select}}" );
                 }
 
@@ -1881,10 +1883,18 @@ export class gActorSheet extends ActorSheet {
 
         console.log(actor);
 
-        await this.buildHTML(tabs);
-        //console.log("sheet built");
+        let keychecker = await this.checkTemplateKeys(tabs);
+        await this.actor.update({"data.buildlog": keychecker.checkerMsg});
+        console.log(keychecker);
+        if(keychecker.hasissue){
+            ui.notifications.warn("Template actor has consistency problems, please check Config Tab");
+            return;
+        }
+        else{
+            await this.buildHTML(tabs);
+            this.actor.update({"data.flags": flags},{diff:false});
+        }
 
-        this.actor.update({"data.flags": flags},{diff:false});
 
     }
 
@@ -1982,6 +1992,144 @@ export class gActorSheet extends ActorSheet {
 
 
         }
+    }
+
+    async checkTemplateKeys(tabs){
+        let hasissue = false;
+        let compilationMsg = "";
+        let myreturn = {};
+
+
+        //SET CurRenT DATE
+        var today = new Date();
+        var dd = String(today.getDate()).padStart(2, '0');
+        var mm = String(today.getMonth() + 1).padStart(2, '0'); //January is 0!
+        var yyyy = today.getFullYear();
+
+        today = mm + '/' + dd + '/' + yyyy;
+        compilationMsg += "Last rebuilt: " + today + ", ";
+
+        let allProps = [];
+        let allTabs = [];
+        let allPanels = [];
+        for (let y = 0; y < tabs.length; y++){
+            let titem = game.items.get(tabs[y].id);
+            let tabitempanels=[];
+            if(titem!=null){
+                tabitempanels = titem.data.data.panels;
+                allTabs.push(titem.data.data.tabKey);
+            }
+            else{
+                allTabs.push(tabs[y].name + "_TAB_NONEXISTING");
+                hasissue=true;
+            }
+
+            if(tabitempanels==null)
+                tabitempanels = [];
+
+            for (let i = 0; i < tabitempanels.length; i++){
+                let tabpanel = game.items.get(tabitempanels[i].id);
+                let panelproperties;
+                if(tabpanel!=null){
+                    panelproperties = tabpanel.data.data.properties;
+                    allPanels.push(tabpanel.data.data.panelKey);
+                }
+                else{
+                    allPanels.push(tabitempanels[i].name + "_PANEL_NONEXISTING");
+                    hasissue=true;
+                }
+
+                if(panelproperties==null)
+                    panelproperties = [];
+
+                for (let j = 0; j < panelproperties.length; j++){
+                    let property = game.items.get(panelproperties[j].id);
+                    if(property!=null){
+                        allProps.push(property.data.data.attKey);
+                    }
+                    else{
+                        allProps.push(panelproperties[j].name + "_PROP_NONEXISTING");
+                        hasissue=true;
+                    }
+
+                }
+
+            }
+        }
+
+        //CHECK FOR DUPLICATES
+        let duplicateProps = allProps.filter((e, i, a) => a.indexOf(e) !== i);
+        console.log(duplicateProps);
+        for(let n=0;n<duplicateProps.length;n++){
+            compilationMsg += "property key " + duplicateProps[n] + " is duplicated,";
+            hasissue=true;
+        }
+
+        let duplicatePanels = allPanels.filter((e, i, a) => a.indexOf(e) !== i);
+        for(let m=0;m<duplicatePanels.length;m++){
+            compilationMsg += "panel key " + duplicatePanels[m] + " is duplicated, ";
+            hasissue=true;
+        }
+
+        let duplicateTabs = allTabs.filter((e, i, a) => a.indexOf(e) !== i);
+        for(let s=0;s<duplicateTabs.length;s++){
+            compilationMsg += "panel key " + duplicateTabs[s] + " is duplicated, ";
+            hasissue=true;
+        }
+
+        //CHECK FOR INCORRECT KEYS
+        for(let checkPrKey in allProps){
+            if(/\s/.checkPrKey){
+                compilationMsg += "property key " + checkPrKey + " includes blank space, ";
+                hasissue=true;
+            }
+
+        }
+
+        for(let checkPaKey in allPanels){
+            if(/\s/.checkPaKey){
+                compilationMsg += "panel key " + checkPaKey + " includes blank space, ";
+                hasissue=true;
+            }
+
+        }
+
+        for(let checkTaKey in allTabs){
+            if(/\s/.checkTaKey){
+                compilationMsg += "tab key " + checkTaKey + " includes blank space, ";
+                hasissue=true;
+            }
+
+        }
+
+        //CHECK NONEXISTING TEMPLATE ELEMENTS
+        let nonEmsg = ", the following elements do not exist in world (type included after _):"
+        let checkNonE = allProps.concat(allPanels,allTabs);
+        let nonE = checkNonE.filter(y=>y.includes("_NONEXISTING"));
+        for(let nonElement in nonE){
+            let noneKey = nonElement.replace("_NONEXISTING","");
+            nonEmsg += noneKey + ", ";
+        }
+
+        //IF NOTHING WRONG
+        compilationMsg += " SUCCESFULLY REBUILT"
+
+        myreturn.hasissue = hasissue;
+        myreturn.checkerMsg = compilationMsg;
+
+        return myreturn;
+
+    }
+
+    find_duplicate_in_array(myarray) {
+        let result = [];
+        for(let i=0;i<myarray.length;i++){
+            let myelement = myarray[i];
+            let timespresent = myarray.filter((v) => (v === myelement)).length;
+            if(timespresent>0 && !result.includes(myelement))
+                result.push(myelement);
+        }
+        return result;
     }
 
     async buildHTML(tabs){
@@ -3135,8 +3283,12 @@ export class gActorSheet extends ActorSheet {
         const gminputs = basehtml.find(".inputGM");
         for(let i=0;i<gminputs.length;i++){
             let input = gminputs[i];
+
             if(!game.user.isGM){
                 input.setAttribute("readonly",true);
+
+                if(input.type=="select-one")
+                    input.className += " list-noneditable";
             }
         }
     }
