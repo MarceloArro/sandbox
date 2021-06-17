@@ -68,6 +68,14 @@ export class gActor extends Actor{
         }
     }
 
+    async _preCreate(data, options, user) {
+
+        await super._preCreate(data, options, user);
+
+        if(data.data.istemplate)
+            this.data.update({"data.istemplate":false});
+    }
+
     async _preUpdate(updateData, options, userId) {
         //        let upclon = duplicate(updateData);
         //        console.log(updateData);
