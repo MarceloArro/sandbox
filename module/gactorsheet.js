@@ -2029,10 +2029,22 @@ export class gActorSheet extends ActorSheet {
 
             for (let i = 0; i < tabitempanels.length; i++){
                 let tabpanel = game.items.get(tabitempanels[i].id);
-                let panelproperties;
+                let panelproperties=[];
                 if(tabpanel!=null){
-                    panelproperties = tabpanel.data.data.properties;
-                    allPanels.push(tabpanel.data.data.panelKey);
+                    if(tabpanel.data.type=="multipanel"){
+                        for(let b=0;b<tabpanel.data.data.panels.length;b++){
+                            let subpanel = game.items.get(tabpanel.data.data.panels[b].id);
+                            let subproperties = subpanel.data.data.properties;
+                            allPanels.push(subpanel.data.data.panelKey);
+                            panelproperties = [].concat(panelproperties,subproperties);
+
+                        }
+                    }
+                    else{
+                        panelproperties = tabpanel.data.data.properties;
+                        allPanels.push(tabpanel.data.data.panelKey);
+                    }
+
                 }
                 else{
                     allPanels.push(tabitempanels[i].name + "_PANEL_NONEXISTING");
@@ -2059,7 +2071,6 @@ export class gActorSheet extends ActorSheet {
 
         //CHECK FOR DUPLICATES
         let duplicateProps = allProps.filter((e, i, a) => a.indexOf(e) !== i);
-        console.log(duplicateProps);
         for(let n=0;n<duplicateProps.length;n++){
             compilationMsg += "property key " + duplicateProps[n] + " is duplicated,";
             hasissue=true;
