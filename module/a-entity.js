@@ -71,9 +71,9 @@ export class gActor extends Actor{
     async _preCreate(data, options, user) {
 
         await super._preCreate(data, options, user);
-
-        if(data.data.istemplate)
-            this.data.update({"data.istemplate":false});
+        if(data.data!=null)
+            if(data.data.istemplate)
+                this.data.update({"data.istemplate":false});
     }
 
     async _preUpdate(updateData, options, userId) {
