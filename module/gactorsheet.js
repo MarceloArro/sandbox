@@ -2073,19 +2073,16 @@ export class gActorSheet extends ActorSheet {
         let duplicateProps = allProps.filter((e, i, a) => a.indexOf(e) !== i);
         for(let n=0;n<duplicateProps.length;n++){
             compilationMsg += "property key " + duplicateProps[n] + " is duplicated,";
-            hasissue=true;
         }
 
         let duplicatePanels = allPanels.filter((e, i, a) => a.indexOf(e) !== i);
         for(let m=0;m<duplicatePanels.length;m++){
             compilationMsg += "panel key " + duplicatePanels[m] + " is duplicated, ";
-            hasissue=true;
         }
 
         let duplicateTabs = allTabs.filter((e, i, a) => a.indexOf(e) !== i);
         for(let s=0;s<duplicateTabs.length;s++){
             compilationMsg += "panel key " + duplicateTabs[s] + " is duplicated, ";
-            hasissue=true;
         }
 
         //CHECK FOR INCORRECT KEYS
