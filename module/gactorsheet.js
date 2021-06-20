@@ -2111,16 +2111,24 @@ export class gActorSheet extends ActorSheet {
         }
 
         //CHECK NONEXISTING TEMPLATE ELEMENTS
-        let nonEmsg = ", the following elements do not exist in world (type included after _):"
+        let nonEmsg = "";
         let checkNonE = allProps.concat(allPanels,allTabs);
         let nonE = checkNonE.filter(y=>y.includes("_NONEXISTING"));
-        for(let nonElement in nonE){
-            let noneKey = nonElement.replace("_NONEXISTING","");
+        if(nonE.length>0){
+            nonEmsg = ", the following elements do not exist in world (type included after _):";
+            hasissue =true;
+        }
+
+        for(let r=0;r<nonE.length;r++){
+            let noneKey = nonE[r].replace("_NONEXISTING","");
             nonEmsg += noneKey + ", ";
         }
 
+        compilationMsg += nonEmsg;
+
         //IF NOTHING WRONG
-        compilationMsg += " SUCCESFULLY REBUILT"
+        if(!hasissue)
+            compilationMsg += " SUCCESFULLY REBUILT"
 
         myreturn.hasissue = hasissue;
         myreturn.checkerMsg = compilationMsg;
