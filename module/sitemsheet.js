@@ -227,10 +227,10 @@ export class sItemSheet extends ItemSheet {
         //        if(event==null)
         //            return;
 
-        if(event.toElement.classList.contains("itemdrop-area")){
+        if(event.target.classList.contains("itemdrop-area")){
             console.log("dropping on mod");
             dropmod = true;
-            modId = event.toElement.getAttribute("mod");
+            modId = event.target.getAttribute("mod");
         }
 
         else if(event.target.parentElement.classList.contains("itemdrop-area")){
