@@ -735,7 +735,7 @@ export class gActor extends Actor{
                         if(_citem.usetype=="PAS" || citem.isactive){
 
                             if(!ispresent && !_mod.exec){
-                                console.log("adding " + toadd.name);
+                                //console.log("adding " + toadd.name);
                                 let newItem= game.items.get(itemtoadd.id);
                                 citemIDs = await this.addcItem(newItem,mod.citem,data);
                                 result.iterate = true;
@@ -752,6 +752,7 @@ export class gActor extends Actor{
                                 let citemmod = citemIDs.find(y=>y.id==itemtoadd.id);
                                 let cindex = citemIDs.indexOf(citemmod);
                                 await citemIDs.splice(cindex,1);
+                                await mods.splice(mods.findIndex(e => e.citem === itemtoadd.id),1);
                                 _mod.exec = false;
                             }
                         }
@@ -1268,7 +1269,7 @@ export class gActor extends Actor{
 
                     finalvalue = Number(finalvalue);
 
-                    //console.log(mod.index);
+                    console.log(mods);
 
                     const _basecitem = await citemIDs.find(y=>y.id==mod.citem && y.mods.find(x=>x.index==mod.index));
                     const _mod = await _basecitem.mods.find(x=>x.index==mod.index);
@@ -1282,9 +1283,12 @@ export class gActor extends Actor{
                     }
 
                     //console.log(_basecitem.name + " " + _mod.exec);
-                    //console.log(_mod.expr);
                     let exprcheck = _mod.expr;
-                    let checkroll = exprcheck.match(/d[%@(]|d+/g);
+                    if(exprcheck==undefined)
+                        exprcheck = "";
+                    let checkroll;
+                    if(exprcheck!= "" || exprcheck!=null)
+                        checkroll = exprcheck.match(/d[%@(]|d+/g);
                     if(_mod.exec && ((_mod.value!=finalvalue && checkroll==null) || _mod.attribute!=modAtt)){
                         //console.log("resetting " + _mod.attribute);
                         if(!citem.ispermanent){
