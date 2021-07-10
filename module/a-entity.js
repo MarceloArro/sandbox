@@ -78,7 +78,7 @@ export class gActor extends Actor{
 
     async _preUpdate(updateData, options, userId) {
         //        let upclon = duplicate(updateData);
-        //        console.log(updateData);
+        //console.log(updateData);
         if(this.data.permission.default >= CONST.ENTITY_PERMISSIONS.OBSERVER ||  this.data.permission[game.user.id] >= CONST.ENTITY_PERMISSIONS.OBSERVER || game.user.isGM){
             let myuser = userId;
         }
@@ -152,10 +152,14 @@ export class gActor extends Actor{
             attributes = updateData.attributes;
 
         for (var key in attributes) {
+
             if (attKeys.includes(key)) {
                 actorData.attributes[key].value = attributes[key].value;
+                if(actorData.attributes[key].istable && hasProperty(attributes[key],"tableitems"))
+                    actorData.attributes[key].tableitems = attributes[key].tableitems;
             }
             else{
+                //console.log("adding " + key)
                 await this.createAttProps(actorData,updateData,key);
 
             }
@@ -515,7 +519,7 @@ export class gActor extends Actor{
 
                         if(actorAtt!=null){
                             if(addsetmods[i].type=="ADD"){
-                                let jumpmod = await this.checkModConditional(this.data,addsetmods[i]);
+                                let jumpmod = await this.checkModConditional(this.data,_mod);
                                 if(((toRemove.isactive && !toRemoveObj.ispermanent) || (toRemoveObj.usetype=="PAS" && !toRemoveObj.selfdestruct)) && !jumpmod){
                                     actorAtt[attProp] -= myAttValue;
                                 }
@@ -841,7 +845,6 @@ export class gActor extends Actor{
         const attributes = data.data.attributes;
         let condAtt = mod.condat;
         let jumpmod = false;
-        //console.log(condAtt);
 
         let citem = citemIDs.find(y=>y.id==mod.citem);
 
@@ -943,6 +946,42 @@ export class gActor extends Actor{
         return actorData;
     }
 
+    async checkcItemConsistency(actorData){
+        //Removes cITems marked for removal CITEMS
+        const citemIDs = actorData.data.citems;
+
+        for(let k=0;k<citemIDs.length;k++){
+            let mycitem = citemIDs[k];
+            let cITemplate = game.items.get(mycitem.id);
+            //TODO CHECK FOR CHANGED ATTRIBUTES IN ORIGINAL CITEM
+
+            for(let att in cITemplate.data.data.attributes){
+                if(!hasProperty(mycitem.attributes,att)){
+                    setProperty(mycitem.attributes,att,cITemplate.data.data.attributes[att].value);
+                }
+
+            }
+
+            for(let i=0;i<cITemplate.data.data.mods.length;i++){
+                let originalmod = cITemplate.data.data.mods[i];
+                let mymod = mycitem.mods.find(y=>y.index == originalmod.index);
+                if(mymod==null){
+                    await mycitem.mods.push({
+                        index:originalmod.index,
+                        citem: mycitem.id,
+                        once:originalmod.once,
+                        exec:false,
+                        attribute:originalmod.attribute,
+                        expr:originalmod.value,
+                        value:null
+                    });
+                }
+            }
+        }
+
+        return citemIDs;
+    }
+
     async checkPropAuto(actorData,repeat=false){
         //console.log("checking auto properties");
         //        await this.update({"flags.ischeckingauto":true});
@@ -986,6 +1025,7 @@ export class gActor extends Actor{
         //CHECKING CI ITEMS
         actorData = await this.removeDropcITems(actorData);
         actorData.data.citems = await this.setdefcItems(actorData);
+        actorData.data.citems = await this.checkcItemConsistency(actorData);
 
         let mods=[];
         let resMods = true;
@@ -1151,12 +1191,6 @@ export class gActor extends Actor{
                 const _basecitem = await citemIDs.find(y=>y.id==mod.citem && y.mods.find(x=>x.index==mod.index));
                 const _mod = await _basecitem.mods.find(x=>x.index==mod.index);
 
-                //                console.log(mod.name);
-                //                console.log(value);
-                //                
-                //                console.log(_mod.expr);
-                //                console.log(_mod.exec);
-
                 if(_mod==null)
                     console.log(citem);
 
@@ -1269,7 +1303,7 @@ export class gActor extends Actor{
 
                     finalvalue = Number(finalvalue);
 
-                    console.log(mods);
+                    //console.log(mods);
 
                     const _basecitem = await citemIDs.find(y=>y.id==mod.citem && y.mods.find(x=>x.index==mod.index));
                     const _mod = await _basecitem.mods.find(x=>x.index==mod.index);
@@ -1760,14 +1794,39 @@ export class gActor extends Actor{
             }  
         }
 
-        //TABLE TOTALS CALCULATION
+        //FREE TABLES autos of items  *** TEST **********************************
+
         for(var tabAProp in attributes){
             if(attributes[tabAProp].istable){
 
                 let t_Prop = attributes[tabAProp];
                 let tableObj = game.items.get(t_Prop.id);
                 let totalGroupID = tableObj.data.data.group.id;
-                //console.log(citemIDs);
+
+                //FREE TABLE AUTO PROP CALCULATION
+                if(t_Prop.tableitems!=null){
+                    let groupObj = game.items.get(totalGroupID);
+                    let groupProps = groupObj.data.data.properties;
+                    for(let k=0; k<groupProps.length;k++){
+                        let tableProp = game.items.get(groupProps[k].id);
+                        let propauto = tableProp.data.data.auto;
+                        let freepropKey = tableProp.data.data.attKey;
+                        let freevalue;
+                        if(propauto!=""){
+                            for(let d=0;d<t_Prop.tableitems.length;d++){
+                                freevalue = await auxMeth.autoParser(propauto,attributes,t_Prop.tableitems[d].attributes,false,false);
+                                t_Prop.tableitems[d].attributes[freepropKey].value = freevalue;
+                            }
+
+                        }
+
+
+                    }
+                }
+
+
+                //TOTAL CALCULATION
+
                 let gcitems = await citemIDs.filter(y=>y.groups.filter(x=>x.id==totalGroupID));
 
                 for(var propKey in t_Prop.totals){
