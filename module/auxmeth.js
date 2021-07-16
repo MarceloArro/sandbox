@@ -35,9 +35,6 @@ export class auxMeth {
             if(_template!=null){
                 html=_template.data.data._html;
             }
-            //
-            //            if((html==null || html=="") && !istemplate)
-            //                ui.notifications.warn("Please rebuild template actor");
 
         }
 
@@ -87,6 +84,13 @@ export class auxMeth {
 
     static async registerIfHelper(){
         Handlebars.registerHelper('ifCond', function(v1, v2, options) {
+
+            if(auxMeth.isNumeric(v1))
+                v1 = Number(v1);
+
+            if(auxMeth.isNumeric(v2))
+                v2 = Number(v2);
+
             if(v1 === v2) {
                 return options.fn(this);
             }
@@ -146,6 +150,21 @@ export class auxMeth {
             }
             return options.inverse(this);
         });
+    }
+
+    static async registerShowRollMod(){
+        Handlebars.registerHelper('rollMod', function(options) {
+            if(game.settings.get("sandbox", "rollmod")) {
+                return options.fn(this);
+            }
+            return options.inverse(this);
+        });
+    }
+
+    static async isNumeric(str) {
+        if (typeof str != "string") return false // we only process strings!  
+        return !isNaN(str) && // use type coercion to parse the _entirety_ of the string (`parseFloat` alone does not do this)...
+            !isNaN(parseFloat(str)) // ...and ensure strings of whitespace fail
     }
 
     static async regParser(expr,attributes,itemattributes){
@@ -498,7 +517,8 @@ export class auxMeth {
 
                         let test = eval(ceilExpr);
                         let finalstring = "ceil(" + test+ ")";
-                        let roll = new Roll(finalstring).roll();
+                        let roll = new Roll(finalstring);
+                        await roll.evaluate({async: true});
                         finalstring = roll.total;
                         expr = expr.replace(tochange,finalstring);
                         //}
@@ -541,7 +561,8 @@ export class auxMeth {
                             let test = eval(floorExpr);
                             //console.log(test);
                             let finalstring = "floor(" + test+ ")";
-                            let roll = new Roll(finalstring).roll();
+                            let roll = new Roll(finalstring);
+                            await roll.evaluate({async: true});
                             finalstring = roll.total;
                             expr = expr.replace(tochange,finalstring);
                         }
@@ -571,7 +592,8 @@ export class auxMeth {
                     let tochange = "maxdie(" + maxDie[i]+ ")";
 
 
-                    let newroll = new Roll(maxDie[i]).roll();
+                    let newroll = new Roll(maxDie[i]);
+                    await newroll.evaluate({async: true});
 
                     let attvalue = 0;
                     for(let j=0;j<newroll.dice.length;j++){
@@ -618,7 +640,8 @@ export class auxMeth {
                             //console.log(pushblock);
                             if(!checknonumsum){
                                 if(isNaN(pushblock)){
-                                    let roll = new Roll(blocks[n]).roll();
+                                    let roll = new Roll(blocks[n]);
+                                    await roll.evaluate({async: true});
                                     pushblock = roll.total;
                                 }
 
@@ -680,7 +703,8 @@ export class auxMeth {
                             let checknonumsum = blocks[n].match(nonumsum);
                             if(!checknonumsum){
                                 if(isNaN(pushblock)){
-                                    let roll = new Roll(blocks[n]).roll();
+                                    let roll = new Roll(blocks[n]);
+                                    await roll.evaluate({async: true});
                                     pushblock = roll.total;
                                 }
 
@@ -967,7 +991,8 @@ export class auxMeth {
                         //console.log(limits[0]);
                         let value = limits[0];
                         if(isNaN(value) && !value.includes("$") && !value.includes("min") && !value.includes("max") ){
-                            let roll = new Roll(limits[0]).roll();
+                            let roll = new Roll(limits[0]);
+                            await roll.evaluate({async: true});
                             value = roll.total;
                         }
 
@@ -990,7 +1015,8 @@ export class auxMeth {
                                 //
                                 //                            if(isNaN(scale)  && !scale.includes("$") && !scale.includes("min") && !scale.includes("max") ){
                                 //if(isNaN(scale) || scale.includes('+')|| scale.includes('-')|| scale.includes('/')|| scale.includes('*')){
-                                let newroll = new Roll(scale).roll();
+                                let newroll = new Roll(scale);
+                                await newroll.evaluate({async: true});
                                 //expr = expr.replace(scale,newroll.total);
                                 scale = newroll.total;
 
@@ -1105,7 +1131,8 @@ export class auxMeth {
 
                                 if(isNaN(checker)){
                                     try{
-                                        let newroll = new Roll(checker).roll();
+                                        let newroll = new Roll(checker);
+                                        await newroll.evaluate({async: true});
                                         checker = newroll.total;
                                     }
                                     catch(err){
@@ -1121,7 +1148,8 @@ export class auxMeth {
 
                                 if(isNaN(thiscondition) || checknonumcond!=null){
                                     try{
-                                        let newroll = new Roll(thiscondition).roll();
+                                        let newroll = new Roll(thiscondition);
+                                        await newroll.evaluate({async: true});
                                         thiscondition = newroll.total;
                                     }
                                     catch(err){
@@ -1153,7 +1181,8 @@ export class auxMeth {
 
                                 if(isNaN(checker)){
                                     try{
-                                        let newroll = new Roll(checker).roll();
+                                        let newroll = new Roll(checker);
+                                        await newroll.evaluate({async: true});
                                         checker = newroll.total;
                                     }
                                     catch(err){
@@ -1169,7 +1198,8 @@ export class auxMeth {
 
                                 if(isNaN(thiscondition) || checknonumcond!=null){
                                     try{
-                                        let newroll = new Roll(thiscondition).roll();
+                                        let newroll = new Roll(thiscondition);
+                                        await newroll.evaluate({async: true});
                                         thiscondition = newroll.total;
                                     }
                                     catch(err){
@@ -1205,7 +1235,8 @@ export class auxMeth {
 
                             if(isNaN(checker)){
                                 try{
-                                    let newroll = new Roll(checker).roll();
+                                    let newroll = new Roll(checker);
+                                    await newroll.evaluate({async: true});
                                     checker = newroll.total;
                                 }
                                 catch(err){
@@ -1221,7 +1252,8 @@ export class auxMeth {
 
                             if(isNaN(thiscondition) || checknonumcond!=null){
                                 try{
-                                    let newroll = new Roll(thiscondition).roll();
+                                    let newroll = new Roll(thiscondition);
+                                    await newroll.evaluate({async: true});
                                     thiscondition = newroll.total;
                                 }
                                 catch(err){
@@ -1294,8 +1326,9 @@ export class auxMeth {
                 //console.log("exprmode=false")
                 try{
                     let final = new Roll(expr);
+                    await final.evaluate({async: true});
 
-                    final.roll();
+                    //final.roll();
                     //console.log(final);
 
                     if(isNaN(final.total)||final.total==null||final.total===false)
