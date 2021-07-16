@@ -155,6 +155,9 @@ export class gActor extends Actor{
         for (var key in attributes) {
 
             if (attKeys.includes(key)) {
+                if(attributes[key].id!=null)
+                    actorData.attributes[key].id = attributes[key].id;
+
                 if(attributes[key].value!=null)
                     actorData.attributes[key].value = attributes[key].value;
                 if(attributes[key].modified!=null)
@@ -384,7 +387,7 @@ export class gActor extends Actor{
 
     }
 
-    async addcItem(ciTem,addedBy = null,data = null){
+    async addcItem(ciTem,addedBy = null,data = null, number = null){
         //console.log("adding citems");
         //console.log(ciTem);
 
@@ -407,7 +410,9 @@ export class gActor extends Actor{
         newItem[itemKey].name=ciTem.data.name;
 
         if(!data.data.istemplate){
-            newItem[itemKey].number = 1;
+            if(number == null)
+                number = 1;
+            newItem[itemKey].number = number;
             newItem[itemKey].isactive = false;
             newItem[itemKey].isreset = true;
 
@@ -969,6 +974,12 @@ export class gActor extends Actor{
         for(let k=0;k<citemIDs.length;k++){
             const mycitem = citemIDs[k];
             let cIOrigTemplate = game.items.get(mycitem.id);
+
+            if(cIOrigTemplate==null){
+                await citemIDs.splice(citemIDs.indexOf(mycitem),1);
+                continue;
+            }
+
             let cITemplate = await duplicate(cIOrigTemplate);
             let requestUpdate = false;
             let updatecItem = false;
