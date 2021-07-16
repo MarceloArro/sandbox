@@ -9,13 +9,9 @@
                     {{#if actor.data.istemplate}}
                     {{else}}
                     <div class="flexblock-left">
-                        <!--
-<label class="label-free boldtext">MOD</label>
-<input class="input-min" type="text" name="data.mod" value="{{data.mod}}"/>
--->
 
                         {{#advShow}}
-                        <a class="roll-mode boldtext" title="Roll mode"><i>{{data.rollmode}}</i></a>
+                        <a class="roll-mode boldtext" title="Roll mode"><i>{{data.data.rollmode}}</i></a>
                         {{/advShow}}
 
                         {{#showRoller}}
@@ -25,6 +21,12 @@
                         {{#if actor.data.selector}}
                         <a class="mod-selector" title="Select Options"><i class="fas fa-exclamation-circle fa-2x"></i></a>
                         {{/if}}
+
+                        {{#rollMod}}
+                        <label class="label-mod">MOD</label>
+                        <input class="input-mod" type="text" name="data.mod" value="{{data.data.mod}}"/>
+                        {{/rollMod}}
+
                     </div>
                     {{/if}}
                 </div>
@@ -61,7 +63,7 @@
         <a class="tab-prev" id="tab-prev"><i class="leftarrow"></i></a>
         <nav class="sheet-tabs tabs" data-group="primary" id="tabs" tabs="0">
 
-            <a class="item tab-button" data-tab="description" id="tab-0">Bio</a>          
+            <a class="item tab-button desc-tab" data-tab="description" id="tab-0">Bio</a>          
             <a style="display: none" id="tab-last"></a>
             {{#isGM}}
             {{#if actor.data.istemplate}}
