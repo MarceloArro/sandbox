@@ -95,14 +95,14 @@ export class gActorSheet extends ActorSheet {
                 this._sheetTab = clicked.data("tab");
                 let li = clicked.parents(".tabs");
                 let alltabs = li.children();
-                for(let i=0;i<alltabs.length;i++){
-                    let tab = alltabs[i];
-                    let datatab = tab.getAttribute("data-tab");
-                    if(datatab==clicked.data("tab")){
-                        actor.data.flags.selectedtab = i;
-                    }
-
-                }
+                //                for(let i=0;i<alltabs.length;i++){
+                //                    let tab = alltabs[i];
+                //                    let datatab = tab.getAttribute("data-tab");
+                //                    if(datatab==clicked.data("tab")){
+                //                        actor.data.flags.selectedtab = i;
+                //                    }
+                //
+                //                }
 
             }
         });
@@ -208,12 +208,14 @@ export class gActorSheet extends ActorSheet {
 
         html.find('.tab-prev').click(ev => {
             event.preventDefault();
-            this.displaceTabs(true);
+            //this.displaceTabs(true,html);
+            this.displaceTabs2("prev",html);
         });
 
         html.find('.tab-next').click(ev => {
             event.preventDefault();
-            this.displaceTabs(false);
+            //this.displaceTabs(false,html);
+            this.displaceTabs2("next",html);
         });
         html.find('.roll-free').click(ev => {
             event.preventDefault();
@@ -422,7 +424,7 @@ export class gActorSheet extends ActorSheet {
 
     }
 
-    async _onRollCheck(attrID, citemID,ciRoll=false) {
+    async _onRollCheck(attrID, citemID,ciRoll=false,isFree=false,tableKey=null) {
         //console.log("rolling att " + attrID + " item " + citemID);
 
         let actorattributes = this.actor.data.data.attributes;
@@ -439,10 +441,22 @@ export class gActorSheet extends ActorSheet {
         let number;
 
         if(citemID!=null){
-            citem = await game.items.get(citemID);
-            findcitem = this.actor.data.data.citems.find(y=>y.id == citemID);
-            if(findcitem!=null)
-                citemattributes= findcitem.attributes;
+            if(!isFree){
+                citem = await game.items.get(citemID);
+                findcitem = this.actor.data.data.citems.find(y=>y.id == citemID);
+                if(findcitem!=null)
+                    citemattributes= findcitem.attributes;
+            }
+
+            else{
+                if(tableKey!=null){
+                    let tableItems = actorattributes[tableKey].tableitems;
+                    let myFreeItem = tableItems.find(y=>y.id==citemID);
+                    citemattributes = myFreeItem.attributes;
+                }
+
+            }
+
 
             //console.log(citem);
         }
@@ -608,6 +622,7 @@ export class gActorSheet extends ActorSheet {
         const property = await game.items.get(attID);
 
         const attribute = property.data.data.attKey;
+        //console.log(attribute);
         let idkey = attData[attribute];
         let populate = false;
         if(idkey==null){
@@ -618,13 +633,31 @@ export class gActorSheet extends ActorSheet {
                 populate = true;
             }
 
+            //            else{
+            //                if(idkey.value==null)
+            //                    populate = true;
+            //            }
+
             if(property.data.data.datatype=="radio" && (idkey.max==null || idkey.max=="" || idkey.value=="" || idkey.value==null)){
                 populate=true;
             }
+
+            //            if(property.data.data.maxtop){
+            //                console.log("setting");
+            //                setProperty(attData[attribute],"maxblocked", true);
+            //            }
+            //            else{
+            //                setProperty(attData[attribute],"maxblocked", false);
+            //            }
+
         }
 
+        if(property.data.data.datatype == "table"){
+            if(!hasProperty(attData[attribute],"tableitems"))
+                populate=true;
+        }
 
-        console.log(property.data.data.attKey + " " + property.data.data.datatype + " " + populate);
+        //console.log(property.data.data.attKey + " " + property.data.data.datatype + " " + populate);
         if(!hasProperty(attData,attribute) || Object.keys(attData[attribute]).length == 0 || populate){
             console.log("populating prop");
             attData[attribute] = {};
@@ -646,13 +679,15 @@ export class gActorSheet extends ActorSheet {
                 }
             }
             else{
-                //console.log("setting table");
+                console.log("setting table");
                 let tablegroup = property.data.data.group;
                 let groupObj = await game.items.get(tablegroup.id);
                 let groupprops = groupObj.data.data.properties;
                 //console.log(groupprops);
                 setProperty(attData[attribute],"istable", true);
                 setProperty(attData[attribute],"totals", {});
+                if(!hasProperty(attData[attribute],"tableitems"))
+                    setProperty(attData[attribute],"tableitems", []);
                 const attTableKey = attData[attribute];
                 for(let i = 0; i < groupprops.length; i++){
                     let propId = groupprops[i].id;
@@ -672,6 +707,8 @@ export class gActorSheet extends ActorSheet {
 
 
         }
+
+        //console.log(attData[attribute]);
 
         //return attData;
 
@@ -779,6 +816,10 @@ export class gActorSheet extends ActorSheet {
             newElement.insertAdjacentHTML( 'beforeend', "{{/isGM}}" );
         }
 
+        else{
+            newElement.className += " player-tab";
+        }
+
         //Tab content
         let parentNode = deftemplate.querySelector('#sheet-body');
         let div5 = document.createElement("DIV");
@@ -789,7 +830,7 @@ export class gActorSheet extends ActorSheet {
         parentNode.appendChild(div5);
 
         let div9 = document.createElement("DIV");
-        div9.className = "new-column";
+        div9.className = "new-column sbbody";
         div9.setAttribute('id', tabKey + "Body");
         div5.appendChild(div9);
 
@@ -838,7 +879,7 @@ export class gActorSheet extends ActorSheet {
         }
 
         //let deftemplate= wrapper;
-        let deftemplate = new DOMParser().parseFromString(newHTML, "text/html")
+        let deftemplate = new DOMParser().parseFromString(newHTML, "text/html");
         const actor = this.actor;
         const flags = this.actor.data.flags;        
         const parentNode = deftemplate.querySelector('#' + tabKey + 'Body');
@@ -1234,6 +1275,10 @@ export class gActorSheet extends ActorSheet {
                         labelwidth += " label-small";
                     }
 
+                    else if(property.data.labelsize=="T"){
+                        labelwidth += " label-tiny";
+                    }
+
                     else if(property.data.labelsize=="M"){
                         labelwidth += " label-med";
                     }
@@ -1441,7 +1486,7 @@ export class gActorSheet extends ActorSheet {
                     header.appendChild(header_row);
 
                     //Add name ta
-                    if(property.data.onlynames=="DEFAULT" || property.data.onlynames=="ONLY_NAMES"){
+                    if((property.data.onlynames=="DEFAULT" || property.data.onlynames=="ONLY_NAMES") && !property.data.isfreetable){
                         if (!property.data.namecolumn) {
                             property.data.namecolumn = "Item";
                         }
@@ -1450,30 +1495,34 @@ export class gActorSheet extends ActorSheet {
                         //hnameCell.className = "input-free";
                         hnameCell.className = "label-large";
                         //hnameCell.textContent = "Item";
+                        hnameCell.className += " tableheader";
                         hnameCell.textContent = property.data.namecolumn;
                         header_row.appendChild(hnameCell);
                     }
 
 
                     if(property.data.onlynames!="ONLY_NAMES"){
-                        if(property.data.hasactivation){
+                        if(property.data.hasactivation && !property.data.isfreetable){
                             let hactiveCell = deftemplate.createElement("TH");
                             hactiveCell.className = "input-min";
+                            hactiveCell.className += " tableheader";
                             hactiveCell.textContent = "Active";
                             header_row.appendChild(hactiveCell);
                         }
 
-                        if(property.data.hasunits){
+                        if(property.data.hasunits && !property.data.isfreetable){
                             let hnumberCell = deftemplate.createElement("TH");
                             hnumberCell.className = "input-min";
+                            hnumberCell.className += " tableheader";
                             hnumberCell.textContent = "Num";
                             header_row.appendChild(hnumberCell);
                         }
 
                         //REMOVE USES WORKSTREAM
-                        if(property.data.hasuses && property.data.hasactivation){
+                        if(property.data.hasuses && property.data.hasactivation && !property.data.isfreetable){
                             let husesCell = deftemplate.createElement("TH");
                             husesCell.className = "input-med";
+                            husesCell.className += " tableheader";
                             husesCell.textContent = "Uses";
                             header_row.appendChild(husesCell);
                         }
@@ -1486,38 +1535,38 @@ export class gActorSheet extends ActorSheet {
                                 let propTable = game.items.get(groupprops[i].id);
                                 let hCell = deftemplate.createElement("TH");
 
-                                if(propTable.data.data.datatype=="simplenumeric"){
-                                    hCell.className ="input-min";
 
-                                    if(propTable.data.data.inputsize=="M"){
-                                        hCell.className = "label-med";
-                                    }
+
+
+                                hCell.className ="input-med";
+
+                                if(propTable.data.data.labelsize=="F"){
+                                    hCell.className = "label-free";
+
                                 }
-
+                                else if(propTable.data.data.labelsize=="S"){
+                                    hCell.className = "label-small";
+                                }
+                                else if(propTable.data.data.labelsize=="T"){
+                                    hCell.className = "label-tiny";
+                                }
+                                else if(propTable.data.data.labelsize=="L" && propTable.data.data.inputsize=="M"){
+                                    hCell.className = "label-medlarge";
+                                }
+                                else if(propTable.data.data.labelsize=="L" && propTable.data.data.inputsize=="L"){
+                                    hCell.className = "label-big";
+                                }
+                                else if(propTable.data.data.labelsize=="L"){
+                                    hCell.className = "label-large";
+                                }
                                 else {
-                                    hCell.className ="input-med";
-
-                                    if(propTable.data.data.labelsize=="F"){
-                                        hCell.className = "label-free";
-                                    }
-                                    else if(propTable.data.data.labelsize=="S"){
-                                        hCell.className = "label-small";
-                                    }
-                                    else if(propTable.data.data.labelsize=="L" && propTable.data.data.inputsize=="M"){
-                                        hCell.className = "label-medlarge";
-                                    }
-                                    else if(propTable.data.data.labelsize=="L" && propTable.data.data.inputsize=="L"){
-                                        hCell.className = "label-big";
-                                    }
-                                    else if(propTable.data.data.labelsize=="L"){
-                                        hCell.className = "label-large";
-                                    }
-                                    else {
-                                        hCell.className = "label-med";
-                                    }
-
+                                    hCell.className = "label-med";
                                 }
 
+
+
+
+                                hCell.className += " tableheader";
                                 hCell.textContent = propTable.data.data.tag;
 
                                 if(!propTable.data.data.ishidden)
@@ -1714,37 +1763,37 @@ export class gActorSheet extends ActorSheet {
                 parentGranda.appendChild(parentRow);
 
                 //parentGranda conditional visibility, to reorganize in method with previous ones
-                if(_paneldata.condop!="NON"){
-                    let attProp = ".value";
-                    if(_paneldata.condat!=null){
-                        if(_paneldata.condat.includes("max")){
-                            attProp = "";
-                        }
-                    }
-
-
-                    if(_paneldata.condop=="EQU"){
-                        if(_paneldata.condvalue == "true"||_paneldata.condvalue == "false" || typeof _paneldata.condvalue ==="boolean"){
-                            parentGranda.insertAdjacentHTML( 'beforebegin', "{{#if actor.data.attributes." + _paneldata.condat + attProp + "}}" );
-                            parentGranda.insertAdjacentHTML( 'afterend', "{{/if}}" );
-                        }
-                        else{
-                            parentGranda.insertAdjacentHTML( 'beforebegin', "{{#ifCond actor.data.attributes." + _paneldata.condat + attProp + " '" + _paneldata.condvalue + "'}}" );
-                            parentGranda.insertAdjacentHTML( 'afterend', "{{/ifCond}}" );
-                        }
-
-                    }
-
-                    else if(_paneldata.condop=="HIH"){
-                        parentGranda.insertAdjacentHTML( 'beforebegin', "{{#ifGreater actor.data.attributes." + _paneldata.condat + attProp + " '" + _paneldata.condvalue + "'}}" );
-                        parentGranda.insertAdjacentHTML( 'afterend', "{{/ifGreater}}" );
-                    }
-
-                    else if(_paneldata.condop=="LOW"){
-                        parentGranda.insertAdjacentHTML( 'beforebegin', "{{#ifLess actor.data.attributes." + _paneldata.condat + attProp + " '" + _paneldata.condvalue + "'}}" );
-                        parentGranda.insertAdjacentHTML( 'afterend', "{{/ifLess}}" );
-                    }
-                }
+                //                if(_paneldata.condop!="NON"){
+                //                    let attProp = ".value";
+                //                    if(_paneldata.condat!=null){
+                //                        if(_paneldata.condat.includes("max")){
+                //                            attProp = "";
+                //                        }
+                //                    }
+                //
+                //
+                //                    if(_paneldata.condop=="EQU"){
+                //                        if(_paneldata.condvalue == "true"||_paneldata.condvalue == "false" || typeof _paneldata.condvalue ==="boolean"){
+                //                            parentGranda.insertAdjacentHTML( 'beforebegin', "{{#if actor.data.attributes." + _paneldata.condat + attProp + "}}" );
+                //                            parentGranda.insertAdjacentHTML( 'afterend', "{{/if}}" );
+                //                        }
+                //                        else{
+                //                            parentGranda.insertAdjacentHTML( 'afterbegin', "{{#ifCond actor.data.attributes." + _paneldata.condat + attProp + " '" + _paneldata.condvalue + "'}}" );
+                //                            parentGranda.insertAdjacentHTML( 'beforeend', "{{/ifCond}}" );
+                //                        }
+                //
+                //                    }
+                //
+                //                    else if(_paneldata.condop=="HIH"){
+                //                        parentGranda.insertAdjacentHTML( 'afterbegin', "{{#ifGreater actor.data.attributes." + _paneldata.condat + attProp + " '" + _paneldata.condvalue + "'}}" );
+                //                        parentGranda.insertAdjacentHTML( 'beforeend', "{{/ifGreater}}" );
+                //                    }
+                //
+                //                    else if(_paneldata.condop=="LOW"){
+                //                        parentGranda.insertAdjacentHTML( 'afterbegin', "{{#ifLess actor.data.attributes." + _paneldata.condat + attProp + " '" + _paneldata.condvalue + "'}}" );
+                //                        parentGranda.insertAdjacentHTML( 'beforeend', "{{/ifLess}}" );
+                //                    }
+                //                }
 
             }
 
@@ -1794,7 +1843,7 @@ export class gActorSheet extends ActorSheet {
         }
         console.log("almost there");
         await parentRow.appendChild(div6);
-        //console.log(parentRow);
+        console.log(div6);
 
         //ADD VISIBILITY RULES TO PANEL
         if(tabpanel.data.condop!="NON"){
@@ -1837,6 +1886,8 @@ export class gActorSheet extends ActorSheet {
             if(tabpanel.data.contentalign == "center")
                 div6.className += " centertext";
         }
+
+        console.log(div6);
 
         console.log("almost there 2");
         let finalreturn = new XMLSerializer().serializeToString(deftemplate);
@@ -2205,7 +2256,8 @@ export class gActorSheet extends ActorSheet {
                         let singlepanel = game.items.get(multipanels[j].id);
                         //console.log(multipanels[j]);
                         //LAst argument is only to pass the conditionals. Poorly done, to fix in the future.
-                        newHTML = await this.addNewPanel(newHTML,singlepanel.data,titem.data.tabKey,tabname,firstmrow,tabpanel.data.data.panelKey,tabpanel.data.data.title,tabpanel.data.data);
+                        newHTML = await this.addNewPanel(newHTML,singlepanel.data,titem.data.tabKey,tabname,firstmrow,tabpanel.data.data.panelKey,tabpanel.data.data.title);
+                        newHTML = await this.addMultipanelVisibility(newHTML,tabpanel.data.data.panelKey,tabpanel.data.data.condat,tabpanel.data.data.condop,tabpanel.data.data.condvalue);
                         if(firstmrow)
                             flags.rwidth += multiwidth;
                         firstmrow = false;
@@ -2232,6 +2284,45 @@ export class gActorSheet extends ActorSheet {
         //console.log(deftemplate);
 
         await this.registerHTML(deftemplate.querySelector("#sheet").outerHTML);
+    }
+
+    async addMultipanelVisibility(html,multiKey,att,op,val){
+        let deftemplate = new DOMParser().parseFromString(html, "text/html");
+        let parentGranda = deftemplate.getElementById(multiKey + "multi" );
+        if(op!="NON"){
+            let attProp = ".value";
+            if(att!=null){
+                if(att.includes("max")){
+                    attProp = "";
+                }
+            }
+
+
+            if(op=="EQU"){
+                if(val == "true"||val == "false" || typeof val ==="boolean"){
+                    parentGranda.insertAdjacentHTML( 'beforebegin', "{{#if actor.data.attributes." + att + attProp + "}}" );
+                    parentGranda.insertAdjacentHTML( 'afterend', "{{/if}}" );
+                }
+                else{
+                    parentGranda.insertAdjacentHTML( 'afterbegin', "{{#ifCond actor.data.attributes." + att + attProp + " '" + val + "'}}" );
+                    parentGranda.insertAdjacentHTML( 'beforeend', "{{/ifCond}}" );
+                }
+
+            }
+
+            else if(op=="HIH"){
+                parentGranda.insertAdjacentHTML( 'afterbegin', "{{#ifGreater actor.data.attributes." + att + attProp + " '" + val + "'}}" );
+                parentGranda.insertAdjacentHTML( 'beforeend', "{{/ifGreater}}" );
+            }
+
+            else if(op=="LOW"){
+                parentGranda.insertAdjacentHTML( 'afterbegin', "{{#ifLess actor.data.attributes." + att + attProp + " '" + val + "'}}" );
+                parentGranda.insertAdjacentHTML( 'beforeend', "{{/ifLess}}" );
+            }
+        }
+
+        let finalreturn = new XMLSerializer().serializeToString(deftemplate);
+        return finalreturn;
     }
 
     hideTabsinTemplate(){
@@ -2495,7 +2586,7 @@ export class gActorSheet extends ActorSheet {
                 await this.actor.update({"data.citems": subitems});
             }
         }
-        console.log("updating after drop");
+        //console.log("updating after drop");
 
 
         return subitems;
@@ -2560,7 +2651,7 @@ export class gActorSheet extends ActorSheet {
             //console.log(html);
             let tableID = totalTables[i].tableID;
             let table = html[i];
-            let inputgroup
+            let inputgroup;
 
             //let table = html.find(y=>y.id==tableID);
             //console.log(tableID);
@@ -2570,28 +2661,42 @@ export class gActorSheet extends ActorSheet {
                 inputgroup = table.getAttribute("inputgroup");
             }
 
+            if(inputgroup==null)
+                inputgroup="";
+
             const propTable = await propitems.find(y=>y.id == tableID);
 
             //const propTable = await propitems.find(y=>y.id == html[i].getAttribute("attid"));
             let group;
             let groupID;
             let tableKey;
+            let isFree;
 
             if(propTable!=null){
                 groupID = propTable.data.data.group;
                 group = game.items.get(groupID.id);
                 tableKey = propTable.data.data.attKey;
+                isFree = propTable.data.data.isfreetable;
             }
 
             if(group!=null){
 
                 let groupprops = group.data.data.properties;
-                let groupcitems = await citems.filter(y=>y.groups.find(item=>item.id==groupID.id));
-                groupcitems = groupcitems.sort(auxMeth.dynamicSort("name"));
+                let groupcitems;
+
+                if(isFree){
+                    groupcitems = attributes[tableKey].tableitems;
+                }
+                else{
+                    groupcitems = await citems.filter(y=>y.groups.find(item=>item.id==groupID.id));
+                    groupcitems = groupcitems.sort(auxMeth.dynamicSort("name")); 
+                }
 
                 for (let n=0;n<groupcitems.length;n++){
                     let ciObject = groupcitems[n];
-                    let ciTemplate = game.items.get(ciObject.id);
+                    let ciTemplate;
+                    if(!isFree)
+                        ciTemplate = game.items.get(ciObject.id);
                     //console.log(ciObject.name);
                     let new_row = document.createElement("TR");
                     new_row.className="table-row";
@@ -2601,9 +2706,9 @@ export class gActorSheet extends ActorSheet {
                     if(table!=null)
                         table.appendChild(new_row);
 
-                    if(ciObject!=null && ciTemplate!=null){
+                    if(ciObject!=null && (ciTemplate!=null||isFree)){
                         //Link Element
-                        if(propTable.data.data.onlynames=="DEFAULT" || propTable.data.data.onlynames=="ONLY_NAMES"){
+                        if((propTable.data.data.onlynames=="DEFAULT" || propTable.data.data.onlynames=="ONLY_NAMES")&& !isFree){
                             let firstcell = document.createElement("TD");
                             firstcell.className = "input-free linkable";
                             firstcell.className += " " + inputgroup;
@@ -2614,14 +2719,14 @@ export class gActorSheet extends ActorSheet {
                         }
 
 
-                        if(propTable.data.data.onlynames!="ONLY_NAMES"){
-                            if(propTable.data.data.hasactivation){
+                        if((propTable.data.data.onlynames!="ONLY_NAMES")){
+                            if(propTable.data.data.hasactivation && !isFree){
                                 let activecell = document.createElement("TD");
                                 activecell.className = "input-min centertext";                   
                                 activecell.className += " " + inputgroup;                   
                                 new_row.appendChild(activecell);
 
-                                if(ciObject.usetype=="ACT"){
+                                if(ciObject.usetype=="ACT"  && !isFree){
                                     let activeinput = document.createElement("INPUT");
                                     activeinput.className = "centertext";
                                     activeinput.className += " " + inputgroup;
@@ -2633,7 +2738,7 @@ export class gActorSheet extends ActorSheet {
                                     activecell.appendChild(activeinput);
                                 }
 
-                                else if(ciObject.usetype=="CON"){
+                                else if(ciObject.usetype=="CON"  && !isFree){
                                     let inputwrapper = document.createElement('a');
                                     let torecharge = false;
 
@@ -2678,7 +2783,7 @@ export class gActorSheet extends ActorSheet {
 
                             }
 
-                            if(propTable.data.data.hasunits){
+                            if(propTable.data.data.hasunits && !isFree){
                                 let numcell = document.createElement("TD");
                                 numcell.className = "input-min centertext";                   
                                 numcell.className += " " + inputgroup;                  
@@ -2697,7 +2802,7 @@ export class gActorSheet extends ActorSheet {
                             }
 
                             //REMOVE USES WORKSTREAM
-                            if(propTable.data.data.hasuses && propTable.data.data.hasactivation){
+                            if(propTable.data.data.hasuses && propTable.data.data.hasactivation && !isFree){
                                 let usescell = document.createElement("TD");
                                 usescell.className = "tabblock-center";                   
                                 usescell.className += " " + inputgroup;                  
@@ -2718,11 +2823,9 @@ export class gActorSheet extends ActorSheet {
 
                                     let maxuses = ciObject.maxuses;
 
-
-                                    maxuses = await auxMeth.autoParser(ciTemplate.data.data.maxuses,attributes,ciObject.attributes,false);
+                                    if(!isFree)
+                                        maxuses = await auxMeth.autoParser(ciTemplate.data.data.maxuses,attributes,ciObject.attributes,false);
                                     maxuses = parseInt(maxuses);
-
-                                    //console.log(ciTemplate.name);
 
                                     let ciuses = ciObject.uses;
 
@@ -2771,7 +2874,8 @@ export class gActorSheet extends ActorSheet {
                                 let new_cell = document.createElement("TD");
                                 let isconstant = groupprops[k].isconstant;
 
-                                new_cell.className = "centertext";
+                                new_cell.className = "centertext ";
+                                new_cell.className += propKey;
                                 new_cell.className += " " + inputgroup;
 
                                 if(((ciObject.attributes[propKey]!=null && propdata.datatype!="label")||(propdata.datatype=="label")) && !propdata.ishidden){
@@ -2789,7 +2893,14 @@ export class gActorSheet extends ActorSheet {
                                         if(isconstant)
                                             isdisabled = true;
                                         textiContainer.addEventListener("click", (event) => {
-                                            this.showTextAreaDialog(ciObject.id,propKey,isdisabled);
+                                            if(isFree){
+                                                this.showFreeTextAreaDialog(ciObject.id,tableKey,propKey,isdisabled);
+                                            }
+                                            else{
+                                                this.showTextAreaDialog(ciObject.id,propKey,isdisabled);
+                                            }
+
+
                                         }); 
                                         //}
 
@@ -2799,7 +2910,13 @@ export class gActorSheet extends ActorSheet {
 
                                         let constantvalue;
                                         if(propdata.datatype!="label")
-                                            constantvalue = ciTemplate.data.data.attributes[propKey].value;
+                                            if(!isFree){
+                                                constantvalue = ciTemplate.data.data.attributes[propKey].value;
+                                            }
+
+                                            else{
+                                                constantvalue = propdata.defvalue;
+                                            }
 
                                         if(isconstant){
 
@@ -2811,6 +2928,22 @@ export class gActorSheet extends ActorSheet {
                                                     //console.log("adding roll");
                                                     let dieContainer = document.createElement("DIV");
                                                     dieContainer.setAttribute("title",propdata.tag);
+                                                    dieContainer.className = "";
+                                                    if(propdata.labelsize=="S"){
+                                                        dieContainer.className += "label-small";
+                                                    }
+
+                                                    else if(propdata.labelsize=="T"){
+                                                        dieContainer.className += "label-tiny";
+                                                    }
+
+                                                    else if(propdata.labelsize=="M"){
+                                                        dieContainer.className += "label-med";
+                                                    }
+
+                                                    else if(propdata.labelsize=="L"){
+                                                        dieContainer.className += "label-large";
+                                                    }
 
                                                     let dieSymbol = document.createElement('i');
                                                     dieSymbol.className = "fas fa-dice-d20";
@@ -2862,9 +2995,29 @@ export class gActorSheet extends ActorSheet {
 
                                             }
 
+                                            if(propdata.labelsize=="F"){
+                                                new_cell.className += " label-free";
+                                            }
+
+                                            else if(propdata.labelsize=="S"){
+                                                new_cell.className += " label-small";
+                                            }
+
+                                            else if(propdata.labelsize=="T"){
+                                                new_cell.className += " label-tiny";
+                                            }
+
+                                            else if(propdata.labelsize=="M"){
+                                                new_cell.className += " label-med";
+                                            }
+
+                                            else if(propdata.labelsize=="L"){
+                                                new_cell.className += " label-large";
+                                            }
+
                                             if(propdata.hasroll){
                                                 new_cell.className += " rollable";
-                                                new_cell.addEventListener('click',this._onRollCheck.bind(this,groupprops[k].id,ciObject.id,false),false);
+                                                new_cell.addEventListener('click',this._onRollCheck.bind(this,groupprops[k].id,ciObject.id,false,isFree,tableKey),false);
                                             }
                                         }
 
@@ -2910,15 +3063,19 @@ export class gActorSheet extends ActorSheet {
                                                 cellvalue = document.createElement("INPUT");
                                                 cellvalue.setAttribute("type", "text");
 
-                                                cellvalue.className = "table-input table-free";
+                                                cellvalue.className = "table-input";
                                                 cellvalue.className += " " + inputgroup;
-                                                if(propdata.inputsize!=null){
+                                                if(propdata.inputsize!=null && k>0){
                                                     if(propdata.inputsize=="F"){
-
+                                                        cellvalue.className += "  table-free";
                                                     }
 
                                                     else if(propdata.inputsize=="S"){
                                                         cellvalue.className += " input-small";
+                                                    }
+
+                                                    else if(propdata.inputsize=="T"){
+                                                        cellvalue.className += " input-tiny";
                                                     }
 
                                                     else if(propdata.inputsize=="M"){
@@ -2981,7 +3138,12 @@ export class gActorSheet extends ActorSheet {
 
                                             }
 
-                                            new_cell.addEventListener("change", (event) => this.saveNewCIAtt(ciObject.id,groupprops[k].id,event.target.value));
+                                            if(!isFree){
+                                                new_cell.addEventListener("change", (event) => this.saveNewCIAtt(ciObject.id,groupprops[k].id,event.target.value)); 
+                                            }
+                                            else{
+                                                new_cell.addEventListener("change", (event) => this.saveNewFreeItem(ciObject.id,tableKey,propKey,event.target.value));
+                                            }
 
                                             new_cell.appendChild(cellvalue);
 
@@ -3009,7 +3171,13 @@ export class gActorSheet extends ActorSheet {
 
                             let wrapdeleteBton = document.createElement('i');
                             wrapdeleteBton.className = "fas fa-times-circle";
-                            wrapdeleteBton.addEventListener('click',this.deleteCItem.bind(this,ciObject.id,false),false);
+                            if(!isFree){
+                                wrapdeleteBton.addEventListener('click',this.deleteCItem.bind(this,ciObject.id,false),false);
+                            }
+                            else{
+                                wrapdeleteBton.addEventListener('click',this.deleteFreeItem.bind(this,ciObject.id,tableKey),false);
+                            }
+
                             wrapdeleteCell.appendChild(wrapdeleteBton);
 
                             new_row.appendChild(deletecell);
@@ -3040,6 +3208,30 @@ export class gActorSheet extends ActorSheet {
                     if(table!=null)
                         table.appendChild(new_row);
 
+                }
+
+                if(isFree){
+                    let new_row = document.createElement("TR");
+                    new_row.className="transparent-row";
+                    if(inputgroup)
+                        new_row.className += " " + inputgroup;
+                    new_row.setAttribute("id", propTable.data.data.attKey + "_plus");
+
+                    let new_pluscell = document.createElement("TD");
+                    new_pluscell.className = "pluscell";
+
+                    let plusContainer = document.createElement("A");
+                    plusContainer.className = "mod-button addRow";
+                    //plusContainer.addEventListener('click',this.addFreeRow.bind(propTable.data.data.attKey),false);
+                    plusContainer.addEventListener("click", (event) => this.addFreeRow(propTable.data.data.attKey));
+
+                    let plusButton = document.createElement("I");
+                    plusButton.className = "fas fa-plus-circle fa-1x";
+
+                    plusContainer.appendChild(plusButton);
+                    new_pluscell.appendChild(plusContainer);
+                    new_row.appendChild(new_pluscell);
+                    table.appendChild(new_row);
                 }
 
                 if(propTable.data.data.hastotals && table!=null){
@@ -3178,6 +3370,48 @@ export class gActorSheet extends ActorSheet {
         d.render(true);
     }
 
+    showFreeTextAreaDialog(freeId,freeTableKey,freePropKey,disabled){
+
+        let freeitem = this.actor.data.data.attributes[freeTableKey].tableitems.find(y=>y.id == freeId);
+        let isdisabled = ""
+        if(disabled)
+            isdisabled = "disabled";
+
+
+        let d = new Dialog({
+            title: "Item Num " + freeId,
+            content: '<textarea id="dialog-textarea" class="texteditor-large"' + isdisabled + '>' + freeitem.attributes[freePropKey].value + '</textarea>',
+            buttons: {
+                one: {
+                    icon: '<i class="fas fa-check"></i>',
+                    label: "Save",
+                    callback: async (html) => {
+                        if(!disabled){
+                            let key = "data.attributes." + freeTableKey + ".tableitems[" + freeId + "].attributes." + freePropKey + ".value";
+                            let freeattributes = duplicate(this.actor.data.data.attributes[freeTableKey].tableitems);
+                            freeattributes[freeId].attributes[freePropKey].value = d.data.dialogValue;
+                            await this.actor.update({[`data.attributes.${freeTableKey}.tableitems`]: freeattributes});
+                        }
+
+                    }
+                },
+                two: {
+                    icon: '<i class="fas fa-times"></i>',
+                    label: "Cancel",
+                    callback: () => {console.log("canceling text edition");}
+                }
+            },
+            default: "one",
+            close: () => {
+                console.log("Text edition dialog was shown to player.");
+            },
+            citemText: true,
+            dialogValue: freeitem.attributes[freePropKey].value
+        });
+
+        d.render(true);
+    }
+
     async saveNewCIAtt(ciId,propId, value){
         console.log("changing citem");
         let cItemsID = duplicate(this.actor.data.data.citems);
@@ -3210,6 +3444,13 @@ export class gActorSheet extends ActorSheet {
 
     }
 
+    async saveNewFreeItem(id, tableKey, propKey, value){
+        let myfreeItems = await duplicate(this.actor.data.data.attributes[tableKey].tableitems);
+        let myItem = myfreeItems.find(y=>y.id == id);
+        myItem.attributes[propKey].value = value;
+        await this.actor.update({[`data.attributes.${tableKey}.tableitems`] : myfreeItems});
+    }
+
     linkCItem(evt){
         //console.log();
         let item = game.items.get(evt.currentTarget.getAttribute("item_id"));
@@ -3233,7 +3474,7 @@ export class gActorSheet extends ActorSheet {
         }
         //console.log(citem.maxuses);
         if(iscon && citem.maxuses>0){
-            citem.uses -=1;
+
 
             if(citem.uses>=0){
                 let actualItems = Math.ceil(parseInt(citem.uses)/citem.maxuses);
@@ -3242,6 +3483,8 @@ export class gActorSheet extends ActorSheet {
                     citem.number = actualItems;
                 //}
             }
+
+            citem.uses -=1;
 
 
         }
@@ -3275,6 +3518,7 @@ export class gActorSheet extends ActorSheet {
     async deleteCItem(itemID, cascading=false){
         //get Item
         //console.log("deleting");
+
         let subitems = await this.actor.deletecItem(itemID, cascading);
         //console.log(subitems);
         if(this.actor.isToken){
@@ -3292,6 +3536,49 @@ export class gActorSheet extends ActorSheet {
 
         //await this.actor.update(this.actor.data);
 
+    }
+
+    async addFreeRow(tableKey){
+
+        let myfreeItems = await duplicate(this.actor.data.data.attributes[tableKey].tableitems);
+        let lastIndex=-1;
+        if(myfreeItems.length)
+            lastIndex = myfreeItems[myfreeItems.length-1].id;
+
+        let newItem = {};
+        newItem.attributes= {};
+        newItem.icon = "star";
+        newItem.id = lastIndex+1;
+
+        //Get element values
+        let tableTemplate = game.items.find(y=>y.data.type=="property" && y.data.data.datatype == "table" && y.data.data.attKey == tableKey);
+
+        if(tableTemplate!=null){
+            let tableGroup = tableTemplate.data.data.group.id;
+            if(tableGroup!=null){
+                let groupTemplate = game.items.get(tableGroup);
+                let groupProps = groupTemplate.data.data.properties;
+                if(groupProps.length>0){
+                    for(let i=0;i<groupProps.length;i++){
+                        let propTemplate = game.items.get(groupProps[i].id);
+                        newItem.attributes[propTemplate.data.data.attKey]={};
+                        newItem.attributes[propTemplate.data.data.attKey].value=propTemplate.data.data.defvalue;
+                    }
+                }
+            }
+
+        }
+
+        myfreeItems.push(newItem);
+        await this.actor.update({[`data.attributes.${tableKey}.tableitems`] : myfreeItems});
+
+
+    }
+
+    async deleteFreeItem(id,tableKey){
+        let myfreeItems = await duplicate(this.actor.data.data.attributes[tableKey].tableitems);
+        myfreeItems.splice(myfreeItems.indexOf(myfreeItems.find(y=>y.id == id)),1);
+        await this.actor.update({[`data.attributes.${tableKey}.tableitems`] : myfreeItems});
     }
 
     handleGMinputs(basehtml){
@@ -3523,7 +3810,7 @@ export class gActorSheet extends ActorSheet {
 
     }
 
-    displaceTabs(prev){
+    displaceTabs(prev,newhtml){
         //console.log("retabbing");
         const flags = this.actor.data.flags;
 
@@ -3536,6 +3823,9 @@ export class gActorSheet extends ActorSheet {
         }
 
         const tabs = $(this._element)[0].getElementsByClassName("tab-button");
+
+        //        console.log(tabs);
+        //        console.log($(newhtml).find(".tab-button"));
 
         const sheettabs = [];
         var oneactive = false;
@@ -3628,6 +3918,182 @@ export class gActorSheet extends ActorSheet {
 
     }
 
+    async displaceTabs2(next=null, newhtml){
+        //console.log("displacing");
+        let tabs;
+        let nonbio = false;
+
+        if(game.user.isGM){
+            tabs = $(newhtml).find(".tab-button");
+        }
+        else{
+            tabs = $(newhtml).find(".player-tab");
+        }
+
+        if(!this.actor.data.data.biovisible){
+            nonbio = true;
+        }
+
+        let activetab = $(newhtml).find(".tab-button.active");
+
+        if(activetab[0].classList.contains("desc-tab") && nonbio){
+            tabs[1].click();
+        }
+
+        let foundfirst = false;
+        let passedfirst = false;
+        let maxtabs = parseInt(duplicate(this.actor.data.data.visitabs))-1;
+        let totaltabs = tabs.length;
+        //console.log(tabs);
+
+        //        let spacer = totaltabs - activetab.index();
+        //        console.log(spacer);
+        let tabcounter = 0;
+        let firsthidden = false;
+        tabs.each(async function(i,tab){
+
+            let nexttab = tabs[i+1];
+            let lasttab = tabs[i+maxtabs+1];
+            let isvisible = false;
+
+            if(nonbio){
+                if(tab.classList.contains("desc-tab")){
+                    if(!tab.classList.contains("hidden-tab"))
+                        tab.classList.add("hidden-tab");
+                    tab.classList.remove("visible-tab");
+
+                    if(tab.classList.contains("active")){
+                        tab.classList.remove("active");
+                        nexttab.classList.add("active");
+                    }
+
+                }
+
+            }
+
+            if(tab.classList.contains("active")){
+                if(!tab.classList.contains("hidden-tab"))
+                    tab.classList.add("visible-tab");
+            }
+
+            if(tab.classList.contains("visible-tab")){
+                isvisible = true;
+            }
+
+            if(next=="next" && lasttab!=null){
+                //console.log("next");
+
+                if(isvisible){
+                    if(!firsthidden){
+                        //console.log("hiding " + i);
+                        if(!tab.classList.contains("hidden-tab"))
+                            tab.classList.add("hidden-tab");
+                        tab.classList.remove("visible-tab");
+                        firsthidden = true;
+                    }
+
+                    else{
+                        tabcounter += 1;
+                    }
+
+                }
+
+                else{
+                    if(tabcounter>maxtabs || !firsthidden){
+                        //console.log("hiding " + i);
+
+                        if(!tab.classList.contains("hidden-tab"))
+                            tab.classList.add("hidden-tab");
+                        tab.classList.remove("visible-tab");
+
+
+                    }
+
+                    else{
+                        //console.log("showing " + i);
+                        tabcounter += 1;
+                        if(!tab.classList.contains("visible-tab"))
+                            tab.classList.add("visible-tab");
+                        tab.classList.remove("hidden-tab");
+                    }
+                }
+
+
+            }
+
+            else if(next=="prev" ){
+                //console.log("prev");
+
+                if(isvisible){
+                    if(tabcounter>maxtabs){
+                        //console.log("hiding " + i);
+                        if(!tab.classList.contains("hidden-tab"))
+                            tab.classList.add("hidden-tab");
+                        tab.classList.remove("visible-tab");
+                        firsthidden = true;
+                    }
+
+                    else{
+                        //console.log("keep showing " + i);
+                        tabcounter += 1;
+                    }
+
+                }
+
+                else{
+                    if(nexttab!=null){
+
+                        if(nexttab.classList.contains("visible-tab") && !firsthidden){
+                            //console.log("showing " + i);
+                            if((nonbio && !tab.classList.contains("desc-tab")) || (!nonbio)){
+                                tabcounter += 1;
+                                if(!tab.classList.contains("visible-tab"))
+                                    tab.classList.add("visible-tab");
+                                tab.classList.remove("hidden-tab");
+                                firsthidden = true;
+                            }
+                        } 
+                    }
+
+                }
+            }
+
+            else{
+                //console.log("idle");
+                if(isvisible){
+                    if(tabcounter > maxtabs){
+                        if(!tab.classList.contains("hidden-tab"))
+                            tab.classList.add("hidden-tab");
+                        tab.classList.remove("visible-tab");
+                    }
+
+                    else{
+
+                        tabcounter += 1;
+                    }
+
+                }
+
+                else{
+                    if(tabcounter<=maxtabs && tabcounter>0){
+                        tabcounter +=1;
+                        if(!tab.classList.contains("visible-tab"))
+                            tab.classList.add("visible-tab");
+                        tab.classList.remove("hidden-tab");
+                    }
+
+                    else{
+                        if(!tab.classList.contains("hidden-tab"))
+                            tab.classList.add("hidden-tab");
+                        tab.classList.remove("visible-tab");
+                    }
+                }
+            }
+
+        })
+
+    }
+
     async setSheetStyle(){
         //console.log(this.actor.data.data.gtemplate);
 
@@ -3659,7 +4125,7 @@ export class gActorSheet extends ActorSheet {
 
         //Set Background
         if(_mytemplate.data.data.backg!=""){
-            bground[0].style.background = "url(" + _mytemplate.data.data.backg + ") no-repeat";
+            bground[0].style.background = "url(" + _mytemplate.data.data.backg + ") repeat";
         }
 
 
