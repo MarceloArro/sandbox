@@ -1,7 +1,27 @@
-<header class="message-header flexrow">
-    <h4 class="message-sender">Gamemaster</h4>
-    <span class="message-metadata">
-        <time class="message-timestamp">Now</time>
-        <a class="button message-delete"><i class="fas fa-trash"></i></a>
-    </span>
-</header>
+<div class="sbchat-template">
+    <div class="sbchat-content">
+
+        <div class="sbchat-flexrow sbchat-header">
+
+            <div class="sbchat-flexrow roll-underline">
+                <h4 class="sbchat-sender-name">{{user}}</h4>
+                <span class="roll-delete-button">
+                    {{#isGM}}
+                    <a class="roll-message-delete"><i class="fas fa-trash"></i></a>
+                    {{/isGM}}
+                </span>
+            </div>
+
+        </div>
+
+        <div class="sbchat-message">
+            {{{message}}}
+        </div>
+
+        <div class="sbchat-flexrow centertext">
+            <div class="sbchat-timestamp message-timestamp">
+                {{{data.timestamp}}}
+            </div>
+        </div>
+    </div>
+</div>
