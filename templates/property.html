@@ -10,8 +10,8 @@
     {{!-- Sheet Tab Navigation --}}
     <div class="atabs">
         <nav class="sheet-tabs tabs" data-group="primary">
-            <a class="item" data-tab="description">Description</a>
-            <a class="item" data-tab="details">Details</a>
+            <a class="item item-tab-button" data-tab="description">Description</a>
+            <a class="item item-tab-button" data-tab="details">Details</a>
         </nav>
     </div>
     {{!-- Sheet Body --}}
@@ -104,6 +104,15 @@
                     </div>
                     {{/if}}
                     {{/ifCond}}
+
+<!--
+                    <div class="new-row">
+                        <div class="flexblock-left">
+                            <label class="label-medlarge">Is Free?</label>
+                            <input class="check-isfreetable" name="data.isfreetable" id="check-isfreetable" type="checkbox" {{checked item.data.data.isfreetable}}/>
+                        </div>
+                    </div>
+-->
 
                     <div class="new-row">
                         <div class="flexblock-left">
@@ -202,6 +211,7 @@
                                 {{#select item.data.data.labelsize}}
                                 <option  value="F">Fit</option>
                                 <option  value="S">Small</option>
+                                <option  value="T">Tiny</option>
                                 <option  value="M">Medium</option>
                                 <option  value="L">Large</option>
                                 {{/select}}
@@ -246,6 +256,7 @@
                             <select  name="data.inputsize"  data-type="String">
                                 {{#select item.data.data.inputsize}}
                                 <option  value="F">Fit</option>
+                                <option  value="T">Tiny</option>
                                 <option  value="S">Small</option>
                                 <option  value="M">Medium</option>
                                 <option  value="L">Large</option>
@@ -260,6 +271,7 @@
                             <label class="label-medlarge">Input Size</label>
                             <select  name="data.inputsize"  data-type="String">
                                 {{#select item.data.data.inputsize}}
+                                <option  value="T">Tiny</option>
                                 <option  value="F">Small</option>
                                 <option  value="M">Medium</option>
                                 {{/select}}
@@ -331,7 +343,7 @@
 
             <div class="flexblock">
                 {{#ifNot item.data.data.datatype "simpletext"}}
-                <div class="col-2-3">
+                <div class="col-1-2">
                     <div class="new-row">
                         <div class="flexblock-left">
                             <label class="label-medlarge">Max Value</label>
@@ -339,11 +351,19 @@
                         </div>
                     </div>
                 </div>
-                <div class="col-1-3">
+                <div class="col-1-4">
                     <div class="new-row">
                         <div class="flexblock-left">
                             <label class="label-small righttext">Visible</label>
                             <input class="check-maxvisible" name="data.maxvisible" id="check-maxvisible" type="checkbox" {{checked item.data.data.maxvisible}}/>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-1-4">
+                    <div class="new-row">
+                        <div class="flexblock-left">
+                            <label class="label-small righttext">Top</label>
+                            <input class="check-maxtop" name="data.maxtop" id="check-maxtop" type="checkbox" {{checked item.data.data.maxtop}}/>
                         </div>
                     </div>
                 </div>
