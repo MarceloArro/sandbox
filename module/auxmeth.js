@@ -85,10 +85,14 @@ export class auxMeth {
     static async registerIfHelper(){
         Handlebars.registerHelper('ifCond', function(v1, v2, options) {
 
-            if(auxMeth.isNumeric(v1))
+            let regE = /^\d+$/g;
+            let isnumv1 = v1.match(regE);
+            let isnumv2 = v2.match(regE);
+
+            if(isnumv1)
                 v1 = Number(v1);
 
-            if(auxMeth.isNumeric(v2))
+            if(isnumv2)
                 v2 = Number(v2);
 
             if(v1 === v2) {
