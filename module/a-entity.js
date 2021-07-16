@@ -3017,12 +3017,55 @@ export class gActor extends Actor{
                 op: 'target_edit',
                 user: game.user.id,
                 scene: canvas.scene.id,
+                actorId:mytoken.actor.id,
                 tokenId: tokenId,
                 attkey:attkey,
                 attvalue:attvalue,
                 istoken:myactor.istoken
             });
         }
+
+    }
+
+    async requestTransferToGM(actorID,ownerID,citemID,number){
+        console.log("requiesting to GM");
+        game.socket.emit("system.sandbox", {
+            op: 'transfer_edit',
+            user: game.user.id,
+            actorID: actorID,
+            ownerID: ownerID,
+            citemID: citemID,
+            number: number
+        });
+    }
+
+    async handleTransferEdit(data){
+        console.log("handleing transfer");
+        if(!game.user.isGM)
+            return;
+        let actorOwner = game.actors.get(data.ownerID);
+        let ownercItems = duplicate(actorOwner.data.data.citems);
+        let cItem = ownercItems.find(y=>y.id == data.citemID);
+        cItem.number -= data.number;
+
+        let actorReceiver = game.actors.get(data.actorID);
+        let receivercItems = duplicate(actorReceiver.data.data.citems);
+
+
+        try{
+            await actorOwner.update({"data.citems":ownercItems});
+            return true;
+        }
+        catch (err) {
+            let cItemRec = receivercItems.find(y=>y.id == data.citemID);
+
+            if(cItemRec !=null){
+                cItemRec.number -= data.number;
+            }
+
+            await actorReceiver.update({"data.citems":receivercItems});
+        }
+
 
     }
 
