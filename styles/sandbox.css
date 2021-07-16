@@ -991,7 +991,6 @@
 
 .sandbox.sheet table{
     width:-webkit-fill-available;
-    background-color:#bcc2bf;
     border-style:none;
     padding: 0px 0px;
     margin:0;
@@ -1027,8 +1026,14 @@
     border-bottom: 1px solid black;
 }
 
-.sandbox.sheet tr.empty-row{
-    background-color: inherit;
+.sandbox.sheet tbody tr.empty-row{
+    width:100%;
+    min-width:80px;
+    height:100%;
+}
+
+.sandbox.sheet tbody tr.transparent-row{
+    background-color: transparent;
     width:100%;
     min-width:80px;
     height:100%;
@@ -1036,6 +1041,15 @@
 
 .sandbox.sheet tr{
     border-bottom: 1px solid #ddd;
+}
+
+.sandbox.sheet th{
+    height: 26px;
+    padding: 2px 1px;
+}
+
+.sandbox.sheet tbody tr{
+    background-color:#bcc2bf;
 }
 
 .sandbox.sheet td{
@@ -1053,15 +1067,16 @@
 
 }
 
-.sandbox.sheet td.input-small {
-    width:60px;
+.sandbox.sheet td.pluscell {
+    width:100%;
     text-align: center;
 
 }
 
-.sandbox.sheet th{
-    height: 26px;
-    padding: 2px 1px;
+.sandbox.sheet td.input-small {
+    width:70px;
+    text-align: center;
+
 }
 
 .sandbox.sheet th.input-small {
@@ -1070,7 +1085,24 @@
 
 }
 
+.sandbox.sheet td.input-tiny {
+    width:50px;
+    text-align: center;
+
+}
+
+.sandbox.sheet th.input-tiny {
+    width:50px;
+    text-align: center;
+
+}
+
 .sandbox.sheet th.input-med {
+    width:130px;
+    text-align: center;
+}
+
+.sandbox.sheet td.input-med {
     width:130px;
     text-align: center;
 }
@@ -1113,10 +1145,18 @@
 }
 
 .sandbox.sheet input.table-small{
-    width:40px;
+    width:70px;
     padding:0px 0px;
 }
 
+.sandbox.sheet input.table-tiny{
+    width:50px;
+    padding:0px 0px;
+}
+
+.sandbox.sheet input-tiny{
+    width:50px;
+}
 .sandbox.sheet input-small{
     width:70px;
 }
@@ -1126,6 +1166,24 @@
 }
 
 .sandbox.sheet input-large{
+    width:150px;
+}
+.sandbox.sheet div.label-tiny,input.input-tiny,td.input-tiny,td.label-tiny{
+    width:50px;
+}
+
+.sandbox.sheet td.label-tiny{
+    width:50px;
+}
+.sandbox.sheet div.label-small,input.input-small,td.input-small,td.label-small{
+    width:70px;
+}
+
+.sandbox.sheet div.label-med,input.input-med,td.input-med,td.label-med{
+    width:110px;
+}
+
+.sandbox.sheet div.label-large,input.input-large,td.input-large,td.label-large{
     width:150px;
 }
 
@@ -1161,6 +1219,14 @@
     background: url('/systems/sandbox/styles/img/sbtexture.jpg') no-repeat;
     */
 
+}
+
+.sandbox.sheet .hidden-tab{
+    display:none;
+}
+
+.sandbox.sheet .visible-tab{
+    display:block;
 }
 
 .sandbox.sheet .modtitle{
@@ -1296,6 +1362,10 @@
     width:100%;
 }
 
+.roll-content{
+
+}
+
 .roll-flexrow{
     display: flex;
     flex-direction:row;
@@ -1378,6 +1448,47 @@
     font-style: italic;
     font-size: 12px;
     text-align:left;
+}
+
+.sbchat-template{
+    width:100%;
+}
+
+.sbchat-content{
+
+}
+
+.sbchat-message{
+    padding: 10px 10px;
+}
+
+.sbchat-flexrow{
+    display: flex;
+    flex-direction:row;
+    flex: 0 0 100%;
+    padding: 0px 5px;
+    margin:0;
+}
+
+.sbchat-header{
+
+}
+
+.sbchat-sender-name{
+    font-family: Tahoma, sans-serif;
+    font-weight: bold;
+    font-size: 14px;
+    width:100%;
+    text-align:center;
+}
+
+.sbchat-timestamp{
+    font-family: Tahoma, sans-serif;
+    font-size: 9px;
+    font-style: italic;
+    text-align:center;
+    width:100%;
+    padding:0px 5px;
 }
 
 .label-roll{
@@ -1504,6 +1615,19 @@
     flex-direction:row;
     justify-content: center;
     width:100%;
+}
+
+.sandbox-sheet .label-mod{
+    padding: 5px 15px;
+    height: 100%;
+    font-size: 18px;
+}
+
+.sandbox-sheet .input-mod{
+    padding: 0px 10px;
+    width: 50px;
+    height: 85%;
+    font-size: 13px;
 }
 
 .fa-exclamation-circle {
