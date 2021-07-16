@@ -148,15 +148,26 @@ export class gActor extends Actor{
         //MERGE ATTRIBUTES
         let attributes;
         let attKeys = Object.keys(actorData.attributes);
+        //await console.log(duplicate(updateData));
         if(updateData.attributes)
             attributes = updateData.attributes;
 
         for (var key in attributes) {
 
             if (attKeys.includes(key)) {
-                actorData.attributes[key].value = attributes[key].value;
+                if(attributes[key].value!=null)
+                    actorData.attributes[key].value = attributes[key].value;
+                if(attributes[key].modified!=null)
+                    actorData.attributes[key].modified = attributes[key].modified;
+                if(attributes[key].max!=null)
+                    actorData.attributes[key].max = attributes[key].max;
+                if(attributes[key].modmax!=null)
+                    actorData.attributes[key].modmax = attributes[key].modmax;
                 if(actorData.attributes[key].istable && hasProperty(attributes[key],"tableitems"))
                     actorData.attributes[key].tableitems = attributes[key].tableitems;
+
+                if(actorData.attributes[key].istable && hasProperty(attributes[key],"totals"))
+                    actorData.attributes[key].totals = attributes[key].totals;
             }
             else{
                 //console.log("adding " + key)
@@ -584,10 +595,14 @@ export class gActor extends Actor{
                         for(let y=0;y<group.data.data.properties.length;y++){
                             let property = group.data.data.properties[y];
                             if(property.isconstant && citem.attributes[property.ikey]){
-                                //console.log(property.ikey);
-                                if(citem.attributes[property.ikey].value != citemTemplate.data.data.attributes[property.ikey].value){
-                                    citem.attributes[property.ikey].value = citemTemplate.data.data.attributes[property.ikey].value;
+
+                                if(citem.attributes[property.ikey]!=null){
+                                    if(citemTemplate.data.data.attributes[property.ikey] !=null)
+                                        if(citem.attributes[property.ikey].value != citemTemplate.data.data.attributes[property.ikey].value){
+                                            citem.attributes[property.ikey].value = citemTemplate.data.data.attributes[property.ikey].value;
+                                        }
                                 }
+
                             }
                         }
                     }
@@ -949,34 +964,120 @@ export class gActor extends Actor{
     async checkcItemConsistency(actorData){
         //Removes cITems marked for removal CITEMS
         const citemIDs = actorData.data.citems;
+        const attributes = actorData.data.attributes;
 
         for(let k=0;k<citemIDs.length;k++){
-            let mycitem = citemIDs[k];
-            let cITemplate = game.items.get(mycitem.id);
+            const mycitem = citemIDs[k];
+            let cIOrigTemplate = game.items.get(mycitem.id);
+            let cITemplate = await duplicate(cIOrigTemplate);
+            let requestUpdate = false;
+            let updatecItem = false;
+
             //TODO CHECK FOR CHANGED ATTRIBUTES IN ORIGINAL CITEM
+            for(let j=0;j<cITemplate.data.groups.length;j++){
+                let myGroup = cITemplate.data.groups[j];
+                let myGroupTemp = game.items.get(myGroup.id);
+                let groupProps = myGroupTemp.data.data.properties;
 
-            for(let att in cITemplate.data.data.attributes){
-                if(!hasProperty(mycitem.attributes,att)){
-                    setProperty(mycitem.attributes,att,cITemplate.data.data.attributes[att].value);
+                for(let j=0;j<groupProps.length;j++){
+                    let myPropId = groupProps[j].id;
+                    let myProp = game.items.get(myPropId);
+                    let att = myProp.data.data.attKey;
+                    let tempAtt = cITemplate.data.attributes[att];
+                    let newvalue;
+
+                    if(tempAtt!=null){
+
+                        if(hasProperty(mycitem.attributes,att)){
+                            if(groupProps[j].isconstant && tempAtt.value!= mycitem.attributes[att].value){
+
+                                if(game.user.isGM){
+                                    mycitem.attributes[att].value = tempAtt.value;
+                                }
+                                else{
+                                    //REQUEST recheck
+                                    console.log("1: " + att + " " + mycitem.name);
+                                    requestUpdate = true;
+                                }
+
+                            }
+                        }
+
+                        if(game.user.isGM)
+                            newvalue = tempAtt.value;
+                    }
+
+                    else{
+                        updatecItem = true;
+                        if(myProp.data.data.datatype==="simplenumeric"){
+                            newvalue = await auxMeth.autoParser(myProp.data.data.defvalue,attributes,cITemplate.data.attributes,false); 
+                        }
+
+                        else{
+                            newvalue = await auxMeth.autoParser(myProp.data.data.defvalue,attributes,cITemplate.data.attributes,true); 
+                        }
+
+                        //GUARDA Y LUEGO ACCEDE
+                        if(game.user.isGM){
+                            setProperty(cITemplate.data.attributes,att,{});
+                            cITemplate.data.attributes[att].value = newvalue;
+                        }
+
+                        else{
+                            //REQUEST UPDATE
+                            console.log("2: " + att + " " + mycitem.name);
+                            requestUpdate = true;
+                        }
+                    }
+
+                    if(!hasProperty(mycitem.attributes,att)){
+                        if(game.user.isGM){
+                            setProperty(mycitem.attributes,att,{});
+                            setProperty(mycitem.attributes[att],"value",newvalue);
+                        }
+
+                        else{
+                            //REQUEST UPDATE
+                            //console.log(att + " not in local citem list");
+                            console.log("3: " + att + " " + mycitem.name);
+                            requestUpdate = true;
+                        }
+
+                    }
+
+
+
                 }
 
             }
 
-            for(let i=0;i<cITemplate.data.data.mods.length;i++){
-                let originalmod = cITemplate.data.data.mods[i];
-                let mymod = mycitem.mods.find(y=>y.index == originalmod.index);
-                if(mymod==null){
-                    await mycitem.mods.push({
-                        index:originalmod.index,
-                        citem: mycitem.id,
-                        once:originalmod.once,
-                        exec:false,
-                        attribute:originalmod.attribute,
-                        expr:originalmod.value,
-                        value:null
-                    });
+            if(game.user.isGM){
+                if(updatecItem){
+                    await cIOrigTemplate.update({"data.attributes":cITemplate.data.attributes});
+                }
+
+                for(let i=0;i<cITemplate.data.mods.length;i++){
+                    let originalmod = cITemplate.data.mods[i];
+                    let mymod = mycitem.mods.find(y=>y.index == originalmod.index);
+                    if(mymod==null){
+                        await mycitem.mods.push({
+                            index:originalmod.index,
+                            citem: mycitem.id,
+                            once:originalmod.once,
+                            exec:false,
+                            attribute:originalmod.attribute,
+                            expr:originalmod.value,
+                            value:null
+                        });
+                    }
                 }
             }
+
+            else{
+                if(requestUpdate == true)
+                    ui.notifications.warn("Please ask your GM to Reload template on your character, there are broken cItems");
+            }
+
         }
 
         return citemIDs;
@@ -1015,6 +1116,7 @@ export class gActor extends Actor{
             //TEST TO DELETE
             await setProperty(attdata,"autoadd",0);
             await setProperty(attdata,"maxadd",0);
+            await setProperty(attdata,"maxexec",false);
 
             attributearray.push(attribute);
 
@@ -1542,15 +1644,11 @@ export class gActor extends Actor{
                                 if(!myAtt.default && _mod.exec && !citem.ispermanent){
 
                                     //myAtt[attProp] = Number(myAtt[attProp]) - Number(finalvalue);
-                                    console.log("Previous in " + modAtt + " autoadd: " + myAtt["autoadd"]);
-                                    //TEST TO DELETE
-                                    //                                    if(attProp=="value")
-                                    //                                        myAtt["autoadd"] -= Number(finalvalue);
-                                    //                                    if(attProp=="max")
-                                    //                                        myAtt["maxadd"] -= Number(finalvalue);
+                                    //console.log("Previous in " + modAtt + " autoadd: " + myAtt["autoadd"]);
+
                                     ithaschanged = true;
 
-                                    console.log("removing auto Add to " + modAtt + " finalvalue: " + finalvalue + " autoadd: " + myAtt["autoadd"]);
+                                    //console.log("removing auto Add to " + modAtt + " finalvalue: " + finalvalue + " autoadd: " + myAtt["autoadd"]);
                                 }
 
                                 _mod.exec=false;
@@ -1742,12 +1840,13 @@ export class gActor extends Actor{
 
                             if(isNaN(rawvalue) && propdata.data.data.datatype != "simpletext"){
                                 //console.log(rawvalue);
-                                let afinal = new Roll(rawvalue).roll();
+                                let afinal = new Roll(rawvalue);
+                                await afinal.evaluate({async: true});
                                 if(!isNaN(afinal.total))
                                     rawvalue = afinal.total;
 
                             }
-
+                            //console.log(propKey + " of " + citemIDs[n].name + " is " + rawvalue);
                             citmAttr[propKey].value = rawvalue;
                         }
                     }
@@ -1976,14 +2075,11 @@ export class gActor extends Actor{
                     //console.log(rawexp);
                     //console.log(exprmode);
                     let newvalue = actorAtt.value;
-                    //console.log(newvalue);
-                    //console.log(this.data.data.attributes[attribute]);
                     rawexp = await this.expandPropsP(rawexp,attributes);
-                    //console.log(rawexp);
 
                     if(!actorAtt.isset){
                         newvalue = await auxMeth.autoParser(rawexp,attributes,null,exprmode);
-
+                        //console.log(newvalue);
                         if(actorAtt.value!=newvalue)
                             ithaschanged = true;
                         actorAtt.default= true;
@@ -2008,9 +2104,16 @@ export class gActor extends Actor{
                     rawexp = await this.expandPropsP(rawexp,attributes);
 
                     let maxval = await auxMeth.autoParser(rawexp,attributes,null,false);
+
+                    if(actorAtt.maxblocked)
+                        maxval = actorAtt.max;
+
                     //TEST TO DELETE
-                    if(property.data.data.datatype!="simpletext")
+                    if(property.data.data.datatype!="simpletext" && !actorAtt.maxexec){
+                        actorAtt.maxexec = true;
                         maxval = Number(maxval) + Number(actorAtt.maxadd);
+
+                    }
 
                     //console.log("Changing " + attribute + " max to " + maxval);
 
@@ -2021,10 +2124,15 @@ export class gActor extends Actor{
                         ithaschanged = true;
 
                         //console.log(attribute + " max: " + actorAtt.maxblocked);
-                        if(parseInt(actorAtt.value)>actorAtt.max){
-                            actorAtt.value=actorAtt.max;
-                        }
+
                     }
+
+                    actorAtt.max = maxval;
+
+                    if(parseInt(actorAtt.value)>actorAtt.max && property.data.data.maxtop){
+                        actorAtt.value=actorAtt.max;
+                    }
+
                 }
             }
         }
@@ -2308,7 +2416,8 @@ export class gActor extends Actor{
                     sRoll.expr = "0";
 
                 let partroll = new Roll(sRoll.expr);
-                let finalroll = await partroll.roll();
+                let finalroll = await partroll.evaluate({async: true});
+                //let finalroll = await partroll.roll();
                 finalroll.extraroll=true;
 
                 if(game.dice3d!=null){
@@ -2664,7 +2773,8 @@ export class gActor extends Actor{
         rollformula = await auxMeth.autoParser(rollformula,actorattributes,citemattributes,true,false,number);
         //console.log(rollexp);
         let partroll = new Roll(rollexp);
-        roll = partroll.roll();
+        roll = await partroll.evaluate({async: true});
+        //roll = partroll.roll();
 
         if(game.dice3d!=null){
             await game.dice3d.showForRoll(partroll,game.user,true);
@@ -2900,7 +3010,6 @@ export class gActor extends Actor{
                 attkey:attkey,
                 attvalue:attvalue,
                 istoken:myactor.istoken
-                //                targetattributes: targetattributes
             });
         }
 
