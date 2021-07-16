@@ -38,6 +38,7 @@ Hooks.once("init", async function() {
     auxMeth.registerIsGM();
     auxMeth.registerShowMod();
     auxMeth.registerShowSimpleRoll();
+    auxMeth.registerShowRollMod();
 
     // Register sheet application classes
     Actors.unregisterSheet("core", ActorSheet);
@@ -99,6 +100,15 @@ Hooks.once("init", async function() {
         config: false,
         default: 0,
         type: Number,
+    });
+
+    game.settings.register("sandbox", "rollmod", {
+        name: "Show Roll Modifier",
+        hint: "This number will be added to the total of all rolls",
+        scope: "world",
+        config: true,
+        default: false,
+        type: Boolean,
     });
 
     game.settings.register("sandbox", "tokenOptions", {
@@ -573,10 +583,10 @@ Hooks.on("preCreateActor", (createData) =>{
     if(createData.token!=null)
         createData.token.name = createData.name;
 
-//    if(createData.data.data.istemplate)
-//        createData.data.data.istemplate = false;
-//
-//    console.log(createData.data.data.istemplate);
+    //    if(createData.data.data.istemplate)
+    //        createData.data.data.istemplate = false;
+    //
+    //    console.log(createData.data.data.istemplate);
 
 });
 
@@ -724,18 +734,18 @@ Hooks.on("rendergActorSheet", async (app, html, data) => {
 
     }
 
-    app.displaceTabs();
+    app.displaceTabs2(null,html);
 
 });
 
 Hooks.on("renderChatMessage", async (app, html, data) => {
-    //console.log(app);
-    //console.log(data);
-    //console.log(html);
+    //    console.log(app);
+    //    console.log(data);
+    //    console.log(html);
     let hide=false;
     let messageId = app.id;
     let msg = game.messages.get(messageId);
-    //await console.log(app);
+
     let msgIndex = game.messages.contents.indexOf(msg);
 
     let _html = await html[0].outerHTML;
@@ -778,32 +788,52 @@ Hooks.on("renderChatMessage", async (app, html, data) => {
     //console.log(html);
 
     if(!_html.includes("roll-template")){
+        //console.log(_html);
         if(_html.includes("table-draw")){
             let mytableID = data.message.flags.core.RollTable;
             let mytable = game.tables.get(mytableID);
-            //console.log(mytable.data.permission.default);
+            let tableresult = mytable.getResultsForRoll(app._roll.total)[0].data.text;
+            html.find('.dice-roll');
             if(mytable.data.permission.default==0)
                 hide=true;
         }
 
-        let containerDiv = document.createElement("DIV");
+        let msgData = {
+            message: data.message.content,
+            user: realuser.data.name
+        };
 
-        let headerDiv = document.createElement("HEADER");
-        let headertext = await fetch("systems/sandbox/templates/sbmessage.html").then(resp => resp.text());
-        headerDiv.innerHTML = headertext;
+        await renderTemplate("systems/sandbox/templates/sbmessage.html", msgData).then(async newhtml => {
 
-        let msgcontent = html;
-        let messageDiv = await document.createElement("DIV");
-        messageDiv.innerHTML = _html;
+            while (html.firstChild) {
+                html.removeChild(html.lastChild);
+            }
 
-        //containerDiv.appendChild(headerDiv);
-        await containerDiv.appendChild(headerDiv);
-        await containerDiv.appendChild(messageDiv);
+            html[0].innerHTML = newhtml;
 
-        html = html[0].insertBefore(headerDiv,html[0].childNodes[0]);
-        html = $(html);
+
+        });
+
+        //        let containerDiv = document.createElement("DIV");
+        //
+        //        let headerDiv = document.createElement("HEADER");
+        //        let headertext = await fetch("systems/sandbox/templates/sbmessage.html").then(resp => resp.text());
+        //        headerDiv.innerHTML = headertext;
+        //
+        //        let msgcontent = html;
+        //        let messageDiv = await document.createElement("DIV");
+        //        messageDiv.innerHTML = _html;
+        //
+        //        //containerDiv.appendChild(headerDiv);
+        //        await containerDiv.appendChild(headerDiv);
+        //        await containerDiv.appendChild(messageDiv);
+        //
+        //        html = html[0].insertBefore(headerDiv,html[0].childNodes[0]);
+        //        html = $(html);
 
     }
+
+    //console.log(html);
 
 
 
