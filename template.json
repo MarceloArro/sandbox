@@ -63,6 +63,7 @@
             "hasuses":true,
             "hasactivation":false,
             "hastotals":false,
+            "transferrable":false,
             "onlynames":"",
             "isfreetable":false,
             "tableitems":[],
