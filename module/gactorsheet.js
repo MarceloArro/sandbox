@@ -630,6 +630,7 @@ export class gActorSheet extends ActorSheet {
         }
         else{
             if(idkey.id==null){
+                //console.log(property.data.data.attKey + " no ID needs " + attID);
                 populate = true;
             }
 
@@ -659,7 +660,7 @@ export class gActorSheet extends ActorSheet {
 
         //console.log(property.data.data.attKey + " " + property.data.data.datatype + " " + populate);
         if(!hasProperty(attData,attribute) || Object.keys(attData[attribute]).length == 0 || populate){
-            console.log("populating prop");
+            //console.log("populating prop");
             attData[attribute] = {};
             setProperty(attData[attribute],"id", "");
             attData[attribute].id =  attID;
@@ -667,7 +668,8 @@ export class gActorSheet extends ActorSheet {
             //Sets id and auto
             if(property.data.data.datatype!="table"){
 
-                setProperty(attData[attribute],"value", "");
+                if(!hasProperty(attData[attribute],"value"))
+                    setProperty(attData[attribute],"value", "");
                 setProperty(attData[attribute],"prev", "");
                 await setProperty(attData[attribute],"isset", false);
 
@@ -679,7 +681,7 @@ export class gActorSheet extends ActorSheet {
                 }
             }
             else{
-                console.log("setting table");
+                //console.log("setting table");
                 let tablegroup = property.data.data.group;
                 let groupObj = await game.items.get(tablegroup.id);
                 let groupprops = groupObj.data.data.properties;
@@ -1575,9 +1577,14 @@ export class gActorSheet extends ActorSheet {
                         }
                     }
 
+                    //Add transfer column
+                    if(property.data.transferrable){
+                        let transferCell = deftemplate.createElement("TH");
+                        transferCell.className = "input-min tableheader";
+                        header_row.appendChild(transferCell);
+                    }
 
-
-                    //Add name ta
+                    //Add delete column
                     let deleteCell = deftemplate.createElement("TH");
                     deleteCell.className = "cell-empty";
                     header_row.appendChild(deleteCell);
@@ -2478,9 +2485,10 @@ export class gActorSheet extends ActorSheet {
         event.preventDefault();
         event.stopPropagation();
         let dropitem;
+        let dropdata;
 
         try {
-            let dropdata = JSON.parse(event.dataTransfer.getData('text/plain'));
+            dropdata = JSON.parse(event.dataTransfer.getData('text/plain'));
             dropitem = game.items.get(dropdata.id);
 
             if ( dropitem.data.type !== "sheettab" && dropitem.data.type !== "cItem") {
@@ -2493,6 +2501,15 @@ export class gActorSheet extends ActorSheet {
             console.log(event.dataTransfer.getData('text/plain'));
             console.log(err);
             return false;
+        }
+
+        if(dropdata.ownerID){
+
+            if(this.actor.id == dropdata.ownerID)
+                return;
+
+            this.showTransferDialog(dropdata.id,dropdata.ownerID);
+            return;
         }
 
         let subitemsTag;
@@ -2609,12 +2626,12 @@ export class gActorSheet extends ActorSheet {
         //console.log(basehtml);
         //GET CITEMS
         let myactor = this.actor.data.data;
+
         if(this.actor.isToken){
             let tokenId = this.id.split("-")[2];
             let mytoken = canvas.tokens.get(tokenId);
             myactor = mytoken.actor.data.data;
         }
-
         const citems = myactor.citems;
         const attributes = myactor.attributes;
 
@@ -2625,7 +2642,9 @@ export class gActorSheet extends ActorSheet {
         //Gets all game properties
         const propitems = game.items.filter(y=>y.data.type=="property" && y.data.data.datatype == "table");
         //console.log(propitems);
+
         let totalTables = [];
+        let forceUpdate = false;
 
         for(let y=0;y<html.length;y++){
             let tableID = html[y].id;
@@ -2695,8 +2714,15 @@ export class gActorSheet extends ActorSheet {
                 for (let n=0;n<groupcitems.length;n++){
                     let ciObject = groupcitems[n];
                     let ciTemplate;
-                    if(!isFree)
+                    if(!isFree){
                         ciTemplate = game.items.get(ciObject.id);
+                        if(ciTemplate==null){
+                            citems.splice(citems.indexOf(ciObject),1);
+                            forceUpdate = true;
+                            continue;
+                        }
+                    }
+
                     //console.log(ciObject.name);
                     let new_row = document.createElement("TR");
                     new_row.className="table-row";
@@ -3158,6 +3184,22 @@ export class gActorSheet extends ActorSheet {
                             }
                         }
 
+                        //Add transfer column
+                        if(propTable.data.data.transferrable){
+                            let transferCell = document.createElement("TD");
+                            transferCell.className = "ci-transfercell";
+
+                            let wraptransferCell = document.createElement('A');
+                            wraptransferCell.className = "ci-transfer";
+                            wraptransferCell.className += " " + inputgroup;
+                            wraptransferCell.title = "Grab Item";
+                            wraptransferCell.draggable = "true";
+                            transferCell.appendChild(wraptransferCell);
+
+                            transferCell.addEventListener("dragstart", (event) => this.dragcItem(event,ciObject.id,ciObject.number, this.actor.id));
+                            new_row.appendChild(transferCell);
+                        }
+
 
                         //Delete Element
                         if(propTable.data.data.editable || game.user.isGM){
@@ -3182,6 +3224,8 @@ export class gActorSheet extends ActorSheet {
 
                             new_row.appendChild(deletecell);
                         }
+
+
                     }
 
                 }
@@ -3309,6 +3353,16 @@ export class gActorSheet extends ActorSheet {
 
                         }
 
+                        //For transfer cell
+                        if(propTable.data.data.transferrable){
+                            let empty_cell = document.createElement("TD");
+                            if(lastRow.children[cellcounter])
+                                empty_cell.className = lastRow.children[cellcounter].className;
+                            new_row.appendChild(empty_cell);
+                            cellcounter +=1;
+                        }
+
+                        //Extra for deleted cell
                         if(propTable.data.data.editable || game.user.isGM){
                             let empty_cell = document.createElement("TD");
                             if(lastRow.children[cellcounter])
@@ -3328,7 +3382,104 @@ export class gActorSheet extends ActorSheet {
             }
 
         }
+
+        if(forceUpdate)
+            this.actor.update({"data.citems":citems});
         //console.log("refreshcItem finished");
+    }
+
+    async dragcItem(ev,iD,number, originiD){
+        ev.stopPropagation();
+
+        let ciTemTemplate = game.items.get(iD);
+
+        let dragData = { type: ciTemTemplate, id: iD, ownerID: originiD};
+        ev.dataTransfer.setData("text/plain", JSON.stringify(dragData));
+        this._dragType = dragData.type;
+    }
+
+    async showTransferDialog(id,ownerID){
+        let actorOwner = game.actors.get(ownerID);
+        let ownercItems = duplicate(actorOwner.data.data.citems);
+        let cItem = ownercItems.find(y=>y.id == id);
+        let cItemOrig = game.items.get(id);
+
+        let d = new Dialog({
+            title: "Transfer from " + actorOwner.name,
+            content: `	<div class="transfer-itemmname">
+<label class="label-citemtransfer">` + cItem.name + ` max: ` + cItem.number +`</label>
+</div>
+<div class="transfer-itemnumber">
+<input class="input-transfer" type="number" id="transfer-number" value="1">
+</div>
+<div class="transfer-takeall">
+<label class="label-transfer">Take All</label>
+<input class="check-transfer" type="checkbox" id="transfer-all">
+</div>`,
+            buttons: {
+                one: {
+                    icon: '<i class="fas fa-check"></i>',
+                    label: "Save",
+                    callback: async (html) => {
+                        let numElem = html[0].getElementsByClassName("input-transfer");
+                        numElem = numElem[0].value;
+                        let transferAll = html[0].getElementsByClassName("check-transfer");
+                        transferAll = transferAll[0].checked;
+                        let mynum = 1;
+
+                        let regE = /^\d+$/g;
+                        let isnum = numElem.match(regE);
+                        if(isnum)
+                            mynum = parseInt(numElem);
+
+
+                        if(transferAll)
+                            mynum = parseInt(cItem.number);
+
+                        if(mynum > cItem.number)
+                            mynum = cItem.number;
+
+                        cItem.number -= mynum;
+
+                        //REQUEST IF NOT GM
+                        if(!game.user.isGM){
+                            await this.actor.requestTransferToGM(this.actor.id,ownerID,id,mynum);
+                        }
+
+                        else{
+                            await actorOwner.update({"data.citems":ownercItems})
+                        }
+
+
+                        let newcitems = duplicate(this.actor.data.data.citems);
+                        let citemowned = newcitems.find(y=>y.id == id);
+
+                        if(!citemowned){
+                            newcitems = await this.actor.addcItem(cItemOrig,null,null,mynum);
+                        }
+                        else{
+                            citemowned.number += mynum;
+                        }
+
+                        await this.updateSubItems(false, newcitems);
+
+
+
+                    }
+                },
+                two: {
+                    icon: '<i class="fas fa-times"></i>',
+                    label: "Cancel",
+                    callback: () => {console.log("canceling text edition");}
+                }
+            },
+            default: "one",
+            close: () => {
+                console.log("Text edition dialog was shown to player.");
+            }
+        });
+
+        d.render(true);
     }
 
     showTextAreaDialog(citemID,citemAttribute,disabled){
