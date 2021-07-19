@@ -1001,15 +1001,8 @@ export class gActor extends Actor{
 
                         if(hasProperty(mycitem.attributes,att)){
                             if(groupProps[j].isconstant && tempAtt.value!= mycitem.attributes[att].value){
-
-                                if(game.user.isGM){
+                                if(actor.data.permission.default >= CONST.ENTITY_PERMISSIONS.OBSERVER ||  actor.data.permission[game.user.id] >= CONST.ENTITY_PERMISSIONS.OBSERVER || game.user.isGM)
                                     mycitem.attributes[att].value = tempAtt.value;
-                                }
-                                else{
-                                    //REQUEST recheck
-                                    console.log("1: " + att + " " + mycitem.name);
-                                    requestUpdate = true;
-                                }
 
                             }
                         }
@@ -1042,16 +1035,9 @@ export class gActor extends Actor{
                     }
 
                     if(!hasProperty(mycitem.attributes,att)){
-                        if(game.user.isGM){
+                        if(actor.data.permission.default >= CONST.ENTITY_PERMISSIONS.OBSERVER ||  actor.data.permission[game.user.id] >= CONST.ENTITY_PERMISSIONS.OBSERVER || game.user.isGM){
                             setProperty(mycitem.attributes,att,{});
                             setProperty(mycitem.attributes[att],"value",newvalue);
-                        }
-
-                        else{
-                            //REQUEST UPDATE
-                            //console.log(att + " not in local citem list");
-                            console.log("3: " + att + " " + mycitem.name);
-                            requestUpdate = true;
                         }
 
                     }
@@ -2313,6 +2299,8 @@ export class gActor extends Actor{
         //console.log(citemattributes);
 
         let initiative=false;
+        let gmmode=false;
+        let blindmode=false;
         let rolltotal=0;
         let conditionalText="";
         //let diff = SBOX.diff[game.data.world.name];
@@ -2432,7 +2420,8 @@ export class gActor extends Actor{
                 finalroll.extraroll=true;
 
                 if(game.dice3d!=null){
-                    await game.dice3d.showForRoll(partroll,game.user,true);
+
+                    await game.dice3d.showForRoll(partroll,game.user,true, ToGM,blindmode);
                 }
 
                 sRoll.results = finalroll;
@@ -2555,8 +2544,15 @@ export class gActor extends Actor{
             rollid=[];
 
         for(let n=0;n<rollid.length;n++){
+            //console.log(rollid[n]);
             if(rollid[n]=="init")
                 initiative = true;
+
+            if(rollid[n]=="gm")
+                gmmode = true;
+
+            if(rollid[n]=="blind")
+                blindmode = true;
         }
 
         //Remove rollIDs and save them
@@ -2586,6 +2582,12 @@ export class gActor extends Actor{
 
                 if(parseid[j]=="init")
                     initiative=true;
+
+                if(parseid[j]=="gm")
+                    gmmode=true;
+
+                if(parseid[j]=="blind")
+                    blindmode=true;
 
 
                 /************************************ H3LSI - 09/11/2020 *********************************************/
@@ -2625,6 +2627,11 @@ export class gActor extends Actor{
         /*************************************************************************************************** */
 
         //console.log(rollexp);
+
+        let ToGM = null;
+
+        if(gmmode)
+            ToGM = ChatMessage.getWhisperRecipients('GM');
 
         //Parse Roll
         rollexp = await auxMeth.autoParser(rollexp,actorattributes,citemattributes,true,false,number);
@@ -2788,7 +2795,7 @@ export class gActor extends Actor{
         //roll = partroll.roll();
 
         if(game.dice3d!=null){
-            await game.dice3d.showForRoll(partroll,game.user,true);
+            await game.dice3d.showForRoll(partroll,game.user,true,ToGM,blindmode);
         }
 
         rolltotal = roll.total;
@@ -2938,7 +2945,8 @@ export class gActor extends Actor{
             user: game.user.name,
             conditional: convalue,
             iscrit: hascrit,
-            isfumble: hasfumble
+            isfumble: hasfumble,
+            blind: blindmode
         };
 
         renderTemplate("systems/sandbox/templates/dice.html", rollData).then(html => {
@@ -2947,10 +2955,19 @@ export class gActor extends Actor{
             let rvalue = 0;
             if(rtypevalue=="gmroll")
                 rvalue = 1;
-            let newmessage = ChatMessage.create({
+
+            let messageData ={
                 content: html,
-                type:rvalue
-            });
+                type:rvalue,
+                blind:blindmode
+            };
+
+            if(gmmode)
+                messageData.whisper = ChatMessage.getWhisperRecipients('GM');
+
+            console.log(blindmode);
+
+            let newmessage = ChatMessage.create(messageData);
 
             //if(game.user.isGM){
             auxMeth.rollToMenu(html);
