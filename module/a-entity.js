@@ -112,8 +112,14 @@ export class gActor extends Actor{
 
             if(newattributes)
                 setProperty(maindata,"attributes",newattributes);
-            if(newcitems.length>0)
+            if(newcitems.length>0){
                 setProperty(maindata,"citems",newcitems);
+            }
+            else{
+                if(updateData.data.citems)
+                    updateData.data.citems = adata.data.citems;
+            }
+
             if(newrolls)
                 setProperty(maindata,"rolls",newrolls);
 
@@ -198,6 +204,8 @@ export class gActor extends Actor{
             actorData.citems = citems;
         }
 
+        //console.log(citems);
+
         return actor;
     }
 
@@ -271,6 +279,12 @@ export class gActor extends Actor{
         for (let i = 0; i<data2.length; i++) {
             if (!data1.includes(data2[i])) {
                 result.push(data2[i]);
+            }
+
+            else{
+                if(data2[i] != data1[i]){
+                    result.push(data2[i]);
+                }
             }
 
         }
@@ -1870,7 +1884,6 @@ export class gActor extends Actor{
                     }
 
                     else{
-
                         citemIDs[n].ispermanent =false;
 
                     }
@@ -1878,6 +1891,11 @@ export class gActor extends Actor{
                 }
                 else{
                     citemIDs[n].isreset =true;
+                }
+
+                if(citemObj.usetype == "PAS"){
+                    if(citemIDs[n].number<=0)
+                        actorData = await this.deletecItem(citemIDs[n].id,true);
                 }
 
                 if(citemIDs[n]!=null)
@@ -2297,10 +2315,12 @@ export class gActor extends Actor{
         //console.log(rollexp);
         //console.log(rollid);
         //console.log(citemattributes);
+        //console.log("rolling");
 
         let initiative=false;
         let gmmode=false;
         let blindmode=false;
+        let ToGM = null;
         let rolltotal=0;
         let conditionalText="";
         //let diff = SBOX.diff[game.data.world.name];
@@ -2543,6 +2563,9 @@ export class gActor extends Actor{
         if (rollid==null)
             rollid=[];
 
+        if(rollid=="")
+            rollid=[];
+
         for(let n=0;n<rollid.length;n++){
             //console.log(rollid[n]);
             if(rollid[n]=="init")
@@ -2628,7 +2651,7 @@ export class gActor extends Actor{
 
         //console.log(rollexp);
 
-        let ToGM = null;
+
 
         if(gmmode)
             ToGM = ChatMessage.getWhisperRecipients('GM');
@@ -2795,7 +2818,10 @@ export class gActor extends Actor{
         //roll = partroll.roll();
 
         if(game.dice3d!=null){
-            await game.dice3d.showForRoll(partroll,game.user,true,ToGM,blindmode);
+            let rollblind = blindmode;
+            if(game.user.isGM)
+                rollblind = false;
+            await game.dice3d.showForRoll(partroll,game.user,true,ToGM,rollblind);
         }
 
         rolltotal = roll.total;
@@ -2965,7 +2991,7 @@ export class gActor extends Actor{
             if(gmmode)
                 messageData.whisper = ChatMessage.getWhisperRecipients('GM');
 
-            console.log(blindmode);
+            //console.log(blindmode);
 
             let newmessage = ChatMessage.create(messageData);
 
