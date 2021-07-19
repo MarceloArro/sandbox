@@ -86,6 +86,8 @@ export class auxMeth {
         Handlebars.registerHelper('ifCond', function(v1, v2, options) {
 
             let regE = /^\d+$/g;
+            v1 = v1.toString();
+            v2 = v2.toString();
             let isnumv1 = v1.match(regE);
             let isnumv2 = v2.match(regE);
 
@@ -1239,9 +1241,11 @@ export class auxMeth {
 
                             if(isNaN(checker)){
                                 try{
-                                    let newroll = new Roll(checker);
-                                    await newroll.evaluate({async: true});
-                                    checker = newroll.total;
+                                    //                                    let newroll = new Roll(checker);
+                                    //                                    await newroll.evaluate({async: true});
+                                    //                                    checker = newroll.total;
+
+                                    checker = eval(checker);
                                 }
                                 catch(err){
                                     dontparse = true;
@@ -1256,9 +1260,10 @@ export class auxMeth {
 
                             if(isNaN(thiscondition) || checknonumcond!=null){
                                 try{
-                                    let newroll = new Roll(thiscondition);
-                                    await newroll.evaluate({async: true});
-                                    thiscondition = newroll.total;
+                                    //                                    let newroll = new Roll(thiscondition);
+                                    //                                    await newroll.evaluate({async: true});
+                                    //                                    thiscondition = newroll.total;
+                                    checker = eval(checker);
                                 }
                                 catch(err){
                                     dontparse = true;
