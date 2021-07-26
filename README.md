@@ -384,6 +384,8 @@ THE FOLLOWING EXPRESSIONS CAN NOT BE USED INSIDE cITEM MOD VALUE fields:
 - ~Roll_ID~: adds a Roll ID to the roll. Remember that we have a MOD type called ROLL? And this one adds values to rolls of a specific Roll ID? So this function lets you add ROll IDs to rolls. As many as you like. So let's say we just defined a roll for an attack with Roll Name:"Attack", Roll ID: "attack", and Roll Expression: 1d20+@{strength}. However, we want more definition for it, and for that we want to incorporate some more Roll IDs, in case we need to modify the roll through a MOD. Let's say we want to add the Ids "melee_attack" and "slashing", then we would have to change the Roll Expression to 1d20+@{strength} ~melee_attack~ ~slashing~
 - ~ADV~ or ~DIS~: fives advantage or disadvantage to the roll
 - ~init~: sends the result of the roll to the initiative on the combat tracker.
+- ~gm~: roll is whispered to GM.
+- ~blind~: roll is blind.
 
 ![Rolling to initiative](docs/images/tuto42a.png)
 
