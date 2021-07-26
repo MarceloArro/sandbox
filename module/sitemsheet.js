@@ -36,7 +36,7 @@ export class sItemSheet extends ItemSheet {
         data.flags = item.data.flags;
 
         //BEHOLD THE BEST DEBUGGER LINE ON SANDBOX!
-        console.log(data);
+        //console.log(data);
 
         return data;
 
@@ -104,6 +104,16 @@ export class sItemSheet extends ItemSheet {
 
         html.find('.mod-add').click(ev => {
             this.adnewCIMod();
+        });
+
+        html.find('.tokeniconpath').click(ev => {
+
+            new FilePicker({
+                type: "image",
+                displayMode: "tiles",
+                current: this.item.data.data.tokeniconpath,
+                callback: imagePath => this.item.update({"data.tokeniconpath": imagePath}),
+            }).browse(this.item.data.data.tokeniconpath);
         });
 
         html.find('.mod-input').change(ev => {
@@ -310,7 +320,7 @@ export class sItemSheet extends ItemSheet {
         newItem[itemKey].id=dropitem.id;
         newItem[itemKey].name=dropitem.data.name;
         newItem[itemKey].ikey=itemKey;
-        console.log(newItem);
+        //console.log(newItem);
         if(this.item.data.type=="group" && dropitem.data.type == "property"){
             newItem[itemKey].isconstant=true;
         }
@@ -319,7 +329,7 @@ export class sItemSheet extends ItemSheet {
         if(this.item.data.type!="property" && this.item.data.data.datatype!="table"){
             //Add element id to panel
             const subitems = await this.getsubItems();
-            console.log(subitems);
+            //console.log(subitems);
 
             for (let i=0;i<subitems.length;i++) {
                 if (subitems[i].id == dropitem.data.id) {
@@ -362,7 +372,7 @@ export class sItemSheet extends ItemSheet {
 
         }
         //console.log("updated");
-        console.log(this.item.data.data);
+        //console.log(this.item.data.data);
 
     }
 
@@ -418,7 +428,7 @@ export class sItemSheet extends ItemSheet {
         }
 
         else if(this.item.data.type=="cItem"){
-            console.log(subitems);
+            //console.log(subitems);
             await this.item.update({"data.groups": subitems}); 
             //this.item.data.data.groups = subitems;
         }
@@ -461,7 +471,7 @@ export class sItemSheet extends ItemSheet {
     }
 
     async refreshCIAttributes(basehtml){
-        console.log("updating CItem attr");
+        //console.log("updating CItem attr");
 
         const html = await basehtml.find(".attribute-list")[0];
         html.innerHTML = '';
@@ -517,10 +527,15 @@ export class sItemSheet extends ItemSheet {
                                     tosave = true;
                                 }
 
-                                const attribute = attributes[property.attKey];
+                                let attribute = attributes[property.attKey];
 
                                 if(attribute.value=="" || attribute.value==null){
                                     if(property.datatype==="simplenumeric"){
+                                        //BUG FIXER
+                                        //                                        let newPObj = {};
+                                        //                                        newPObj.value = 0;
+                                        //                                        await this.item.update({[`data.attributes.${property.attKey}`] : newPObj});
+
                                         attribute.value = 0;
                                     }
                                     else{
@@ -739,7 +754,7 @@ export class sItemSheet extends ItemSheet {
     }
 
     async addItemToMod(modId,citemId){
-        console.log(citemId);
+        //console.log(citemId);
         const mods = this.item.data.data.mods;
         const mod = mods[modId];
         let citem = game.items.get(citemId);
