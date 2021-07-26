@@ -2937,15 +2937,17 @@ export class gActorSheet extends ActorSheet {
                                         let constantvalue;
                                         if(propdata.datatype!="label")
                                             if(!isFree){
-                                                constantvalue = ciTemplate.data.data.attributes[propKey].value;
+                                                constantvalue = ciTemplate.data.data.attributes[propKey].value; 
                                             }
 
                                             else{
                                                 constantvalue = propdata.defvalue;
                                             }
 
-                                        if(isconstant){
+                                        if(propdata.auto!="")
+                                            constantvalue = ciObject.attributes[propKey].value;
 
+                                        if(isconstant){
                                             let cContent = constantvalue;
                                             //console.log(propdata);
                                             if(propdata.datatype=="label"){
@@ -3614,6 +3616,7 @@ export class gActorSheet extends ActorSheet {
         const citem = citems.find(y=>y.id==itemId);
         const attributes = this.actor.data.data.attributes;
         const citemObj = game.items.get(itemId).data.data;
+        let currentUses = duplicate(citem.uses);
 
         if(value){
             citem.isactive = false;
@@ -3627,12 +3630,15 @@ export class gActorSheet extends ActorSheet {
         if(iscon && citem.maxuses>0){
 
 
-            if(citem.uses>=0){
-                let actualItems = Math.ceil(parseInt(citem.uses)/citem.maxuses);
-                //if(citemObj.ispermanent){
+            if(citem.uses>0 && citemObj.usetype == "CON"){
+                currentUses -=1;
+                let actualItems = Math.ceil(parseInt(currentUses)/citem.maxuses);
+
                 if(!citemObj.rechargable)
                     citem.number = actualItems;
-                //}
+                if(currentUses==0)
+                    citem.number = 0;
+
             }
 
             citem.uses -=1;
@@ -3671,8 +3677,10 @@ export class gActorSheet extends ActorSheet {
         //console.log("deleting");
 
         let subitems = await this.actor.deletecItem(itemID, cascading);
+
         //console.log(subitems);
         if(this.actor.isToken){
+
             let myToken = canvas.tokens.get(this.actor.token.id);
 
             await myToken.actor.update({"data": subitems.data});
@@ -4074,6 +4082,23 @@ export class gActorSheet extends ActorSheet {
         let tabs;
         let nonbio = false;
 
+        let fakelastTab = $(newhtml).find('#tab-last');
+        fakelastTab.remove();
+
+        let biotab = $(newhtml).find('#tab-0');
+        if(!this.actor.data.data.biovisible){
+            nonbio = true;
+
+            if(biotab.length>0)
+                if(biotab[0].classList.contains("active"))
+                    biotab[0].nextElementSibling.click();
+            biotab.remove();
+        }
+
+        else{
+            biotab[0].classList.add("player-tab");
+        }
+
         if(game.user.isGM){
             tabs = $(newhtml).find(".tab-button");
         }
@@ -4081,24 +4106,22 @@ export class gActorSheet extends ActorSheet {
             tabs = $(newhtml).find(".player-tab");
         }
 
-        if(!this.actor.data.data.biovisible){
-            nonbio = true;
-        }
-
         let activetab = $(newhtml).find(".tab-button.active");
-
-        if(activetab[0].classList.contains("desc-tab") && nonbio){
-            tabs[1].click();
-        }
 
         let foundfirst = false;
         let passedfirst = false;
-        let maxtabs = parseInt(duplicate(this.actor.data.data.visitabs))-1;
+        let maxtabs = this.actor.data.data.visitabs-1;
         let totaltabs = tabs.length;
         //console.log(tabs);
 
-        //        let spacer = totaltabs - activetab.index();
-        //        console.log(spacer);
+        let minTab = totaltabs - (maxtabs+1);
+        if(minTab<0)
+            minTab=0;
+        if(activetab.index()>minTab){
+            tabs[minTab].classList.add("visible-tab");
+        }
+
+
         let tabcounter = 0;
         let firsthidden = false;
         tabs.each(async function(i,tab){
@@ -4106,6 +4129,14 @@ export class gActorSheet extends ActorSheet {
             let nexttab = tabs[i+1];
             let lasttab = tabs[i+maxtabs+1];
             let isvisible = false;
+
+            if(tab.textContent == ""){
+                if(!tab.classList.contains("hidden-tab"))
+                    tab.classList.add("hidden-tab");
+                tab.classList.remove("visible-tab");
+                return false;
+            }
+
 
             if(nonbio){
                 if(tab.classList.contains("desc-tab")){
@@ -4211,6 +4242,7 @@ export class gActorSheet extends ActorSheet {
 
             else{
                 //console.log("idle");
+
                 if(isvisible){
                     if(tabcounter > maxtabs){
                         if(!tab.classList.contains("hidden-tab"))
@@ -4237,6 +4269,7 @@ export class gActorSheet extends ActorSheet {
                         if(!tab.classList.contains("hidden-tab"))
                             tab.classList.add("hidden-tab");
                         tab.classList.remove("visible-tab");
+
                     }
                 }
             }
