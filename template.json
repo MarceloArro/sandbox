@@ -242,6 +242,8 @@
             "roll":"",
             "rollid":"",
             "rollname":"",
+            "tokeniconpath":"",
+            "istokenicon":false,
             "mods":[],
             "groups":[],
             "attributes":{},
