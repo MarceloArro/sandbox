@@ -242,7 +242,15 @@ Hooks.once("init", async function() {
 
     game.socket.on("system.sandbox", (data) => {
         if (data.op === 'target_edit'){
-            gActor.handleTargetRequest(data); 
+            let actorOwner = game.actors.get(data.actorId);
+            actorOwner.handleTargetRequest(data); 
+        } 
+    });
+
+    game.socket.on("system.sandbox", (data) => {
+        if (data.op === 'transfer_edit'){
+            let actorOwner = game.actors.get(data.ownerID);
+            actorOwner.handleTransferEdit(data); 
         } 
     });
 
@@ -419,44 +427,44 @@ Hooks.on("deleteToken", (scene, token) => {
     $('.dmtk-tooltip').remove();
 });
 
-Hooks.on("preUpdateToken", async (scene, token, updatedData, options, userId) => {
-    //console.log("updatingTokenActor");
-    //console.log(token);
-    //console.log(updatedData);
-    if(!token.owner && !game.user.isGM){
-        return;
-    }
-    //    let myToken = canvas.tokens.get(token.id);
-    //    let myactor = game.actors.get(token.actorId);
-    //    let actorData = false;
-    //    if(updatedData.data!=null)
-    //        if(updatedData.data.citems!=null || updatedData.data.rolls!=null)
-    //            actorData = true;
-    //
-    //    if (updatedData["data.citems"] || actorData){
-    //        if(!hasProperty(updatedData,"actorData"))
-    //            setProperty(updatedData,"actorData",{});
-    //        if(!hasProperty(updatedData.actorData,"data"))
-    //            setProperty(updatedData.actorData,"data",{});
-    //        setProperty(updatedData.actorData.data,"citems",[]);
-    //        if(updatedData.data.rolls!=null){
-    //            setProperty(updatedData.actorData.data,"rolls",updatedData.data.rolls);
-    //        }
-    //        if(updatedData["data.citems"])
-    //            updatedData.actorData.data.citems = updatedData["data.citems"];
-    //        if(actorData){
-    //            updatedData.actorData.data.citems = updatedData.data.citems;
-    //            await delete updatedData.data.citems;
-    //        }
-    //
-    //    }
-    //    //    
-    //    if (updatedData["effects"]!=null)
-    //        updatedData.actorData.effects = updatedData["effects"];
-
-    //console.log(updatedData);
-
-});
+//Hooks.on("preUpdateToken", async (scene, token, updatedData, options, userId) => {
+//    //console.log("updatingTokenActor");
+//    //console.log(token);
+//    //console.log(updatedData);
+//    if(!token.owner && !game.user.isGM){
+//        return;
+//    }
+//    //    let myToken = canvas.tokens.get(token.id);
+//    //    let myactor = game.actors.get(token.actorId);
+//    //    let actorData = false;
+//    //    if(updatedData.data!=null)
+//    //        if(updatedData.data.citems!=null || updatedData.data.rolls!=null)
+//    //            actorData = true;
+//    //
+//    //    if (updatedData["data.citems"] || actorData){
+//    //        if(!hasProperty(updatedData,"actorData"))
+//    //            setProperty(updatedData,"actorData",{});
+//    //        if(!hasProperty(updatedData.actorData,"data"))
+//    //            setProperty(updatedData.actorData,"data",{});
+//    //        setProperty(updatedData.actorData.data,"citems",[]);
+//    //        if(updatedData.data.rolls!=null){
+//    //            setProperty(updatedData.actorData.data,"rolls",updatedData.data.rolls);
+//    //        }
+//    //        if(updatedData["data.citems"])
+//    //            updatedData.actorData.data.citems = updatedData["data.citems"];
+//    //        if(actorData){
+//    //            updatedData.actorData.data.citems = updatedData.data.citems;
+//    //            await delete updatedData.data.citems;
+//    //        }
+//    //
+//    //    }
+//    //    //    
+//    //    if (updatedData["effects"]!=null)
+//    //        updatedData.actorData.effects = updatedData["effects"];
+//
+//    //console.log(updatedData);
+//
+//});
 
 //Hooks.on("updateToken", async (scene, token, updatedData, options, userId) => {
 //    //console.log("updatingTokenActor");
@@ -750,9 +758,9 @@ Hooks.on("renderChatMessage", async (app, html, data) => {
 
     let _html = await html[0].outerHTML;
     let realuser = game.users.get(data.message.user);
-
-    if(((data.cssClass == "whisper")||(data.message.type==1)) && game.user.id!=data.message.user && !game.user.isgM)
-        hide=true;
+    //
+    //    if(((data.cssClass == "whisper")||(data.message.type==1)) && game.user.id!=data.message.user && !game.user.isgM)
+    //        hide=true;
 
     //console.log(hide);
     if(_html.includes("dice-roll") && !_html.includes("table-draw")){
@@ -814,29 +822,27 @@ Hooks.on("renderChatMessage", async (app, html, data) => {
 
         });
 
-        //        let containerDiv = document.createElement("DIV");
-        //
-        //        let headerDiv = document.createElement("HEADER");
-        //        let headertext = await fetch("systems/sandbox/templates/sbmessage.html").then(resp => resp.text());
-        //        headerDiv.innerHTML = headertext;
-        //
-        //        let msgcontent = html;
-        //        let messageDiv = await document.createElement("DIV");
-        //        messageDiv.innerHTML = _html;
-        //
-        //        //containerDiv.appendChild(headerDiv);
-        //        await containerDiv.appendChild(headerDiv);
-        //        await containerDiv.appendChild(messageDiv);
-        //
-        //        html = html[0].insertBefore(headerDiv,html[0].childNodes[0]);
-        //        html = $(html);
+    }
 
+    else{
+        let deletebutton = $(html).find(".roll-message-delete")[0];
+
+        if(game.user.isGM){
+            $(html).find(".roll-message-delete").click(async ev => {
+                msg.delete(html);
+            });
+            auxMeth.rollToMenu();
+        }
+
+        else{
+            deletebutton.style.display = "none";
+        }
     }
 
     //console.log(html);
 
-
-
+    //
+    //
     if(!game.user.isGM && hide){
         //console.log(html);
         //console.log(_html);
@@ -871,6 +877,13 @@ Hooks.on("renderChatMessage", async (app, html, data) => {
         return;
     }
 
+    if(!game.user.isGM && data.message.blind){
+        detail.style.display = "none";
+        result.style.display = "none";
+        clickdetail.style.display = "none";
+        clickmain.style.display = "none";
+    }
+
     let detaildisplay = detail.style.display;
     detail.style.display = "none";
 
@@ -896,21 +909,6 @@ Hooks.on("renderChatMessage", async (app, html, data) => {
         $(html).find(".roll-detail-button").show();
         $(html).find(".roll-main-button").hide();
     });
-
-
-
-    if(game.user.isGM){
-        $(html).find(".roll-message-delete").click(async ev => {
-            msg.delete(html);
-        });
-        auxMeth.rollToMenu();
-    }
-
-    else{
-        if(game.user.id!=data.message.user)
-            $(html).find(".roll-message-delete").hide();
-    }
-
 
 });
 
