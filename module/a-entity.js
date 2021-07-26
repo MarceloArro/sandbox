@@ -523,6 +523,7 @@ export class gActor extends Actor{
         const citems = newdata.data.citems;
         let toRemove = citems.find(y=>y.id==itemID);
         let remObj = game.items.get(itemID);
+
         //console.log(remObj);
 
         if(remObj!=null && citems.length>0){
@@ -1015,7 +1016,7 @@ export class gActor extends Actor{
 
                         if(hasProperty(mycitem.attributes,att)){
                             if(groupProps[j].isconstant && tempAtt.value!= mycitem.attributes[att].value){
-                                if(actor.data.permission.default >= CONST.ENTITY_PERMISSIONS.OBSERVER ||  actor.data.permission[game.user.id] >= CONST.ENTITY_PERMISSIONS.OBSERVER || game.user.isGM)
+                                if(actorData.permission.default >= CONST.ENTITY_PERMISSIONS.OBSERVER ||  actorData.permission[game.user.id] >= CONST.ENTITY_PERMISSIONS.OBSERVER || game.user.isGM)
                                     mycitem.attributes[att].value = tempAtt.value;
 
                             }
@@ -1049,7 +1050,7 @@ export class gActor extends Actor{
                     }
 
                     if(!hasProperty(mycitem.attributes,att)){
-                        if(actor.data.permission.default >= CONST.ENTITY_PERMISSIONS.OBSERVER ||  actor.data.permission[game.user.id] >= CONST.ENTITY_PERMISSIONS.OBSERVER || game.user.isGM){
+                        if(this.data.permission.default >= CONST.ENTITY_PERMISSIONS.OBSERVER ||  this.data.permission[game.user.id] >= CONST.ENTITY_PERMISSIONS.OBSERVER || game.user.isGM){
                             setProperty(mycitem.attributes,att,{});
                             setProperty(mycitem.attributes[att],"value",newvalue);
                         }
@@ -1836,15 +1837,10 @@ export class gActor extends Actor{
                         groupprops = cigroup.data.data.properties;
 
 
-                    //console.log(groupprops);
                     for(let x=0;x<groupprops.length;x++){
                         let propdata = game.items.get(groupprops[x].id);
                         let propKey = propdata.data.data.attKey;
                         let propauto = propdata.data.data.auto;
-
-                        //                        if(propdata.data.data.datatype != "simpletext" && propdata.data.data.datatype != "textarea"){
-                        //                            citemObj.attributes[propKey].value = Number(citemObj.attributes[propKey].value);
-                        //                        }
 
                         if(propauto!=""){
                             let rawvalue = await auxMeth.autoParser(propauto,attributes,citmAttr,false,false,citmNum);
@@ -1877,8 +1873,7 @@ export class gActor extends Actor{
                         }
 
                         if(!citemIDs[n].rechargable && citemIDs[n].number<=0){
-                            //await citemIDs.splice(n,1);
-                            actorData = await this.deletecItem(citemIDs[n].id,true);
+                            actorData = await this.deletecItem(citemIDs[n].id,true,actorData);
                         }
 
                     }
@@ -1895,7 +1890,7 @@ export class gActor extends Actor{
 
                 if(citemObj.usetype == "PAS"){
                     if(citemIDs[n].number<=0)
-                        actorData = await this.deletecItem(citemIDs[n].id,true);
+                        actorData = await this.deletecItem(citemIDs[n].id,true,actorData);
                 }
 
                 if(citemIDs[n]!=null)
