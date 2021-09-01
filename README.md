@@ -138,6 +138,8 @@ There are 9 types of properties: simpletext, simplenumeric, checkbox, radio, tex
 - Label Size: if the property has a label, this field states the width. If you keep it as "Fit", it will autosize to the length of the text. If you are going to create many rows of properties, let's say for example the typical attributes from D&D (STR,DEX,CON,etc), it's better for you to use Small or Medium, so all of them end up aligned.
 - Label Format: Normal is just... normal haha... ok. Bold is... Small means that the font is slightly smaller, it's useful if you don't have much space for the label. And Die removes the label and inserts an icon of a d20. Useful if you want to create Label Properties on sheets to roll dice, whether it's on sheets or cItems.
 - Rollable: When checked, the roll confiruation input fields will be shown (Roll Name, Roll ID, Roll Formula). This will be explained later, section 7 Roll Expressions.
+- Arrows: It will display up and down arrows for simplenumeric properties, as a tool to modify their value.
+- Check Group: Only for checkboxes. If filled with a Key, it will ensure that when the checkbox is checked, any other checkbox with the same checkgroup key is unchecked.
 - Max Value: If radio, it sets the maximum circle radio buttons to be displayed (radio buttons like in the Vampire the Masquerade character sheets). If simplenumeric, filling this input field would display a box with the max value on the right side of the input. For example, if we create a property called Hit Points (HP, PG in Spanish) and set Max Value as 10 and Default Value as 10:
 
 ![Max Value Property](docs/images/tuto14.png)
@@ -257,6 +259,10 @@ Finally, there is the option "Show Totals" that will display an extra row with t
 
 ![Totalize](docs/images/totalize.jpg)
 
+But lets say you dont have time to create hundreds of cItems and you just want to crete rows on the go. Then you just need to choose "Is Free" option in the table property window. This will show a + button at the bottom of the table, and will let you create rolls and fill them if their properties are variable.
+
+One last thing, you can sort the contents of the table based on a column if you click on the header title.
+
 ## 6.Modifiers (MODs)
 Now, get ready for the difficult stuff, rules automation. Sandbox is based on the following mantra: character sheets are modified by cItems, and rule systems can be modelled by designing a cItems structure. So, every modification a cItem performs to an Actor is called MOD. Let's get to it.
 
@@ -303,9 +309,15 @@ Let's look at each MOD Type in detail:
 
 ![ITEM MOD type](docs/images/tuto36.png)
 
+-CREATE: This one is temporary, I am not sure is entirely required. It will create a hidden property in the Actor, with the default value specified.
+
 -ROLL: Every roll can have one or more Roll IDs. A Roll ID is a word, a key (no spaces then), and you can define it within the roll expression or by using the roll options input field called Roll ID. With this MOD you modify every Roll with a specific Roll ID with a value. When to use this? For example, again D&D, you would have a cItem called Rage, with the group Trait, and within this you could add a ROLL MOD that would add the Rage Damage value to every roll with a Roll ID of "melee_attack" or whatever you want to ID the melee attacks rolls in your system. For example, on Savage world you could create a cItem called Wild Attack, with the group Combat Option, and as MOD a ROLL that would add +2 to rolls with the ID "fighting" and "damge" or whatever you want to call them. So before setting ROLL MODs make sure you have an idea of the roll IDs you need on your system. In general, before start MODding, have a think of the structure.
 
+- LIST: This cItem can add or remove list options. To do that, simply choose between INCLUDE or REMOVE. Then in the Attribute Key field type in the key of the List property you want modified. Finally, in the VALUE field and separated by commas type in the values you want included or removed.
+
 As MODs interact directly with the Actor and change it's attributes, you need to have an idea of the final attributes (created by Properties as we have seen before) before you create one. For example, if your cItem MOD increases the attribute "strength", it's not going to work unless that attribute has already been created by the character sheet (through a Property on a Template Actor, as explained before). Remember that a cItem is only displayed on a Table in a character sheet!
+
+You might have seen the Has Icon, Always On, and Icon Path options on the MOD Tab. There is a Module I have created that lets you add icons to the actor tokens based on the cItems they have. For now, only on my Patreon, but soon to be published.
 
 One last thing, you can use roll expressions when setting values of a Mod. What is that? Comping up next... But as an example:
 
@@ -322,6 +334,7 @@ The fields mean the following:
 - Roll Name: What title will the roll template display. For example "Strength check", or "Death Save", etc.
 - Roll ID: this is the main roll ID, an identifier or Key that the roll will belong to. It doesnt have to be unique, so if your system has a lot of skills and this is a roll fo one of them, you just can use "skill" as roll ID.
 - Roll Expression: the roll itself, like 1d6 or 1d20 + 5, etc.
+- Has Dialog and Dialog Panel: Keep on reading, and I might explain it MUAHAHAHAHA!
 
 There is a list of functions to use with roll expressions. Now you will hate me for this, but I am horrible with Regex, so these functions are ugly, very bad looking. Bear with me, if you help me we can improve them. You can also use them in MOD value definition fields. 
 
@@ -407,6 +420,8 @@ SOME EXAMPLES OF ROLLS:
 - Roll 4d6 and count results higher than 4:   roll(Test;4;6;false) countH(?[Test];4)
 - Roll 3d10, add the results, and if any die is equal to 10 add +5:  roll(Test;3;10;false)   sum(?[Test]) + (countE(?[Test];10) *5)
 - Roll 2d6, if any die is higher than 3 display SUCCESS, if the first die rolls a 1 display CONSEQUENCE, if both roll a 1 display SNAKE EYES:  roll(Test1;1;6;false) roll(Test2;1;6;false) max(?[Test1],?[Test2]) &&max(?[Test1],?[Test2]);0:FAIL;4:SUCCESS&& &&countE(?[Test1];1);0:-;1:CONSEQUENCE&& &&countE(?[Test1],?[Test2];1);0:-;2:SNAKE EYES&&
+
+Now that you are dizzy, confused, and stunned, is the perfect moment to explain about Roll Dialog Panels. If you mark the option of "Has Dialog" and then drag a Panel or Multipanel with panels containing a number of properties, every time you click to roll the original property a dialog will be displayed, showing a bunch of new properties that the user can adjust. To refer to these properties in your original roll expression, you can use d{key_of_the_property}.
 
 ## 8.Folder structure best practices
 If we want to share our creations and systems, we will have to standardise the way we store Sandbox's info. In the future, we could try to include a button to export to db or something like that, I don't know. But for know, let's stick to this structure. In the Actors Directory I normally create 2 folders, one called _CONFIG, and one called CAMPAIGN. In _CONFIG, and within separate folders, I store each Template Actor that the system needs (one for PCs, other for NPCs, other for shared menus like shared inventory, etc).
