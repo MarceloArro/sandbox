@@ -2,6 +2,8 @@
 
 Build any system, without coding a single line in Javascript.
 
+Last Compatible Foundry Core Version: 0.8.8
+
 ## Important
 
 This system has been developed by me, Seregras (IsmaGM), after extensive hours of brain damage caused by thinking too much. If you like this system, please consider helping me by:
