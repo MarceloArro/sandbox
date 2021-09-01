@@ -12,7 +12,7 @@ export class sItemSheet extends ItemSheet {
             classes: ["sandbox", "sheet", "item"],
             width: 520,
             height: 500,
-            tabs: [{navSelector: ".sheet-tabs", contentSelector: ".sheet-body", initial: "description"}]
+            tabs: [{ navSelector: ".sheet-tabs", contentSelector: ".sheet-body", initial: "description" }]
         });
     }
 
@@ -28,7 +28,7 @@ export class sItemSheet extends ItemSheet {
     /** @override */
     async getData() {
 
-        if(this.item.data.type=="cItem")
+        if (this.item.data.type == "cItem")
             await this.checkStillUnique();
 
         const item = this.item;
@@ -71,17 +71,17 @@ export class sItemSheet extends ItemSheet {
             const propis = this.item.data.data.properties;
             const prop = propis[index];
 
-            if(prop.isconstant){
-                prop.isconstant=false;
+            if (prop.isconstant) {
+                prop.isconstant = false;
             }
-            else{
-                prop.isconstant=true;
+            else {
+                prop.isconstant = true;
             }
 
             //this.item.data.data.properties = propis;
             //this.item.update(this.item.data);
 
-            this.item.update({"data.properties":this.item.data.data.properties});
+            this.item.update({ "data.properties": this.item.data.data.properties });
         });
 
         // Checks if a Mod is executable only one
@@ -91,14 +91,14 @@ export class sItemSheet extends ItemSheet {
             let index = li.attr("index");
             const mod = this.item.data.data.mods[index];
 
-            if(mod.once){
-                mod.once=false;
+            if (mod.once) {
+                mod.once = false;
             }
-            else{
-                mod.once=true;
+            else {
+                mod.once = true;
             }
 
-            this.item.update({"data.mods":this.item.data.data.mods});
+            this.item.update({ "data.mods": this.item.data.data.mods });
             //this.item.update(this.item.data);
         });
 
@@ -112,7 +112,7 @@ export class sItemSheet extends ItemSheet {
                 type: "image",
                 displayMode: "tiles",
                 current: this.item.data.data.tokeniconpath,
-                callback: imagePath => this.item.update({"data.tokeniconpath": imagePath}),
+                callback: imagePath => this.item.update({ "data.tokeniconpath": imagePath }),
             }).browse(this.item.data.data.tokeniconpath);
         });
 
@@ -133,7 +133,6 @@ export class sItemSheet extends ItemSheet {
             let obj = li.attr("name");
             let namechain = obj.split(".");
             let index = namechain[0];
-            console.log(index);
             this.deletemodInput(index);
         });
 
@@ -147,10 +146,10 @@ export class sItemSheet extends ItemSheet {
         html.find('.modcitem-delete').click(ev => {
             const mods = this.item.data.data.mods;
             let cindex = ev.target.parentElement.parentElement.getAttribute("cindex");
-            let modId =  ev.target.parentElement.parentElement.getAttribute("mod");
-            this.item.data.data.mods[modId].items.splice(cindex,1);
-            this.scrollbarSet();
-            this.item.update({"data.mods": mods});
+            let modId = ev.target.parentElement.parentElement.getAttribute("mod");
+            this.item.data.data.mods[modId].items.splice(cindex, 1);
+
+            this.item.update({ "data.mods": mods });
             //this.item.update(this.item.data);
         });
 
@@ -158,7 +157,7 @@ export class sItemSheet extends ItemSheet {
         if (!this.options.editable) return;
 
         let subitems = this.getsubItems();
-        if(subitems==null){
+        if (subitems == null) {
 
             return;
         }
@@ -176,13 +175,13 @@ export class sItemSheet extends ItemSheet {
             const li = $(ev.currentTarget).parents(".property");
             let todelete = li.data("itemId");
             let obj = subitems[todelete];
-            if(this.item.data.type=="cItem"){
+            if (this.item.data.type == "cItem") {
                 let group = game.items.get(obj.id);
-                if(group.data.data.isUnique){
-                    this.item.data.data.isUnique=false;
+                if (group.data.data.isUnique) {
+                    this.item.data.data.isUnique = false;
                 }
             }
-            const prop = subitems.splice(todelete,1);
+            const prop = subitems.splice(todelete, 1);
             li.slideUp(200, () => this.render(false));
             this.updateLists(subitems);
         });
@@ -191,8 +190,8 @@ export class sItemSheet extends ItemSheet {
         html.find('.item-top').click(ev => {
             const li = $(ev.currentTarget).parents(".property");
             let itemindex = li.data("itemId");
-            if(itemindex>0)
-                subitems.splice(itemindex-1, 0, subitems.splice(itemindex, 1)[0]);
+            if (itemindex > 0)
+                subitems.splice(itemindex - 1, 0, subitems.splice(itemindex, 1)[0]);
             this.updateLists(subitems);
         });
 
@@ -200,14 +199,14 @@ export class sItemSheet extends ItemSheet {
         html.find('.item-bottom').click(ev => {
             const li = $(ev.currentTarget).parents(".property");
             let itemindex = li.data("itemId");
-            if(itemindex<subitems.length-1)
-                subitems.splice(itemindex+1, 0, subitems.splice(itemindex, 1)[0]);
+            if (itemindex < subitems.length - 1)
+                subitems.splice(itemindex + 1, 0, subitems.splice(itemindex, 1)[0]);
             this.updateLists(subitems);
         });
 
     }
 
-    async checkItemsExisting(){
+    async checkItemsExisting() {
 
         let panels = this.item.data.flags.panelarray;
         let changed = false;
@@ -222,7 +221,7 @@ export class sItemSheet extends ItemSheet {
             }
         }
 
-        if(changed)
+        if (changed)
             this.updatePanels();
     }
 
@@ -237,59 +236,71 @@ export class sItemSheet extends ItemSheet {
         //        if(event==null)
         //            return;
 
-        if(event.target.classList.contains("itemdrop-area")){
+        if (event.target.classList.contains("itemdrop-area")) {
             console.log("dropping on mod");
             dropmod = true;
             modId = event.target.getAttribute("mod");
         }
 
-        else if(event.target.parentElement.classList.contains("itemdrop-area")){
+        else if (event.target.parentElement.classList.contains("itemdrop-area")) {
             console.log("NOT dropping on mod");
             dropmod = true;
             modId = event.target.parentElement.getAttribute("mod");
         }
 
-        let dropmodcitem=false;
+        let dropmodcitem = false;
 
         try {
             let dropdata = JSON.parse(event.dataTransfer.getData('text/plain'));
             dropitem = game.items.get(dropdata.id);
 
-            let acceptableObj="";
-            if(this.item.data.type=="panel" || this.item.data.type=="group"){
+            let acceptableObj = "";
+            if (this.item.data.type == "panel" || this.item.data.type == "group") {
                 acceptableObj = "property";
             }
 
-            else if(this.item.data.type=="sheettab" || this.item.data.type=="multipanel"){
+            else if (this.item.data.type == "sheettab" || this.item.data.type == "multipanel") {
                 acceptableObj = "panel";
             }
 
             //else if(this.item.data.type=="cItem" && !this.item.data.data.isUnique){
-            else if(this.item.data.type=="cItem"){
+            else if (this.item.data.type == "cItem") {
                 acceptableObj = "group";
             }
 
-            else if(this.item.data.type=="property" && this.item.data.data.datatype=="table"){
+            else if (this.item.data.type == "property" && this.item.data.data.datatype == "table") {
                 acceptableObj = "group";
             }
 
-            else{
+            else if (this.item.data.type == "property" && this.item.data.data.datatype != "table") {
+                acceptableObj = "panel";
+            }
+
+            else {
                 console.log("object not allowed");
-                return false; 
+                return false;
             }
 
             if (dropitem.data.type !== acceptableObj) {
-                if(this.item.data.type=="sheettab" && (dropitem.data.type == "multipanel"||dropitem.data.type == "panel")){
+                if (this.item.data.type == "sheettab" && (dropitem.data.type == "multipanel" || dropitem.data.type == "panel")) {
 
                 }
 
-                else if(this.item.data.type=="cItem" && dropitem.data.type == "cItem" && dropmod){
-                    dropmodcitem=true;
-                    await this.addItemToMod(modId,dropitem.id);
+                else if (this.item.data.type == "cItem" && dropitem.data.type == "cItem" && dropmod) {
+                    dropmodcitem = true;
+                    await this.addItemToMod(modId, dropitem.id);
                 }
-                //TODO- IF YOU THINK YOURSELF PRO, HELP ME PUT MULTIPANELS INTO MULTIPANELS XD
 
-                else{
+
+                else if (this.item.data.type == "cItem" && dropitem.data.type == "panel" && this.item.data.data.hasdialog) {
+
+                }
+
+                else if (this.item.data.type == "property" && dropitem.data.type == "multipanel" && this.item.data.data.hasdialog) {
+
+                }
+
+                else {
                     console.log("object not allowed");
                     return false;
                 }
@@ -305,9 +316,7 @@ export class sItemSheet extends ItemSheet {
             return false;
         }
 
-        this.scrollbarSet();
-
-        if(dropmodcitem)
+        if (dropmodcitem)
             return;
 
         let keyCode = this.getitemKey(dropitem.data);
@@ -316,41 +325,47 @@ export class sItemSheet extends ItemSheet {
         const itemData = this.item.data.data;
         //console.log(itemKey + " " + keyCode);
         let newItem = {}
-        setProperty(newItem,itemKey,{});
-        newItem[itemKey].id=dropitem.id;
-        newItem[itemKey].name=dropitem.data.name;
-        newItem[itemKey].ikey=itemKey;
+        setProperty(newItem, itemKey, {});
+        newItem[itemKey].id = dropitem.id;
+        newItem[itemKey].name = dropitem.data.name;
+        newItem[itemKey].ikey = itemKey;
         //console.log(newItem);
-        if(this.item.data.type=="group" && dropitem.data.type == "property"){
-            newItem[itemKey].isconstant=true;
+        if (this.item.data.type == "group" && dropitem.data.type == "property") {
+            newItem[itemKey].isconstant = true;
         }
         //console.log(newItem);
 
-        if(this.item.data.type!="property" && this.item.data.data.datatype!="table"){
+        if (this.item.data.type != "property") {
             //Add element id to panel
             const subitems = await this.getsubItems();
             //console.log(subitems);
 
-            for (let i=0;i<subitems.length;i++) {
+            for (let i = 0; i < subitems.length; i++) {
                 if (subitems[i].id == dropitem.data.id) {
                     return;
                 }
             }
 
-            if(!subitems.find(y=>y.id==newItem[itemKey].id))
+            if (!subitems.find(y => y.id == newItem[itemKey].id))
                 await subitems.push(newItem[itemKey]);
 
 
 
-            if(this.item.data.type=="cItem" && dropitem.data.type == "group" && dropitem.data.data.isUnique){
-                itemData.isUnique=true;
-                itemData.uniqueGID=dropitem.data.id;
+            if (this.item.data.type == "cItem" && dropitem.data.type == "group" && dropitem.data.data.isUnique) {
+                itemData.isUnique = true;
+                itemData.uniqueGID = dropitem.data.id;
                 //this.item.data.data = itemData;
                 //await this.item.update(this.item.data);
-                await this.item.update({"data": itemData});
+                await this.item.update({ "data": itemData });
             }
 
-            else{
+            else if (this.item.data.data.hasdialog && (dropitem.data.type == "panel" || dropitem.data.type == "multipanel")) {
+                const myitem = this.item.data.data;
+
+                await this.item.update({ "data.dialogID": dropitem.id, "data.dialogName": dropitem.name });
+            }
+
+            else {
                 await this.updateLists(subitems);
 
             }
@@ -359,16 +374,25 @@ export class sItemSheet extends ItemSheet {
 
         }
 
-        else{
-            const myitem = this.item.data.data;
-            myitem.group.id = dropitem.id;
-            //TODO --- No sería Title?
-            myitem.group.name = dropitem.data.name;
-            myitem.group.ikey = itemKey;
-            this.item.data.data.group = myitem.group;
-            //await this.item.update(this.item.data);
+        else {
 
-            await this.item.update({"data.group": myitem.group});
+            if (this.item.data.data.datatype == "table" && dropitem.data.type == "group") {
+                const myitem = this.item.data.data;
+                myitem.group.id = dropitem.id;
+                //TODO --- No sería Title?
+                myitem.group.name = dropitem.data.name;
+                myitem.group.ikey = itemKey;
+                this.item.data.data.group = myitem.group;
+                //await this.item.update(this.item.data);
+
+                await this.item.update({ "data.group": myitem.group });
+            }
+            else if (this.item.data.data.hasdialog && (dropitem.data.type == "panel" || dropitem.data.type == "multipanel")) {
+                const myitem = this.item.data.data;
+
+                await this.item.update({ "data.dialogID": dropitem.id, "data.dialogName": dropitem.name });
+            }
+
 
         }
         //console.log("updated");
@@ -376,20 +400,20 @@ export class sItemSheet extends ItemSheet {
 
     }
 
-    getsubItems(){
+    getsubItems() {
 
         let subitems;
 
-        if(this.item.data.type=="panel"|| this.item.data.type=="group"){
+        if (this.item.data.type == "panel" || this.item.data.type == "group") {
             subitems = this.item.data.data.properties;
         }
 
-        else if(this.item.data.type=="sheettab" || this.item.data.type=="multipanel"){
-            subitems = this.item.data.data.panels; 
+        else if (this.item.data.type == "sheettab" || this.item.data.type == "multipanel") {
+            subitems = this.item.data.data.panels;
         }
 
-        else if(this.item.data.type=="cItem"){
-            subitems = this.item.data.data.groups; 
+        else if (this.item.data.type == "cItem") {
+            subitems = this.item.data.data.groups;
         }
 
         //console.log(subitems);
@@ -397,39 +421,39 @@ export class sItemSheet extends ItemSheet {
         return subitems;
     }
 
-    getitemKey(itemdata){
+    getitemKey(itemdata) {
 
         let objKey;
         //console.log(itemdata.type);
-        if(itemdata.type=="property"){
+        if (itemdata.type == "property") {
             objKey = "attKey";
         }
 
-        else if(itemdata.type=="panel" || itemdata.type=="multipanel"){
+        else if (itemdata.type == "panel" || itemdata.type == "multipanel") {
             objKey = "panelKey";
         }
 
-        else if(itemdata.type=="group"){
+        else if (itemdata.type == "group") {
             objKey = "groupKey";
         }
 
         return objKey;
     }
 
-    async updateLists(subitems){
-        if(this.item.data.type=="panel"|| this.item.data.type=="group"){
-            await this.item.update({"data.properties": subitems});
+    async updateLists(subitems) {
+        if (this.item.data.type == "panel" || this.item.data.type == "group") {
+            await this.item.update({ "data.properties": subitems });
             //this.item.data.data.properties = subitems;
         }
 
-        else if(this.item.data.type=="sheettab" || this.item.data.type=="multipanel"){
-            await this.item.update({"data.panels": subitems});
+        else if (this.item.data.type == "sheettab" || this.item.data.type == "multipanel") {
+            await this.item.update({ "data.panels": subitems });
             //this.item.data.data.panels = subitems;
         }
 
-        else if(this.item.data.type=="cItem"){
+        else if (this.item.data.type == "cItem") {
             //console.log(subitems);
-            await this.item.update({"data.groups": subitems}); 
+            await this.item.update({ "data.groups": subitems });
             //this.item.data.data.groups = subitems;
         }
 
@@ -439,38 +463,38 @@ export class sItemSheet extends ItemSheet {
         return subitems;
     }
 
-    async checkStillUnique(){
+    async checkStillUnique() {
         let isUnique = false;
         const groups = this.item.data.data.groups;
-        for(let j=groups.length-1;j>=0;j--){
+        for (let j = groups.length - 1; j >= 0; j--) {
             let groupId = groups[j].id;
             let groupObj = game.items.get(groupId);
 
             //Checks if group still exist
-            if(groupObj!=null){
-                if(groupObj.data.data.isUnique){
+            if (groupObj != null) {
+                if (groupObj.data.data.isUnique) {
                     isUnique = true;
-                } 
+                }
             }
-            else{
-                groups.splice(j,1);
+            else {
+                groups.splice(j, 1);
             }
 
         }
         //console.log(isUnique);
-        if(isUnique){
-            if(!this.item.data.data.isUnique){
-                this.item.data.data.isUnique=true;
+        if (isUnique) {
+            if (!this.item.data.data.isUnique) {
+                this.item.data.data.isUnique = true;
             }
         }
-        else{
-            if(this.item.data.data.isUnique){
+        else {
+            if (this.item.data.data.isUnique) {
                 this.item.data.data.isUnique = false;
             }
         }
     }
 
-    async refreshCIAttributes(basehtml){
+    async refreshCIAttributes(basehtml) {
         //console.log("updating CItem attr");
 
         const html = await basehtml.find(".attribute-list")[0];
@@ -481,19 +505,19 @@ export class sItemSheet extends ItemSheet {
 
         const attributes = this.item.data.data.attributes;
         const groups = this.item.data.data.groups;
-        for(let j=groups.length-1;j>=0;j--){
+        for (let j = groups.length - 1; j >= 0; j--) {
             let groupId = groups[j].id;
             let propObj = game.items.get(groupId);
 
-            if(propObj!=null){
+            if (propObj != null) {
                 let propertyIds = propObj.data.data.properties;
 
-                for(let i=propertyIds.length-1;i>=0;i--){
+                for (let i = propertyIds.length - 1; i >= 0; i--) {
                     let propertyId = propertyIds[i].id;
                     let ppObj = game.items.get(propertyId);
 
-                    if(ppObj!=null){
-                        if(!ppObj.data.data.ishidden || game.user.isGM){
+                    if (ppObj != null) {
+                        if (!ppObj.data.data.ishidden || game.user.isGM) {
                             let property = ppObj.data.data;
 
                             let new_container = document.createElement("DIV");
@@ -504,7 +528,7 @@ export class sItemSheet extends ItemSheet {
                             new_row.className = "flexblock-left";
                             new_row.setAttribute("id", i);
 
-                            if(property.datatype!="group" && property.datatype!="label"){
+                            if (property.datatype != "group" && property.datatype != "label") {
 
 
 
@@ -514,14 +538,14 @@ export class sItemSheet extends ItemSheet {
 
                                 let input;
 
-                                if(!hasProperty(attributes,property.attKey)){
-                                    setProperty(attributes,property.attKey, {});
-                                    if(property.datatype==="simplenumeric"){
-                                        attributes[property.attKey].value = await auxMeth.autoParser(property.defvalue,null,attributes,false); 
+                                if (!hasProperty(attributes, property.attKey)) {
+                                    setProperty(attributes, property.attKey, {});
+                                    if (property.datatype === "simplenumeric") {
+                                        attributes[property.attKey].value = await auxMeth.autoParser(property.defvalue, null, attributes, false);
                                     }
 
-                                    else{
-                                        attributes[property.attKey].value = await auxMeth.autoParser(property.defvalue,null,attributes,true); 
+                                    else {
+                                        attributes[property.attKey].value = await auxMeth.autoParser(property.defvalue, null, attributes, true);
                                     }
 
                                     tosave = true;
@@ -529,8 +553,14 @@ export class sItemSheet extends ItemSheet {
 
                                 let attribute = attributes[property.attKey];
 
-                                if(attribute.value=="" || attribute.value==null){
-                                    if(property.datatype==="simplenumeric"){
+                                if(attribute.ishidden==null){
+                                    attribute.ishidden = false;
+                                    tosave = true;
+                                }
+                                    
+
+                                if (attribute.value == "" || attribute.value == null) {
+                                    if (property.datatype === "simplenumeric") {
                                         //BUG FIXER
                                         //                                        let newPObj = {};
                                         //                                        newPObj.value = 0;
@@ -538,68 +568,69 @@ export class sItemSheet extends ItemSheet {
 
                                         attribute.value = 0;
                                     }
-                                    else{
+                                    else {
                                         attribute.value = property.defvalue;
                                     }
                                 }
 
-                                if(property.datatype!="list"){
+                                if (property.datatype != "list") {
                                     //console.log("editando");
 
-                                    if(property.datatype=="textarea"){
+                                    if (property.datatype == "textarea") {
                                         input = document.createElement("TEXTAREA");
                                         input.setAttribute("name", property.attKey);
                                         input.textContent = attribute.value;
 
-                                        if(property.inputsize=="S"){
+                                        if (property.inputsize == "S") {
                                             input.className = "texteditor-small";
                                         }
 
-                                        else if(property.inputsize=="L"){
+                                        else if (property.inputsize == "L") {
                                             input.className = "texteditor-large";
                                         }
-                                        else{
+                                        else {
                                             input.className = "texteditor-med";
                                         }
                                     }
-                                    else{
+                                    else {
                                         input = document.createElement("INPUT");
                                         input.setAttribute("name", property.attKey);
 
 
 
-                                        if(property.datatype==="simplenumeric"){
+                                        if (property.datatype === "simplenumeric") {
 
                                             input.setAttribute("type", "number");
                                             input.className = "input-smallmed";
 
 
-                                            if(property.auto!="" && property.auto!=null){
-                                                let atvalue = await auxMeth.autoParser(property.auto,null,attributes,false);
+                                            if (property.auto != "" && property.auto != null) {
+                                                let atvalue = await auxMeth.autoParser(property.auto, null, attributes, false);
                                                 input.setAttribute("value", atvalue);
-                                                input.setAttribute("readonly", "true"); 
+                                                input.setAttribute("readonly", "true");
                                             }
-                                            else{
+                                            else {
                                                 input.setAttribute("value", attribute.value);
                                             }
 
                                         }
-                                        else if(property.datatype==="simpletext"){
+                                        else if (property.datatype === "simpletext") {
                                             input.setAttribute("type", "text");
                                             input.className = "input-med";
                                             input.setAttribute("value", attribute.value);
                                         }
 
-                                        else if(property.datatype==="checkbox"){
+                                        else if (property.datatype === "checkbox") {
                                             input.setAttribute("type", "checkbox");
                                             let setvalue = false;
                                             //console.log(attribute.value);
-                                            if(attribute.value===true || attribute.value==="true"){
+                                            if (attribute.value === true || attribute.value === "true") {
                                                 setvalue = true;
                                             }
 
-                                            if(attribute.value==="false")
+                                            if (attribute.value === "false")
                                                 attribute.value = false;
+
                                             //console.log(setvalue);
                                             input.checked = setvalue;
                                         }
@@ -607,18 +638,18 @@ export class sItemSheet extends ItemSheet {
 
                                 }
                                 //LIST
-                                else{
+                                else {
                                     input = document.createElement("SELECT");
                                     input.className = "input-med";
                                     input.setAttribute("name", property.attKey);
                                     var rawlist = property.listoptions;
                                     var listobjects = rawlist.split(',');
 
-                                    for(var n=0;n<listobjects.length;n++){
+                                    for (var n = 0; n < listobjects.length; n++) {
                                         let n_option = document.createElement("OPTION");
                                         n_option.setAttribute("value", listobjects[n]);
                                         n_option.textContent = listobjects[n];
-                                        if(listobjects[n]==attribute.value)
+                                        if (listobjects[n] == attribute.value)
                                             n_option.setAttribute("selected", 'selected');
 
                                         input.appendChild(n_option);
@@ -627,17 +658,50 @@ export class sItemSheet extends ItemSheet {
                                 }
 
                                 input.className += " att-input";
-                                input.addEventListener("change", (event) => this.updateFormInput(event.target.name,event.target.value,propertyId));
+                                input.addEventListener("change", (event) => this.updateFormInput(event.target.name, event.target.value, propertyId));
 
-                                if(!game.user.isGM){
+                                label.className += " att-input-label";
+                                
+                                if (!game.user.isGM) {
                                     input.setAttribute("readonly", "true");
                                 }
 
                                 await new_row.appendChild(label);
-                                if(property.datatype!="label")
+                                if (property.datatype != "label")
                                     await new_row.appendChild(input);
 
                                 await new_container.appendChild(new_row);
+
+                                //TEST
+                                // if(!property.ishidden){
+                                //     let new_div = document.createElement("DIV");
+                                //     new_div.className = "citem-attribute";
+
+                                //     let mode_block = document.createElement("INPUT");
+                                //     mode_block.className = "visible-input";
+                                //     mode_block.setAttribute("id", i);
+                                //     mode_block.setAttribute("type", "checkbox");
+                                //     let setvalue = false;
+            
+                                //     if (attribute.ishidden == null)
+                                //         attribute.ishidden = false;
+    
+                                //     if (attribute.ishidden === true || attribute.ishidden === "true") {
+                                //         setvalue = true;
+                                //     }
+    
+                                //     if (attribute.ishidden === "false")
+                                //         attribute.ishidden = false;
+    
+    
+                                //     mode_block.checked = setvalue;
+                                //     mode_block.addEventListener("change", (event) => this.updateAttVisibility(property.attKey, event.target.checked));
+                                //     //TEST END
+                                    
+                                //     new_div.appendChild(mode_block);
+                                //     await new_row.appendChild(new_div);
+                                // }
+                                
                                 await html.appendChild(new_container);
 
                             }
@@ -645,8 +709,8 @@ export class sItemSheet extends ItemSheet {
 
                     }
 
-                    else{
-                        propertyIds.splice(i,1);
+                    else {
+                        propertyIds.splice(i, 1);
                     }
 
 
@@ -654,14 +718,14 @@ export class sItemSheet extends ItemSheet {
                 }
             }
 
-            else{
-                groups.splice(j,1);
+            else {
+                groups.splice(j, 1);
             }
 
         }
         //console.log(html);
-        if(tosave){
-            this.item.update({"data.attributes": attributes});
+        if (tosave) {
+            this.item.update({ "data.attributes": attributes });
             //this.item.data.data.attributes = attributes;
             //this.item.update(this.item.data);
         }
@@ -669,158 +733,175 @@ export class sItemSheet extends ItemSheet {
 
     }
 
-    async updateFormInput(name, value,propId){
+    async updateAttVisibility(name,value){
+
+        await this.item.update({ [`data.attributes.${name}.ishidden`]: value });
+    }
+
+    async updateFormInput(name, value, propId) {
         //console.log(value);
         let setvalue;
 
         let propObj = await game.items.get(propId);
-        if(propObj.data.data.datatype =="checkbox"){
+        if (propObj.data.data.datatype == "checkbox") {
             setvalue = true;
             let attKey = [propObj.data.data.attKey];
 
             let currentvalue = this.item.data.data.attributes[attKey].value;
 
-            if(currentvalue==true || currentvalue=="true"){
-                setvalue=false; 
+            if (currentvalue == true || currentvalue == "true") {
+                setvalue = false;
             }
 
             this.item.data.data.attributes[propObj.data.data.attKey].value = setvalue;
 
         }
 
-        else{
-            setvalue=value;
-            this.item.data.data.attributes[propObj.data.data.attKey].value=setvalue; 
+        else {
+            setvalue = value;
+            this.item.data.data.attributes[propObj.data.data.attKey].value = setvalue;
 
         }
 
-        await this.item.update({[`data.attributes.${name}.value`]:setvalue});
+        await this.item.update({ [`data.attributes.${name}.value`]: setvalue });
         //await this.item.update({"data.attributes":this.item.data.data.attributes},{diff:false});
-        await this.scrollbarSet(false);
+
         //this.item.update(this.item.data);
     }
 
 
-    async adnewCIMod(){
+    async adnewCIMod() {
         const mods = this.item.data.data.mods;
 
-        let newindex = mods.length-1;
-        if (newindex<0){
-            newindex=0;
+        let newindex = mods.length - 1;
+        if (newindex < 0) {
+            newindex = 0;
         }
-        else{
+        else {
 
-            newindex = mods[mods.length-1].index+1;
+            newindex = mods[mods.length - 1].index + 1;
         }
 
         let newMod = {};
-        newMod.name= "New Mod";
+        newMod.name = "New Mod";
         newMod.index = newindex;
-        newMod.type= "ADD";
-        newMod.attribute= "";
-        newMod.selectnum= "";
-        newMod.items= [];
+        newMod.type = "ADD";
+        newMod.attribute = "";
+        newMod.selectnum = "";
+        newMod.listmod = "INCLUDE";
+        newMod.items = [];
         newMod.citem = this.item.data.id;
 
 
         await mods.push(newMod);
 
-        await this.item.update({"data.mods": mods});
-        await this.scrollbarSet(false);
+        await this.item.update({ "data.mods": mods });
+
         //this.item.update(this.item.data);
 
         //console.log(mods);
     }
 
-    async editmodInput(index,name,value){
+    async editmodInput(index, name, value) {
         const mods = this.item.data.data.mods;
         const obj = mods[index];
         obj[name] = value;
         //this.item.data.data.mods = mods;
-        await this.scrollbarSet(false);
+
         //this.item.update(this.item.data);
 
-        this.item.update({"data.mods": mods});
+        this.item.update({ "data.mods": mods });
     }
 
-    async deletemodInput(index){
+    async deletemodInput(index) {
         const mods = this.item.data.data.mods;
-        mods.splice(index,1);
-        await this.scrollbarSet();
+        mods.splice(index, 1);
 
-        this.item.update({"data.mods": mods});
-        await this.scrollbarSet(false);
+
+        this.item.update({ "data.mods": mods });
+
         //this.item.update(this.item.data);
     }
 
-    async addItemToMod(modId,citemId){
+    async addItemToMod(modId, citemId) {
         //console.log(citemId);
         const mods = this.item.data.data.mods;
         const mod = mods[modId];
         let citem = game.items.get(citemId);
-        let arrayItem ={};
+        let arrayItem = {};
         arrayItem.id = citemId;
         arrayItem.name = citem.name;
 
-        if(!mod.items.includes(citemId))
+        if (!mod.items.includes(citemId))
             mod.items.push(arrayItem);
-        this.item.update({"data.mods": mods});
-        await this.scrollbarSet(false);
+        this.item.update({ "data.mods": mods });
+
         //this.item.update(this.item.data);
     }
 
-    async scrollBarLoad(basehtml){
-        let html = $(this._element[0]);
-        let wcontent = html.find(".window-content").height();
-        let sheader = html.find(".item-sheet-header").height();
-        let atabs = html.find(".atabs").height();
-        let sbodyheight = html.find(".sheet-body").height();
-        let newheight = wcontent - (sheader + atabs);
+    async scrollBarTest(basehtml) {
+        const wcontent = await this._element[0].getElementsByClassName("window-content");
+        let newheight = parseInt(wcontent[0].offsetHeight) - 152;
 
-        const htmltab = html.find(".scrollable");
-        for(let i=0;i<htmltab.length;i++){
-            let scrollNode = htmltab[i];
-            $(scrollNode).height(newheight);
-
-            if(scrollNode.classList.contains("active")){
-                //console.log(scrollNode.style.height);
-                let myuser = game.user.id;
-                let newscrollTop = 0;
-                if(hasProperty(this.item.data.flags.sandbox,"scrolls_" + myuser + "_" + this.item.id))
-                    newscrollTop =this.item.data.flags.sandbox["scrolls_" + myuser + "_" + this.item.id]
-
-                $(scrollNode).scrollTop(newscrollTop);
-
-            }
+        const html = await basehtml.find(".scrollable");
+        for (let i = 0; i < html.length; i++) {
+            let scrollNode = html[i];
+            scrollNode.style.height = newheight + "px";
 
         }
 
     }
 
-    async scrollbarSet(noupdate = true){
-        let scrolls = this._element[0].getElementsByClassName("scrollable");
-        let scrollTop = 0;
-        for(let i=0;i<scrolls.length;i++){
-            if(scrolls[i].classList.contains("active")){
-                scrollTop = await scrolls[i].scrollTop;
+    // call before super._render
+    async _saveScrollStates() {
+
+        //console.log("getting scroll");
+        let scrollStates = [];
+
+        let html = this._element;
+
+        if (html == null)
+            return;
+
+        let lists = html.find(".scrollable");
+
+        for (let list of lists) {
+            scrollStates.push($(list).scrollTop());
+        }
+
+        return scrollStates;
+    }
+
+    // call after super._render
+    async _setScrollStates() {
+        //console.log("setting scroll");
+        let html = this._element;
+
+        if (html == null)
+            return;
+
+        if (this.scrollStates) {
+
+            let lists = html.find(".scrollable");
+
+            for (let i = 0; i < lists.length; i++) {
+                let newEl = $(lists[i]);
+                let newScroll = parseInt(this.scrollStates[i]);
+                newEl[0].scrollTop = newScroll;
             }
-
         }
+    }
 
-        let myuser = game.user.id;
+    async _render(force = false, options = {}) {
 
-        if(noupdate){
-            await this.item.setFlag('sandbox', "scrolls_" + myuser, scrollTop);
-        }
-        else{
-            this.item.data.flags.sandbox["scrolls_" + myuser] = scrollTop;
-        }
+        this.scrollStates = await this._saveScrollStates();
+
+        await super._render(force, options);
+
     }
 
     /** @override */
     async _updateObject(event, formData) {
-
-        this.scrollbarSet();
 
         super._updateObject(event, formData);
 
