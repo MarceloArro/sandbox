@@ -17,13 +17,13 @@ import { sToken } from "./sandboxtoken.js";
 /*  Hooks                 */
 /* -------------------------------------------- */
 
-Hooks.once("init", async function() {
+Hooks.once("init", async function () {
     console.log(`Initializing Sandbox System`);
 
     /**
-	 * Set an initiative formula for the system
-	 * @type {String}
-	 */
+     * Set an initiative formula for the system
+     * @type {String}
+     */
 
     CONFIG.debug.hooks = true;
     CONFIG.Actor.documentClass = gActor;
@@ -44,7 +44,7 @@ Hooks.once("init", async function() {
     Actors.unregisterSheet("core", ActorSheet);
     Actors.registerSheet("dnd5e", gActorSheet, { makeDefault: true });
     Items.unregisterSheet("core", ItemSheet);
-    Items.registerSheet("dnd5e", sItemSheet, {makeDefault: true});
+    Items.registerSheet("dnd5e", sItemSheet, { makeDefault: true });
 
 
 
@@ -147,8 +147,7 @@ Hooks.once("init", async function() {
         type: String,
     });
 
-
-    Combat.prototype.rollInitiative = async function(ids, {formula=null, updateTurn=true, messageOptions={}}={}) {
+    Combat.prototype.rollInitiative = async function (ids, { formula = null, updateTurn = true, messageOptions = {} } = {}) {
 
         // Structure input data
         ids = typeof ids === "string" ? [ids] : ids;
@@ -158,16 +157,16 @@ Hooks.once("init", async function() {
         // Iterate over Combatants, performing an initiative roll for each
         const updates = [];
         const messages = [];
-        for ( let [i, id] of ids.entries() ) {
+        for (let [i, id] of ids.entries()) {
 
             // Get Combatant data (non-strictly)
             const combatant = this.combatants.get(id);
-            if ( !combatant?.isOwner ) return results;
+            if (!combatant?.isOwner) return results;
 
-                // Produce an initiative roll for the Combatant
-                const roll = await combatant.getInitiativeRoll(formula);
-                console.log(roll);
-                updates.push({_id: id, initiative: roll.total});
+            // Produce an initiative roll for the Combatant
+            const roll = await combatant.getInitiativeRoll(formula);
+            console.log(roll);
+            updates.push({ _id: id, initiative: roll.total });
 
             // Construct chat message data
             let messageData = foundry.utils.mergeObject({
@@ -177,8 +176,8 @@ Hooks.once("init", async function() {
                     token: combatant.token?.id,
                     alias: combatant.name
                 },
-                flavor: game.i18n.format("COMBAT.RollsInitiative", {name: combatant.name}),
-                flags: {"core.initiativeRoll": true}
+                flavor: game.i18n.format("COMBAT.RollsInitiative", { name: combatant.name }),
+                flags: { "core.initiativeRoll": true }
             }, messageOptions);
             const chatData = await roll.toMessage(messageData, {
                 create: false,
@@ -186,17 +185,17 @@ Hooks.once("init", async function() {
             });
 
             // Play 1 sound for the whole rolled set
-            if ( i > 0 ) chatData.sound = null;
+            if (i > 0) chatData.sound = null;
             messages.push(chatData);
         }
-        if ( !updates.length ) return this;
+        if (!updates.length) return this;
 
         // Update multiple combatants
         await this.updateEmbeddedDocuments("Combatant", updates);
 
         // Ensure the turn order remains with the same combatant
-        if ( updateTurn ) {
-            await this.update({turn: this.turns.findIndex(t => t.id === currentId)});
+        if (updateTurn) {
+            await this.update({ turn: this.turns.findIndex(t => t.id === currentId) });
         }
 
         // Create multiple chat messages
@@ -205,25 +204,25 @@ Hooks.once("init", async function() {
 
     };
 
-    Combatant.prototype.getInitiativeRoll = async function(formula){
+    Combatant.prototype.getInitiativeRoll = async function (formula) {
 
         formula = formula || await this._getInitiativeFormula();
         const rollData = await this.actor.getRollData() || {};
         const roll = Roll.create(formula, rollData);
-        return roll.evaluate({async: false}); 
+        return roll.evaluate({ async: false });
     };
 
 
-    Combatant.prototype._getInitiativeFormula = async function() {
+    Combatant.prototype._getInitiativeFormula = async function () {
 
         let initF = await game.settings.get("sandbox", "initKey");
         let formula = "1d20";
-        if(initF!=""){
+        if (initF != "") {
             formula = "@{" + initF + "}"
         }
 
-        formula = await auxMeth.autoParser(formula,this.actor.data.data.attributes,null,true,false);
-        formula = await auxMeth.autoParser(formula,this.actor.data.data.attributes,null,true,false);
+        formula = await auxMeth.autoParser(formula, this.actor.data.data.attributes, null, true, false);
+        formula = await auxMeth.autoParser(formula, this.actor.data.data.attributes, null, true, false);
 
         console.log("aqui1");
 
@@ -241,26 +240,26 @@ Hooks.once("init", async function() {
     };
 
     game.socket.on("system.sandbox", (data) => {
-        if (data.op === 'target_edit'){
+        if (data.op === 'target_edit') {
             let actorOwner = game.actors.get(data.actorId);
-            actorOwner.handleTargetRequest(data); 
-        } 
+            actorOwner.handleTargetRequest(data);
+        }
     });
 
     game.socket.on("system.sandbox", (data) => {
-        if (data.op === 'transfer_edit'){
+        if (data.op === 'transfer_edit') {
             let actorOwner = game.actors.get(data.ownerID);
-            actorOwner.handleTransferEdit(data); 
-        } 
+            actorOwner.handleTransferEdit(data);
+        }
     });
 
 
 });
 
-Hooks.once('ready', async() => {
+Hooks.once('ready', async () => {
     //console.log("ready!");
     //Custom styling
-    if(game.settings.get("sandbox", "customStyle")!=""){
+    if (game.settings.get("sandbox", "customStyle") != "") {
         const link = document.createElement('link');
         link.type = 'text/css';
         link.rel = 'stylesheet';
@@ -274,7 +273,7 @@ Hooks.once('ready', async() => {
 
     //GM ROLL MENU TEMPLATE
     //Sets roll menu close to hotbar THIS IS SOMETHING FOR ME STREAMS, TO REMOVE IF YOU LIKE
-    if(game.user.isGM){
+    if (game.user.isGM) {
 
         game.data.rolldc = 3;
 
@@ -310,26 +309,26 @@ Hooks.once('ready', async() => {
             event.preventDefault();
             event.stopPropagation();
 
-            if(event.key=="Backspace" || event.key=="Delete"){
+            if (event.key == "Backspace" || event.key == "Delete") {
                 sInput.value = 0;
             }
 
-            else if(event.key=="Enter"){
+            else if (event.key == "Enter") {
                 //SBOX.diff[game.data.world.name] = sInput.value;
                 await game.settings.set("sandbox", "diff", sInput.value);
             }
 
-            else if(event.key=="-"){
+            else if (event.key == "-") {
                 //SBOX.diff[game.data.world.name] = sInput.value;
                 sInput.value = "-";
             }
 
-            else{
-                if(!isNaN(event.key))
+            else {
+                if (!isNaN(event.key))
                     sInput.value += event.key;
             }
 
-            if(!isNaN(sInput.value)){
+            if (!isNaN(sInput.value)) {
                 sInput.value = parseInt(sInput.value);
             }
 
@@ -350,7 +349,7 @@ Hooks.once('ready', async() => {
 
         backgr.appendChild(form);
 
-        if(game.settings.get("sandbox", "showDC")){
+        if (game.settings.get("sandbox", "showDC")) {
             await hotbar.appendChild(backgr);
         }
 
@@ -358,9 +357,9 @@ Hooks.once('ready', async() => {
         await auxMeth.rollToMenu();
         SBOX.showshield = false;
 
-        if(game.settings.get("sandbox", "tokenOptions")){
+        if (game.settings.get("sandbox", "tokenOptions")) {
             document.addEventListener("keydown", (event) => {
-                if(event.key=="Control"){
+                if (event.key == "Control") {
                     SBOX.showshield = true;
                 }
 
@@ -372,27 +371,65 @@ Hooks.once('ready', async() => {
             });
         }
 
-
     }
 
 });
 
-//COPIED FROM A MODULE. TO SHOW A SHIELD ON A TOKEN AND LINK THE ATTRIBUTE. TO REMOVE
+Hooks.on("renderSidebarTab", createExportButtons);
+
+function createExportButtons(sidebar, jq) {
+
+    if (sidebar._element[0].id != "settings")
+        return;
+
+    if(!game.user.isGM)
+        return;
+    //NEW SETTINGS OPTIONS
+    let settingstab = jq.get(0).querySelector('#settings-game');
+
+    let exportButton = document.createElement("BUTTON");
+    exportButton.textContent = "EXPORT SANDBOX JSON";
+
+
+    let entities = {};
+
+    entities.actors = game.actors.contents;
+    entities.items = game.items.contents;
+    entities.folders = game.folders.contents;
+
+    exportButton.addEventListener("click", (event) => {
+        auxMeth.exportTree(true, entities);
+
+    });
+
+    let importButton = document.createElement("BUTTON");
+    importButton.textContent = "IMPORT SANDBOX JSON";
+
+    importButton.addEventListener("click", (event) => {
+        auxMeth.getImportFile();
+
+    });
+
+    settingstab.appendChild(exportButton);
+    settingstab.appendChild(importButton);
+}
+
+//COPIED FROM A MODULE. TO SHOW A SHIELD ON A TOKEN AND LINK THE ATTRIBUTE
 Hooks.on("hoverToken", (token, hovered) => {
 
-    if(!game.settings.get("sandbox", "tokenOptions"))
+    if (!game.settings.get("sandbox", "tokenOptions"))
         return;
 
-    if(token.actor==null)
+    if (token.actor == null)
         return;
 
-    if(token.actor.data.data.tokenshield == null)
+    if (token.actor.data.data.tokenshield == null)
         return;
 
     let shieldprop = token.actor.data.data.tokenshield;
     //console.log(shieldprop);
 
-    if(token.actor.data.data.attributes[shieldprop]==null)
+    if (token.actor.data.data.attributes[shieldprop] == null)
         return;
 
     let ca = token.actor.data.data.attributes[shieldprop].value;
@@ -404,7 +441,8 @@ Hooks.on("hoverToken", (token, hovered) => {
 `);
 
     if (hovered && SBOX.showshield) {
-        let canvasToken = canvas.tokens.placeables.find((tok) => tok.id === token.data.id);
+        let canvasToken = canvas.tokens.placeables.find((tok) => tok.id === token.id);
+
         let dmtktooltip = $(`<div class="dmtk-tooltip"></div>`);
         dmtktooltip.css('left', (canvasToken.worldTransform.tx + ((token.width) * canvas.scene._viewPosition.scale)) + 'px');
         dmtktooltip.css('top', (canvasToken.worldTransform.ty) + 'px');
@@ -416,118 +454,7 @@ Hooks.on("hoverToken", (token, hovered) => {
 
 });
 
-Hooks.on("createToken", async (scene,token,options,userId) => {
-
-    if(!hasProperty(token, "data"))
-        setProperty(token,"data",{});
-
-});
-
-Hooks.on("deleteToken", (scene, token) => {
-    $('.dmtk-tooltip').remove();
-});
-
-//Hooks.on("preUpdateToken", async (scene, token, updatedData, options, userId) => {
-//    //console.log("updatingTokenActor");
-//    //console.log(token);
-//    //console.log(updatedData);
-//    if(!token.owner && !game.user.isGM){
-//        return;
-//    }
-//    //    let myToken = canvas.tokens.get(token.id);
-//    //    let myactor = game.actors.get(token.actorId);
-//    //    let actorData = false;
-//    //    if(updatedData.data!=null)
-//    //        if(updatedData.data.citems!=null || updatedData.data.rolls!=null)
-//    //            actorData = true;
-//    //
-//    //    if (updatedData["data.citems"] || actorData){
-//    //        if(!hasProperty(updatedData,"actorData"))
-//    //            setProperty(updatedData,"actorData",{});
-//    //        if(!hasProperty(updatedData.actorData,"data"))
-//    //            setProperty(updatedData.actorData,"data",{});
-//    //        setProperty(updatedData.actorData.data,"citems",[]);
-//    //        if(updatedData.data.rolls!=null){
-//    //            setProperty(updatedData.actorData.data,"rolls",updatedData.data.rolls);
-//    //        }
-//    //        if(updatedData["data.citems"])
-//    //            updatedData.actorData.data.citems = updatedData["data.citems"];
-//    //        if(actorData){
-//    //            updatedData.actorData.data.citems = updatedData.data.citems;
-//    //            await delete updatedData.data.citems;
-//    //        }
-//    //
-//    //    }
-//    //    //    
-//    //    if (updatedData["effects"]!=null)
-//    //        updatedData.actorData.effects = updatedData["effects"];
-//
-//    //console.log(updatedData);
-//
-//});
-
-//Hooks.on("updateToken", async (scene, token, updatedData, options, userId) => {
-//    //console.log("updatingTokenActor");
-//    //console.log(token);
-//    //console.log(updatedData.actorData);
-//    if(!token.owner && !game.user.isGM){
-//        return;
-//    }
-//    let myToken = canvas.tokens.get(token.id);
-//    let myactor = game.actors.get(token.actorId);
-//
-//    //console.log(myToken.actor.data);
-//    //    console.log(myactor.data);
-//
-//    let actorData = false;
-//    if(updatedData.data!=null)
-//        if(updatedData.data.citems!=null)
-//            actorData = true;
-//
-//    if (updatedData["data.citems"] || actorData){
-//        if(!hasProperty(updatedData,"actorData"))
-//            setProperty(updatedData,"actorData",{});
-//        if(!hasProperty(updatedData.actorData,"data"))
-//            setProperty(updatedData.actorData,"data",{});
-//        setProperty(updatedData.actorData.data,"citems",[]);
-//        if(updatedData["data.citems"])
-//            updatedData.actorData.data.citems = updatedData["data.citems"];
-//        if(actorData){
-//            updatedData.actorData.data.citems = updatedData.data.citems;
-//            await delete updatedData.data.citems;
-//        }
-//
-//    }
-//
-//    if(!options.stopit && (updatedData.actorData) && !hasProperty(updatedData.actorData,"effects")){
-//        //console.log("Changing token");
-//
-//        //let myData = await myactor.actorUpdater(myToken.actor.data);
-//
-//        //await myToken.update(myData,{stopit:true});
-//        //myToken.actor.sheet.render();
-//
-//        let mydata = await duplicate(myToken.actor.data);
-//        let adata = await myactor.actorUpdater(myToken.actor.data);
-//
-//        let newattributes = await myactor.compareValues(mydata.data.attributes,adata.data.attributes);
-//        let newcitems = await myactor.comparecItems(mydata.data.citems,adata.data.citems);
-//        let newrolls = await myactor.compareValues(mydata.data.rolls,adata.data.rolls);
-//
-//        let newdata = {};
-//        newdata.attributes = newattributes;
-//        newdata.citems = newcitems;
-//        newdata.rolls = newrolls;
-//
-//        await myToken.update({"actorData.data": newdata},{stopit:true});
-//
-//        myToken.actor.sheet.render();
-//
-//    }
-//});
-
-
-Hooks.on("preUpdateActor", async (actor,updateData,options,userId) => {
+Hooks.on("preUpdateActor", async (actor, updateData, options, userId) => {
     //console.log(actor);
     //console.log(updateData);
     //console.log(data.data.istemplate);
@@ -536,15 +463,15 @@ Hooks.on("preUpdateActor", async (actor,updateData,options,userId) => {
     //await actor.sheet.setTokenOptions(actor.data);
     //    let newname = actor.data.name;
     //
-    if(updateData.name){
+    if (updateData.name) {
 
-        if(!actor.data.data.istemplate){
-            if(!updateData.token)
-                setProperty(updateData,"token",{});
+        if (!actor.data.data.istemplate) {
+            if (!updateData.token)
+                setProperty(updateData, "token", {});
             updateData.token.name = updateData.name;
         }
 
-        else{
+        else {
             delete updateData.name;
         }
 
@@ -552,9 +479,9 @@ Hooks.on("preUpdateActor", async (actor,updateData,options,userId) => {
     }
 
 
-    if(updateData["data.rollmode"]){
-        if(!hasProperty(updateData,"data"))
-            setProperty(updateData,"data",{});
+    if (updateData["data.rollmode"]) {
+        if (!hasProperty(updateData, "data"))
+            setProperty(updateData, "data", {});
         updateData.data.rollmode = updateData["data.rollmode"];
     }
 
@@ -563,32 +490,36 @@ Hooks.on("preUpdateActor", async (actor,updateData,options,userId) => {
 
 });
 
-Hooks.on("preCreateToken", async (scene, tokenData, options, userId) =>{
+Hooks.on("createToken", async (token, options, userId) => {
 
-    if(game.settings.get("sandbox", "tokenOptions")){
-        const sameTokens = game.scenes.get(scene.parent.id).data.tokens.filter(e => e.data.actorId === tokenData.actorId) || [];
-        //console.log(sameTokens);
-        let tokennumber = 0;
-        if (sameTokens.length !== 0) { 
-            tokennumber = sameTokens.length + 1;
-        }
+    if (game.settings.get("sandbox", "tokenOptions")) {
+        let tokenData = token.data;
+        let sameTokens = canvas.tokens.placeables.filter((tok) => tok.data.actorId === tokenData.actorId);
 
-        if(tokennumber!=0){
-            tokenData.name += " " + tokennumber;
+        if (token.actor.isToken) {
+            let tokennumber = 0;
+            if (sameTokens.length > 0) {
+                tokennumber = sameTokens.length;
+            }
+
+            token.update({ name: token.name + " " + tokennumber });
         }
 
 
     }
 
+});
 
+Hooks.on("deleteToken", (scene, token) => {
+    $('.dmtk-tooltip').remove();
 });
 
 Hooks.on('createCombatant', (combat, combatantId, options) => {
-    combatantId.initiative=1;
+    combatantId.initiative = 1;
 });
 
-Hooks.on("preCreateActor", (createData) =>{
-    if(createData.token!=null)
+Hooks.on("preCreateActor", (createData) => {
+    if (createData.token != null)
         createData.token.name = createData.name;
 
     //    if(createData.data.data.istemplate)
@@ -598,7 +529,7 @@ Hooks.on("preCreateActor", (createData) =>{
 
 });
 
-Hooks.on("deleteActor", (actor) =>{
+Hooks.on("deleteActor", (actor) => {
     //console.log(actor);
 
 });
@@ -629,8 +560,8 @@ Hooks.on("closegActorSheet", (entity, eventData) => {
     //console.log("closing sheet");
 
     let character = entity.object.data;
-    if(character.flags.ischeckingauto)
-        character.flags.ischeckingauto=false;
+    if (character.flags.ischeckingauto)
+        character.flags.ischeckingauto = false;
 
     //entity.object.update({"token":entity.object.data.token},{diff:false});
 
@@ -678,37 +609,38 @@ Hooks.on("preCreateItem", (entity, options, userId) => {
 });
 
 Hooks.on("createItem", async (entity) => {
-    let do_update=false;
-    let image="";
-    if(entity.type=="cItem"){
+    let do_update = false;
+    let image = "";
+    if (entity.type == "cItem") {
         //console.log(entity);
-        for(let i=0;i<entity.data.data.mods.length;i++){
-            const mymod=entity.data.data.mods[i];
-            if(mymod.citem!=entity.data.id){
+        for (let i = 0; i < entity.data.data.mods.length; i++) {
+            const mymod = entity.data.data.mods[i];
+            if (mymod.citem != entity.data.id) {
                 mymod.citem = entity.data.id;
-                do_update=true;
+                do_update = true;
             }
 
         }
         //BEWARE OF THIS, THIS WAS NEEDED WHEN DUPLICATING CITEMS IN THE PAST!!
-        if(do_update)
-            await entity.update(entity.data,{diff:false});
+        if (do_update)
+            await entity.update(entity.data, { diff: false });
     }
 
 });
 
-Hooks.on("rendersItemSheet", (app, html, data) => {
+Hooks.on("rendersItemSheet", async (app, html, data) => {
     //console.log(app);
 
-    if(app.object.data.type == "cItem"){
+    if (app.object.data.type == "cItem") {
         app.refreshCIAttributes(html);
     }
 
-    app.scrollBarLoad(html);
+    await app.scrollBarTest(html);
+    app._setScrollStates();
 
     html.find('.window-resizable-handle').mouseup(ev => {
         event.preventDefault();
-        app.scrollBarLoad(html);
+        app.scrollBarTest(html);
     });
 
 });
@@ -719,30 +651,32 @@ Hooks.on("rendergActorSheet", async (app, html, data) => {
     //console.log(data);
     const actor = app.actor;
 
-
-    if(actor.token==null)
+    if (actor.token == null)
         actor.listSheets();
     //if(!actor.data.data.istemplate && !actor.data.flags.ischeckingauto){
-    if(!actor.data.data.istemplate){
-        app.refreshCItems(html);
+    if (!actor.data.data.istemplate) {
+        await app.refreshCItems(html);
         app.handleGMinputs(html);
         app.refreshBadge(html);
         app.populateRadioInputs(html);
+        app.modifyLists(html);
         app.setImages(html);
         await app.setSheetStyle(actor);
-        app.scrollBarLoad(html);
+        //app.scrollBarLoad(html);
+
         actor.setInputColor();
 
         html.find('.window-resizable-handle').mouseup(ev => {
             event.preventDefault();
-            app.scrollBarLoad(html);
+            app.setSheetStyle(actor);
         });
 
 
 
     }
 
-    app.displaceTabs2(null,html);
+    app.displaceTabs2(null, html);
+    await app._setScrollStates();
 
 });
 
@@ -750,7 +684,7 @@ Hooks.on("renderChatMessage", async (app, html, data) => {
     //    console.log(app);
     //    console.log(data);
     //    console.log(html);
-    let hide=false;
+    let hide = false;
     let messageId = app.id;
     let msg = game.messages.get(messageId);
 
@@ -763,13 +697,13 @@ Hooks.on("renderChatMessage", async (app, html, data) => {
     //        hide=true;
 
     //console.log(hide);
-    if(_html.includes("dice-roll") && !_html.includes("table-draw")){
+    if (_html.includes("dice-roll") && !_html.includes("table-draw")) {
         let rollData = {
-            token:{
-                img:"icons/svg/d20-black.svg",
-                name:"Free Roll"
+            token: {
+                img: "icons/svg/d20-black.svg",
+                name: "Free Roll"
             },
-            actor:realuser.data.name,
+            actor: realuser.data.name,
             flavor: "Roll",
             formula: app._roll.formula,
             mod: 0,
@@ -795,20 +729,22 @@ Hooks.on("renderChatMessage", async (app, html, data) => {
 
     //console.log(html);
 
-    if(!_html.includes("roll-template")){
+    if (!_html.includes("roll-template")) {
         //console.log(_html);
-        if(_html.includes("table-draw")){
+        if (_html.includes("table-draw")) {
             let mytableID = data.message.flags.core.RollTable;
             let mytable = game.tables.get(mytableID);
             let tableresult = mytable.getResultsForRoll(app._roll.total)[0].data.text;
             html.find('.dice-roll');
-            if(mytable.data.permission.default==0)
-                hide=true;
+            if (mytable.data.permission.default == 0)
+                hide = true;
         }
 
         let msgData = {
             message: data.message.content,
-            user: realuser.data.name
+            user: realuser.data.name,
+            isWhisper: data.isWhisper,
+            whisperTo: data.whisperTo
         };
 
         await renderTemplate("systems/sandbox/templates/sbmessage.html", msgData).then(async newhtml => {
@@ -824,26 +760,25 @@ Hooks.on("renderChatMessage", async (app, html, data) => {
 
     }
 
-    else{
-        let deletebutton = $(html).find(".roll-message-delete")[0];
-
-        if(game.user.isGM){
-            $(html).find(".roll-message-delete").click(async ev => {
-                msg.delete(html);
-            });
-            auxMeth.rollToMenu();
-        }
-
-        else{
-            deletebutton.style.display = "none";
-        }
+    let deletebutton = $(html).find(".roll-message-delete")[0];
+    //console.log(deletebutton);
+    if (game.user.isGM) {
+        $(html).find(".roll-message-delete").click(async ev => {
+            msg.delete(html);
+        });
+        auxMeth.rollToMenu();
     }
+
+    else {
+        deletebutton.style.display = "none";
+    }
+
 
     //console.log(html);
 
     //
     //
-    if(!game.user.isGM && hide){
+    if (!game.user.isGM && hide) {
         //console.log(html);
         //console.log(_html);
         html.hide();
@@ -857,27 +792,28 @@ Hooks.on("renderChatMessage", async (app, html, data) => {
     let result = $(html).find(".roll-result")[0];
     let clickdetail = $(html).find(".roll-detail-button")[0];
     let clickmain = $(html).find(".roll-main-button")[0];
+    let citemlink = $(html).find(".roll-citemlink")[0];
 
-    if(detail == null){
+    if (detail == null) {
 
         return;
 
     }
 
-    if(result==null){
+    if (result == null) {
         return;
     }
 
-    if(clickdetail==null){
+    if (clickdetail == null) {
         return;
     }
 
-    if(clickmain==null){
+    if (clickmain == null) {
 
         return;
     }
 
-    if(!game.user.isGM && data.message.blind){
+    if (!game.user.isGM && data.message.blind) {
         detail.style.display = "none";
         result.style.display = "none";
         clickdetail.style.display = "none";
@@ -910,12 +846,25 @@ Hooks.on("renderChatMessage", async (app, html, data) => {
         $(html).find(".roll-main-button").hide();
     });
 
+    if (citemlink) {
+        $(html).find(".roll-citemlink").click(ev => {
+            let mylinkId = ev.target.getAttribute("id");
+
+            if (mylinkId) {
+                const item = game.items.get(mylinkId);
+                item.sheet.render(true);
+            }
+
+        });
+    }
+
+
 });
 
-Hooks.on("renderDialog",(app,html,data)=>{
+Hooks.on("renderDialog", async (app, html, data) => {
     const htmlDom = html[0];
 
-    if (app.data.citemdialog){
+    if (app.data.citemdialog) {
 
         let checkbtns = htmlDom.getElementsByClassName("dialog-check");
         let dialogDiv = htmlDom.getElementsByClassName("item-dialog");
@@ -924,36 +873,36 @@ Hooks.on("renderDialog",(app,html,data)=>{
         let actorId = dialogDiv[0].getAttribute("actorId");
         let selectnum = dialogDiv[0].getAttribute("selectnum");
         const actor = game.actors.get(actorId);
-        setProperty(actor.data.flags,"selection",[]);
-        button.disabled=true;
+        setProperty(actor.data.flags, "selection", []);
+        button.disabled = true;
 
-        for(let i=0;i<checkbtns.length;i++){
+        for (let i = 0; i < checkbtns.length; i++) {
             let check = checkbtns[i];
             check.addEventListener("change", (event) => {
 
                 let itemId = event.target.getAttribute("itemId");
-                if(event.target.checked){
+                if (event.target.checked) {
                     actor.data.flags.selection.push(itemId);
                 }
 
-                else{
-                    actor.data.flags.selection.splice(actor.data.flags.selection.indexOf(itemId),1);
+                else {
+                    actor.data.flags.selection.splice(actor.data.flags.selection.indexOf(itemId), 1);
                 }
 
                 let selected = actor.data.flags.selection.length;
 
-                if(selected!=selectnum){
-                    button.disabled=true;
+                if (selected != selectnum) {
+                    button.disabled = true;
                 }
-                else{
-                    button.disabled=false;
+                else {
+                    button.disabled = false;
                 }
 
             });
         }
     }
 
-    if(app.data.citemText){
+    if (app.data.citemText) {
 
         htmlDom.addEventListener("keydown", function (event) {
             event.stopPropagation();
@@ -966,6 +915,147 @@ Hooks.on("renderDialog",(app,html,data)=>{
 
         });
     }
+
+    if (app.data.rollDialog) {
+
+        let checkbtns = htmlDom.getElementsByClassName("checkbox");
+
+        for (let i = 0; i < checkbtns.length; i++) {
+            let check = checkbtns[i];
+            check.addEventListener("change", (event) => {
+
+                let checkgroup = event.target.getAttribute("checkGroup");
+
+                if (event.target.checked && checkgroup != "") {
+                    for (let j = 0; j < checkbtns.length; j++) {
+                        let othercheck = checkbtns[j];
+                        if (othercheck.getAttribute("checkGroup") == checkgroup && othercheck != check)
+                            othercheck.checked = false;
+                    }
+                }
+
+            });
+        }
+
+        let allfields = htmlDom.getElementsByClassName("rdialogInput");
+        let dialogProps = {};
+
+        for (let k = 0; k < allfields.length; k++) {
+            let myKey = allfields[k].getAttribute("attKey");
+            setProperty(dialogProps, myKey, {});
+            if (allfields[k].type == "checkbox") {
+
+                dialogProps[myKey].value = allfields[k].checked;
+            }
+            else {
+                dialogProps[myKey].value = allfields[k].value;
+
+                if (allfields[k].classList.contains("hasarrows")) {
+
+                    let sInputArrows = document.createElement("SPAN");
+                    let arrContainer = document.createElement("A");
+                    arrContainer.className = "arrcontainer";
+                    arrContainer.style.display = "inline-block";
+                    arrContainer.setAttribute("attKey", allfields[k].getAttribute("attKey"));
+                    let arrUp = document.createElement("I");
+                    arrUp.className = "arrup";
+                    let arrDown = document.createElement("I");
+                    arrDown.className = "arrdown";
+
+                    arrContainer.appendChild(arrUp);
+                    arrContainer.appendChild(arrDown);
+                    sInputArrows.appendChild(arrContainer);
+                    allfields[k].parentElement.insertBefore(sInputArrows, allfields[k].nextSibling);
+
+                    arrUp.addEventListener("click", async (event) => {
+                        event.preventDefault();
+
+                        let attKey = event.target.parentElement.getAttribute("attkey");
+
+                        dialogProps[attKey].value = parseInt(dialogProps[attKey].value) + 1;
+
+                        allfields[k].value = dialogProps[attKey].value;
+
+                        var newevent = new Event('change');
+                        allfields[k].dispatchEvent(newevent);
+                    });
+
+                    arrDown.addEventListener("click", async (event) => {
+                        event.preventDefault();
+
+                        let attKey = event.target.parentElement.getAttribute("attkey");
+
+                        dialogProps[attKey].value = parseInt(dialogProps[attKey].value) - 1;
+
+                        allfields[k].value = dialogProps[attKey].value;
+                        var newevent = new Event('change');
+                        allfields[k].dispatchEvent(newevent);
+                    });
+                }
+
+                if (allfields[k].classList.contains("defvalue")) {
+                    let deffield = allfields[k];
+                    let propDef = game.items.find(y => y.data.data.attKey == myKey);
+                    let defexpr = propDef.data.data.defvalue;
+                    let finalvalue = defexpr;
+
+                    if (isNaN(defexpr)) {
+                        defexpr = await auxMeth.parseDialogProps(defexpr, dialogProps);
+                        finalvalue = await auxMeth.autoParser(defexpr, app.data.attributes, app.data.citemattributes, false, null, app.data.number);
+                    }
+
+                    if(propDef.data.data.datatype=="checkbox"){
+                        let checkfinal = false;
+                        if(finalvalue === "true" || finalvalue)
+                            checkfinal = true;
+                        
+                        finalvalue = checkfinal;
+                    }
+                    else{
+                        deffield.value = finalvalue;
+                    }
+                    
+                }
+            }
+
+        }
+
+        let autofields = htmlDom.getElementsByClassName("isauto");
+
+        for (let n = 0; n < autofields.length; n++) {
+            let autofield = autofields[n];
+            autofield.disabled = true;
+        }
+
+        for (let j = 0; j < allfields.length; j++) {
+            let thisinput = allfields[j];
+            if (!thisinput.classList.contains("isauto")) {
+                thisinput.addEventListener("change", async (event) => {
+                    for (let k = 0; k < autofields.length; k++) {
+                        let changedvalue = event.target.value;
+                        let changekey = event.target.getAttribute("attKey");
+                        dialogProps[changekey].value = changedvalue;
+
+                        let autofield = autofields[k];
+                        let propKey = autofield.getAttribute("attKey");
+                        let propObj = await game.items.find(y => y.data.data.attKey == propKey);
+
+                        let autoexpr = propObj.data.data.auto;
+                        autoexpr = await auxMeth.parseDialogProps(autoexpr, dialogProps);
+
+                        let finalvalue = await auxMeth.autoParser(autoexpr, app.data.attributes, app.data.citemattributes, false, null, app.data.number);
+                        autofield.value = finalvalue;
+                    }
+
+
+
+                });
+            }
+
+        }
+    }
+
+
 });
 
 
