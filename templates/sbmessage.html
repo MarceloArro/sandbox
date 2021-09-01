@@ -12,7 +12,18 @@
                 </span>
             </div>
 
+
+
+
+
         </div>
+
+        {{#if isWhisper}}
+        <div class="sbchat-whisper">
+            <span class="whisper-to">WHISPER</span>
+            <span class="whisper-to">{{localize 'CHAT.To'}}: {{whisperTo}}</span>
+        </div>
+        {{/if}}
 
         <div class="sbchat-message">
             {{{message}}}
