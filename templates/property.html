@@ -63,12 +63,20 @@
                             <input class="check-hasroll" name="data.hasroll" id="check-hasroll" type="checkbox" {{checked item.data.data.hasroll}}/>
                         </div>
                     </div>
+                    {{#ifCond item.data.data.datatype "simplenumeric"}}
                     <div class="new-row">
                         <div class="flexblock-left">
                             <label class="label-medlarge">Totalize</label>
                             <input class="check-totalize" name="data.totalize" id="check-totalize" type="checkbox" {{checked item.data.data.totalize}}/>
                         </div>
                     </div>
+                    <div class="new-row">
+                        <div class="flexblock-left">
+                            <label class="label-medlarge">Show Arrows</label>
+                            <input class="check-arrows" name="data.arrows" id="check-arrows" type="checkbox" {{checked item.data.data.arrows}}/>
+                        </div>
+                    </div>
+                    {{/ifCond}}
                     {{/ifNot}}
                     {{#ifCond item.data.data.datatype "table"}}
                     <div class="new-row">
@@ -105,22 +113,20 @@
                     {{/if}}
                     {{/ifCond}}
 
-                    <!--
 
-<div class="new-row">
-<div class="flexblock-left">
-<label class="label-medlarge">Is Free?</label>
-<input class="check-isfreetable" name="data.isfreetable" id="check-isfreetable" type="checkbox" {{checked item.data.data.isfreetable}}/>
-</div>
-</div>
+                    <div class="new-row">
+                        <div class="flexblock-left">
+                            <label class="label-medlarge">Is Free?</label>
+                            <input class="check-isfreetable" name="data.isfreetable" id="check-isfreetable" type="checkbox" {{checked item.data.data.isfreetable}}/>
+                        </div>
+                    </div>
 
-<div class="new-row">
-<div class="flexblock-left">
-<label class="label-medlarge">Transferrable</label>
-<input class="check-transferrable" name="data.transferrable" id="check-transferrable" type="checkbox" {{checked item.data.data.transferrable}}/>
-</div>
-</div>
--->
+                    <div class="new-row">
+                        <div class="flexblock-left">
+                            <label class="label-medlarge">Transferrable</label>
+                            <input class="check-transferrable" name="data.transferrable" id="check-transferrable" type="checkbox" {{checked item.data.data.transferrable}}/>
+                        </div>
+                    </div>
 
 
                     <div class="new-row">
@@ -281,8 +287,9 @@
                             <select  name="data.inputsize"  data-type="String">
                                 {{#select item.data.data.inputsize}}
                                 <option  value="T">Tiny</option>
-                                <option  value="F">Small</option>
+                                <option  value="S">Small</option>
                                 <option  value="M">Medium</option>
+                                <option  value="F">Fit</option>
                                 {{/select}}
                             </select>
                         </div>
@@ -331,6 +338,14 @@
                             <input type="text" name="data.rollname" value="{{data.data.rollname}}"/>
                             <label class="label-medlarge">Roll ID</label>
                             <input type="text" name="data.rollid" value="{{data.data.rollid}}"/>
+                        </div>
+                    </div>
+                    <div class="new-row">
+                        <div class="flexblock-left">
+                            <label class="label-medlarge">Has Dialog</label>
+                            <input class="check-hasdialog" name="data.hasdialog" id="check-hasdialog" type="checkbox" {{checked item.data.data.hasdialog}}/>
+                            <label class="label-medlarge">Dialog Panel (Drag Here)</label>
+                            <input type="text" name="data.dialogName" value="{{data.data.dialogName}}" readonly>
                         </div>
                     </div>
                     <div class="new-row">
@@ -403,6 +418,19 @@
                         <div class="flexblock-left">
                             <label class="label-medlarge">Options (a,b,c)</label>
                             <input type="text" name="data.listoptions" value="{{data.data.listoptions}}"/>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {{/ifCond}}
+
+            {{#ifCond item.data.data.datatype "checkbox"}}
+            <div class="flexblock">
+                <div class="col-1-1">
+                    <div class="new-row">
+                        <div class="flexblock-left">
+                            <label class="label-medlarge">Check Group</label>
+                            <input type="text" name="data.checkgroup" value="{{data.data.checkgroup}}"/>
                         </div>
                     </div>
                 </div>
