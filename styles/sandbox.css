@@ -363,6 +363,11 @@
     color:red;
 }
 
+.sandbox.sheet .input-mod{
+
+    width:50px;
+}
+
 .sandbox.sheet .new-row {
     padding: 0px 0px;
 }
@@ -432,6 +437,20 @@
 .sandbox.sheet .col-1-8 {
     width: 12.5%;
     max-width:75px;
+    padding: 0px 3px;
+    display:inline-block;
+    vertical-align:top;
+}
+.sandbox.sheet .col-3-10 {
+    width: 30%;
+    max-width:180px;
+    padding: 0px 3px;
+    display:inline-block;
+    vertical-align:top;
+}
+.sandbox.sheet .col-1-16 {
+    width: 6.25%;
+    max-width:37.5px;
     padding: 0px 3px;
     display:inline-block;
     vertical-align:top;
@@ -515,6 +534,18 @@
     display:inline-block;
     vertical-align:top;
 }
+.sandbox.sheet .multi-3-10 {
+    width:180px;
+    padding: 0px 2px 4px 2px;
+    display:inline-block;
+    vertical-align:top;
+}
+.sandbox.sheet .multi-1-16 {
+    width:37.5px;
+    padding: 0px 2px 4px 2px;
+    display:inline-block;
+    vertical-align:top;
+}
 
 .sandbox.sheet .multi-3-8 {
     width:225px;
@@ -586,6 +617,18 @@
 
 .sandbox.sheet .multi-1-8-col {
     width:79px;
+    padding: 0px 1px;
+    display:inline-block;
+    vertical-align:top;
+}
+.sandbox.sheet .multi-3-10-col {
+    width:180px;
+    padding: 0px 1px;
+    display:inline-block;
+    vertical-align:top;
+}
+.sandbox.sheet .multi-1-16-col {
+    width:39px;
     padding: 0px 1px;
     display:inline-block;
     vertical-align:top;
@@ -710,6 +753,7 @@
 
 .sandbox.sheet input{
     font-size: 11px;
+    background-color:#ebdfc5;
 }
 
 .sandbox.sheet input.entityname{
@@ -717,6 +761,7 @@
     font-weight: normal;
     color: #191813;
     font-family: "Signika", sans-serif;
+    background-color:transparent;
 }
 
 .sandbox.sheet input.itemname{
@@ -724,6 +769,7 @@
     font-weight: normal;
     color: #191813;
     font-family: "Signika", sans-serif;
+    background-color:transparent;
 }
 
 .sandbox.sheet .flexblock-left input{
@@ -731,7 +777,7 @@
     text-align: center;
     border: 1px solid #4d2424;
     border-radius: 3px;
-    background-color:#ebdfc5;
+
 }
 
 .sandbox.sheet .flexblock-center input{
@@ -810,7 +856,7 @@
     height: 26px;
     border-radius: 3px 0px 0px 3px;
 }
-.sandbox.sheet .flexblock-left input.input-disabled {
+.sandbox.sheet .input-disabled {
     background-color: lightgrey;
 }
 
@@ -1102,6 +1148,12 @@
     text-align: center;
 }
 
+.sandbox.sheet th.input-uses {
+    width:50px;
+    text-align: center;
+
+}
+
 .sandbox.sheet td.input-med {
     width:130px;
     text-align: center;
@@ -1121,9 +1173,27 @@
 
 }
 
+.sandbox.sheet th.nameheader,th.propheader {
+    cursor:pointer;
+
+}
+
 .sandbox.sheet td.ci-delete{
     padding:0px 1px;
     width:14px;
+}
+
+.sandbox.sheet a.ci-transfer{
+    background: url('/systems/sandbox/styles/img/bag.png') no-repeat;
+    background-size: 15px;
+    height:15px;
+    width:15px;
+    display:block;
+    background-position: center;
+}
+
+.sandbox.sheet td.ci-transfercell{
+    padding: 0px 10px;
 }
 
 .sandbox.sheet th.input-min {
@@ -1342,13 +1412,15 @@
     margin:0;
 }
 
-
-
 .sandbox.sheet .table-num{
     width:40px;
     padding:0px 3px;
     border:none;
     margin:0;
+}
+
+.sandbox.sheet .att-input-label{
+    white-space: nowrap;
 }
 
 .roll-free{
@@ -1458,6 +1530,10 @@
 
 }
 
+.sbchat-whisper{
+    text-align:center;
+}
+
 .sbchat-message{
     padding: 10px 10px;
 }
@@ -1543,6 +1619,15 @@
     padding:0px 5px;
 }
 
+.roll-citemlink {
+    cursor: pointer; 
+}
+
+.roll-citemlink:hover{
+    color: dodgerblue;
+    font-weight: bold;
+}
+
 .sandbox.sheet .radio-input{
     padding:5px 2px;
     vertical-align:middle;
@@ -1599,6 +1684,34 @@
     height:36px;
     width:36px;
     display:block;
+}
+.sandbox.sheet .arrcontainer {
+    padding: 0px 3px;
+}
+
+.sandbox.sheet .arrup {
+    background: url('/systems/sandbox/styles/img/arrup.png') no-repeat bottom center;
+    background-size: 11px;
+    height:11px;
+    width:11px;
+    display:block;
+    margin-bottom: 3px;
+}
+
+.sandbox.sheet .arrup:hover {
+    filter: drop-shadow(0 0 11px red);
+}
+
+.sandbox.sheet .arrdown {
+    background: url('/systems/sandbox/styles/img/arrdown.png') no-repeat bottom center;
+    background-size: 11px;
+    height:11px;
+    width:11px;
+    display:block;
+}
+
+.sandbox.sheet .arrdown:hover {
+    filter: drop-shadow(0 0 11px red);
 }
 
 .sandbox.sheet .badge-click {
@@ -1765,3 +1878,278 @@ div.dmtk-tooltip.visible {
     padding: 10px 0px;
 }
 
+.sandbox.sheet input.dialogName {
+    flex: 0 0 auto;
+    border:none;
+    padding: 10px 0px;
+}
+
+.dialog .window-content{
+    text-align:center;
+}
+
+.dialog .input-transfer{
+    width: 65px;
+    height: 50px;
+    font-size: 20px;
+    font-weight: bold;
+}
+
+.dialog .label-citemtransfer{
+    width: 200px;
+    font-size: 20px;
+    font-weight: bold;
+}
+
+.dialog .label-transfer{
+    width: 75px;
+    font-size: 16px;
+}
+
+.dialog .check-transfer{
+    width: 20px;
+    vertical-align: middle;
+    position: relative;
+    bottom: 0.2em;
+}
+
+.dialog .transfer-itemmname{
+    padding: 10px 50px;
+    text-align: center;
+}
+
+.dialog .transfer-itemnumber{
+    padding: 0px 50px;
+    text-align: center;
+}
+
+.dialog .transfer-takeall{
+    padding: 10px 50px;
+    text-align: center;
+}
+
+.dialog .col-1-1{
+    width:600px;
+    padding: 0px 2px;
+}
+
+.dialog .col-1-2{
+    width:300px;
+    padding: 0px 2px;
+}
+
+.dialog .col-1-3{
+    width:200px;
+    padding: 0px 2px;
+}
+
+.dialog .col-2-3{
+    width:400px;
+    padding: 0px 2px;
+}
+
+.dialog .col-1-4{
+    width:150px;
+    padding: 0px 2px;
+}
+
+.dialog .col-3-4{
+    width:450px;
+    padding: 0px 2px;
+}
+
+.dialog .dialog-content{
+    padding:5px 5px;
+}
+
+.dialog input.input-small{
+    width:80px;
+    height: 26px;
+}
+
+.dialog input.input-med{
+    width:130px;
+    height: 26px;
+}
+
+.dialog input.input-free{
+    width:100%;
+    height: 26px;
+}
+
+.dialog .label-free {
+    margin: 0;
+    padding: 5px 5px 5px 10px;
+    font-size:13px;
+}
+
+.dialog .label-mini {
+    margin: 0;
+    padding: 5px 5px;
+    width: 40px;
+    font-size:13px;
+
+}
+
+.dialog .label-small {
+    margin: 0;
+    padding: 5px 5px;
+    width: 70px;
+    font-size:13px;
+
+}
+
+.dialog .label-med {
+    margin: 0;
+    padding: 5px 5px;
+    width: 105px;
+    font-size:13px;
+
+}
+
+.dialog .label-medlarge {
+    margin: 0;
+    padding: 5px 5px;
+    width: 150px;
+    font-size:13px;
+}
+
+.dialog .label-large {
+    margin: 0;
+    padding: 5px 5px;
+    width: 200px;
+    font-size:13px;
+}
+
+.dialog .new-row{
+    display: flex;
+    padding: 2px 0px;
+}
+
+.dialog .multi-col-1-1 {
+    width:604px;
+    padding: 0px 1px;
+}
+
+.dialog .multi-col-1-2 {
+    width:304px;
+    padding: 0px 1px;
+}
+
+.dialog .multi-col-1-3 {
+    width:204px;
+    padding: 0px 1px;
+}
+
+.dialog .multi-col-1-4 {
+    width:154px;
+    padding: 0px 1px;
+}
+
+.dialog .multi-col-1-6 {
+    width:104px;
+    padding: 0px 1px;
+}
+
+.dialog .multi-col-1-8 {
+    width:79px;
+    padding: 0px 1px;
+}
+.dialog .multi-col-3-10 {
+    width:180px;
+    padding: 0px 1px;
+}
+.dialog .multi-col-1-16 {
+    width:37.5px;
+    padding: 0px 1px;
+}
+
+.dialog .multi-col-3-8 {
+    width:227px;
+    padding: 0px 1px;
+}
+
+.dialog .multi-col-5-8 {
+    width:379px;
+    padding: 0px 1px;
+}
+
+.dialog .multi-col-2-3 {
+    width:404px;
+    padding: 0px 1px;
+}
+
+.dialog .multi-col-3-4 {
+    width:454px;
+    padding: 0px 1px;
+}
+
+.dialog .multi-col-5-6 {
+    width:504px;
+    padding: 0px 1px;
+}
+
+.dialog .multiwrapper {
+    display:flex;
+	flex-wrap:wrap;
+}
+
+.dialog .panelheader {
+    background-color: #4e4d49;
+    color:white;
+    padding: 3px 5px;
+    font-family: Arial Narrow, sans-serif;
+    font-size: 14px;
+    font-weight: bold;
+    text-align: center;
+    text-shadow: 1px 1px black;
+    border-bottom: 1px solid black;
+}
+
+.dialog .centertext {
+    text-align: center;
+}
+
+.dialog .righttext {
+    text-align: right;
+}
+.dialog .lefttext {
+    text-align: left;
+}
+
+.dialog .centercontent {
+    justify-content: center;
+}
+
+.dialog .righcontent {
+    justify-content: right;
+}
+
+.dialog .arrcontainer {
+    padding: 0px 3px;
+}
+
+.dialog .arrup {
+    background: url('/systems/sandbox/styles/img/arrup.png') no-repeat bottom center;
+    background-size: 11px;
+    height:11px;
+    width:11px;
+    display:block;
+    margin-bottom: 3px;
+}
+
+.dialog .arrup:hover {
+    filter: drop-shadow(0 0 11px red);
+}
+
+.dialog .arrdown {
+    background: url('/systems/sandbox/styles/img/arrdown.png') no-repeat bottom center;
+    background-size: 11px;
+    height:11px;
+    width:11px;
+    display:block;
+}
+
+.dialog .arrdown:hover {
+    filter: drop-shadow(0 0 11px red);
+}
