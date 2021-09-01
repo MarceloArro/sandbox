@@ -9,9 +9,7 @@
             <div class="roll-header roll-flexrow roll-underline">
                 <h4 class="roll-sender-name">{{actor}}</h4>
                 <span class="roll-delete-button">
-                    {{#isGM}}
                     <a class="roll-message-delete"><i class="fas fa-trash"></i></a>
-                    {{/isGM}}
                 </span>
             </div>
 
@@ -23,7 +21,13 @@
 
         {{#if flavor}}
         <div class="roll-flavor">
+            {{#if link}}
+            <div class="roll-citemlink">
+                {{{flavor}}}
+            </div>
+            {{else}}
             {{{flavor}}}
+            {{/if}}
         </div>
         {{/if}}
 
@@ -105,14 +109,14 @@
                 </div>
             </div>
 
+
+
             <div class="roll-flexrow">
                 <div class="roll-timestamp message-timestamp">
                     {{{data.timestamp}}}
                 </div>
             </div>
         </div>
-
-
 
     </div>
 </div>
