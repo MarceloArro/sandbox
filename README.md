@@ -141,7 +141,7 @@ There are 9 types of properties: simpletext, simplenumeric, checkbox, radio, tex
 - Label Format: Normal is just... normal haha... ok. Bold is... Small means that the font is slightly smaller, it's useful if you don't have much space for the label. And Die removes the label and inserts an icon of a d20. Useful if you want to create Label Properties on sheets to roll dice, whether it's on sheets or cItems.
 - Rollable: When checked, the roll confiruation input fields will be shown (Roll Name, Roll ID, Roll Formula). This will be explained later, section 7 Roll Expressions.
 - Arrows: It will display up and down arrows for simplenumeric properties, as a tool to modify their value.
-- Check Group: Only for checkboxes. If filled with a Key, it will ensure that when the checkbox is checked, any other checkbox with the same checkgroup key is unchecked.
+- Check Group: Only for checkboxes. If filled with a Key, it will ensure that when the checkbox is checked, any other checkbox with the same checkgroup key is unchecked. You can add more than one separated by semicolon ";"
 - Max Value: If radio, it sets the maximum circle radio buttons to be displayed (radio buttons like in the Vampire the Masquerade character sheets). If simplenumeric, filling this input field would display a box with the max value on the right side of the input. For example, if we create a property called Hit Points (HP, PG in Spanish) and set Max Value as 10 and Default Value as 10:
 
 ![Max Value Property](docs/images/tuto14.png)
