@@ -29,7 +29,7 @@
         {{!-- Attributes Tab --}}
         <div class="tab attributes scrollable" data-group="primary" data-tab="attributes">
             <div class="flexblock">
-                <div class="col-1-2">
+                <div class="col-5-8">
                     <div class="new-row attribute-list">
                     </div>
                 </div>
@@ -65,15 +65,22 @@
                             <option  value="CON">CONSUMABLE</option>
                             {{/select}}
                         </select>
-                        <label class="label-free">Self-destruct</label>
-                        <input class="check-selfdestruct" name="data.selfdestruct" id="check-selfdestruct" type="checkbox" {{checked item.data.data.selfdestruct}}/>
+                        {{#ifCond data.data.usetype "PAS"}}
+                        <label class="label-free" title ="If checked, all MODS that are not from the SET type will be permanently executed and the cItem will self destroy" id="check-selfdestruct">Self-destruct</label>
+                        <input class="check-selfdestruct" name="data.selfdestruct"  type="checkbox" {{checked item.data.data.selfdestruct}}/>
+                        {{/ifCond}}
                     </div>
-                    <!--
-<div class="flexblock-center-nopad">
-<label class="label-free">Effect Icon</label>
-<input class="input-medlarge" type="text" name="data.effectpath" value="{{data.effectpath}}"/>
-</div>
--->
+
+                    <div class="flexblock-center-nopad">
+                        <label class="label-free">Has Icon</label>
+                        <input class="check-istokenicon" name="data.istokenicon" id="check-istokenicon" type="checkbox" {{checked item.data.data.istokenicon}}/>
+                        <label class="label-free">Always on</label>
+                        <input class="check-tokenvisible" name="data.tokenvisible" id="check-tokenvisible" type="checkbox" {{checked item.data.data.tokenvisible}}/>
+                        <label class="label-free">Icon Path</label>
+                        <input class="input-medlarge" type="text" name="data.tokeniconpath" value="{{data.data.tokeniconpath}}"/>
+                        <a class="tokeniconpath" title="Browse Image"><i class="fas fa-file-upload fa-2x"></i></a>
+                    </div>
+
                     {{#ifNot data.data.usetype "PAS"}}
                     <div class="flexblock-center-nopad">
                         {{#ifCond data.data.usetype "CON"}}
@@ -104,6 +111,14 @@
                             <input class="input-medlarge" type="text" name="data.rollname" value="{{data.data.rollname}}"/>
                             <label class="label-large righttext">Roll ID</label>
                             <input class="input-free" type="text" name="data.rollid" value="{{data.data.rollid}}"/>
+                        </div>
+                        <div class="new-row">
+                            <div class="flexblock-left">
+                                <label class="label-medlarge">Has Dialog</label>
+                                <input class="check-hasdialog" name="data.hasdialog" id="check-hasdialog" type="checkbox" {{checked item.data.data.hasdialog}}/>
+                                <label class="label-medlarge">Dialog Panel (Drag Here)</label>
+                                <input type="text" name="data.dialogName" value="{{data.data.dialogName}}" readonly>
+                            </div>
                         </div>
                         <div class="flexblock-simple">
                             <label class="label-small">ROLL</label>
@@ -152,6 +167,7 @@
                                                         <option  value="CREATE">CREATE</option>
                                                         <option  value="ITEM">ITEM</option>
                                                         <option  value="ROLL">ROLL</option>
+                                                        <option  value="LIST">LIST</option>
                                                         {{/select}}
                                                     </select>
                                                 </div>
@@ -183,6 +199,24 @@
                                             </div>
                                         </div>
                                         {{/ifNot}}
+                                        {{#ifCond mod.type "LIST"}}
+                                        <div class="mod-row-block">
+                                            <div class="col-1-6  mod-row-header">
+                                                MODE
+                                            </div>
+                                            <div class="col-1-3 mod-row-input">
+                                                <div class="mod-row-block">
+                                                    <select  class="mod-input"  name="{{id}}.listmod"  data-type="String">
+                                                        {{#select mod.listmod}}
+                                                        <option  value="INCLUDE">INCLUDE</option>
+                                                        <option  value="REMOVE">REMOVE</option>
+                                                        <!--                                                        <option  value="ROLL">ROLL</option>-->
+                                                        {{/select}}
+                                                    </select>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        {{/ifCond}}
                                         {{#ifNot mod.type "ITEM"}}
                                         {{#ifNot mod.type "ROLL"}}
                                         <div class="mod-row-block">
