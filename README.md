@@ -498,6 +498,9 @@ Check on Game Settings>Configure Settings>System Settings
 - Initiative attribute key: if you want your initiative to be global, just include your roll initiative expression formula in the value of a simpletext property. Something like "1d20 + @{dexterity}" in a property with "initexpression" key for example. Then, in this settings field you only have to write "initexpression". You wont need to use ~init~ again and all actor will use Founry's general combat tracker roller.
 - Images for Panels: You can now cover a panel with an image, you only have to select the option "Is Image" in the panel item, and include a route to the image in "Image Path", like this: worlds/yourworld/yourimage.png
 
+## HOW TO EXPORT AND SHARE YOUR WORLD
+- On the settings directory, you will find 2 new buttons: EXPORT SANDBOX JSON, that will generate a file with all Actors/Items data. Then, in a newly created Sandbox World, you can press import sandbox JSON and choose this file (has to be in the world directory) to recreate all the info
+
 ## TODO LIST
 - Check release notes
 
