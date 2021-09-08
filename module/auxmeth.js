@@ -231,15 +231,18 @@ export class auxMeth {
                     if (hasProperty(idCollection, citem.id)) {
                         citem.id = idCollection[citem.id];
 
-                        for (let group of citem.groups) {
-                            if (hasProperty(idCollection, group.id))
-                                group.id = idCollection[group.id];
+                        if (citem.groups) {
+                            for (let group of citem.groups) {
+                                if (hasProperty(idCollection, group.id))
+                                    group.id = idCollection[group.id];
+                            }
                         }
 
-                        for (let mod of citem.mods) {
-                            if (hasProperty(idCollection, mod.citem))
-                                mod.citem = idCollection[mod.citem];
-                        }
+                        if (citem.mods)
+                            for (let mod of citem.mods) {
+                                if (hasProperty(idCollection, mod.citem))
+                                    mod.citem = idCollection[mod.citem];
+                            }
                     }
                 }
 
@@ -258,8 +261,8 @@ export class auxMeth {
                 }
             }
 
-            let folderlink = idCollection[actor.getFlag("sandbox", "folder")];
-            finalactor.data.istemplate = actor.getFlag("sandbox", "istemplate");
+            let folderlink = await idCollection[actor.getFlag("sandbox", "folder")];
+            finalactor.data.istemplate = await actor.getFlag("sandbox", "istemplate");
 
             await actor.update({ "data": finalactor.data, "folder": folderlink });
 
@@ -814,7 +817,7 @@ export class auxMeth {
 
             //PARSE MAX ROLL
             //var maxresult = expr.match(/(?<=\maxdie\().*?(?=\))/g);
-            let mxmatch = /\bmaxdie\(/g;
+            let mxmatch = /maxdie\(/g;
             var maxdieArray;
             var maxDie = [];
 
@@ -829,14 +832,30 @@ export class auxMeth {
                 for (let i = 0; i < maxDie.length; i++) {
                     let tochange = "maxdie(" + maxDie[i] + ")";
 
+                    let mdieexpr = maxDie[i].split(";");
+                    let mdieroll = mdieexpr[0];
+                    let mdiemode = mdieexpr[1];
 
-                    let newroll = new Roll(maxDie[i]);
+                    if (mdiemode == null || mdiemode == "true") {
+                        mdiemode = true;
+                    }
+                    else {
+                        mdiemode = false;
+                    }
+
+                    let newroll = new Roll(mdieroll);
                     await newroll.evaluate({ async: true });
 
                     let attvalue = 0;
                     for (let j = 0; j < newroll.dice.length; j++) {
                         let diceexp = newroll.dice[j];
-                        attvalue += parseInt(diceexp.results.length) * parseInt(diceexp.faces);
+                        if (mdiemode) {
+                            attvalue += parseInt(diceexp.results.length) * parseInt(diceexp.faces);
+                        }
+                        else {
+                            attvalue = parseInt(diceexp.faces);
+                        }
+
                     }
 
 
@@ -1549,6 +1568,9 @@ export class auxMeth {
             // expr = expr.replace(minuszero, "");
             //console.log(expr);
 
+            let zeroexplode = /0x0/g;
+            expr = expr.replace(zeroexplode, "0");
+
             safety_break += 1;
 
         }
@@ -1559,9 +1581,9 @@ export class auxMeth {
         //console.log("finished parsed")
         //console.log(expr);
 
-        if(expr.charAt(0) == "|"){
+        if (expr.charAt(0) == "|") {
             exprmode = true;
-            expr = expr.replace("|","");
+            expr = expr.replace("|", "");
         }
 
         toreturn = expr;
