@@ -230,11 +230,29 @@ export class gActorSheet extends ActorSheet {
         });
 
         html.find('.rollable').click(ev => {
-            event.preventDefault();
-
+            ev.preventDefault();
+            //console.log("Aqui");
             let attId = $(ev.currentTarget).attr("attid");
             let citemId = $(ev.currentTarget).attr("attid");
             this._onRollCheck(attId, citemId, false);
+
+        });
+
+        html.find('.customcheck').click(ev => {
+            ev.preventDefault();
+            //console.log("Aqui");
+            let attKey = $(ev.currentTarget).attr("attKey");
+
+            if (this.actor.data.data.attributes[attKey] == null) {
+                return;
+            }
+
+            let currentvalue = this.actor.data.data.attributes[attKey].value;
+            let finalvalue = true;
+            if (currentvalue)
+                finalvalue = false;
+
+            this.actor.update({ [`data.attributes.${attKey}.value`]: finalvalue, [`data.attributes.${attKey}.modified`]: true });
 
         });
 
@@ -790,18 +808,18 @@ ${dialogPanel.data.data.title}
             if (panelProperty.data.data.datatype != "table" && panelProperty.data.data.datatype != "textarea" && panelProperty.data.data.datatype != "label" && panelProperty.data.data.datatype != "badge") {
                 if (panelProperty.data.data.haslabel) {
                     finalContent += `
-<label class="${labelwidth} ${textalignment} ${panelProperty.data.data.fontgroup} ">${panelProperty.data.data.tag}</label>
+<label class="${labelwidth} ${textalignment} ${panelProperty.data.data.fontgroup} " title="${panelProperty.data.data.tooltip}">${panelProperty.data.data.tag}</label>
 `;
                 }
                 if (panelProperty.data.data.datatype == "checkbox") {
 
                     finalContent += `
-<input class="rdialogInput checkbox check-${panelProperty.data.data.attKey} ${panelProperty.data.data.inputgroup} ${defvalue}" checkGroup ="${panelProperty.data.data.checkgroup}" attKey ="${panelProperty.data.data.attKey}" type="checkbox">	
+<input class="rdialogInput checkbox check-${panelProperty.data.data.attKey} ${panelProperty.data.data.inputgroup} ${defvalue}" title="${panelProperty.data.data.tooltip}" checkGroup ="${panelProperty.data.data.checkgroup}" attKey ="${panelProperty.data.data.attKey}" type="checkbox">	
 `;
                 }
                 else if (panelProperty.data.data.datatype == "list") {
                     finalContent += `
-<select  class="rdialogInput select-${panelProperty.data.data.attKey} ${panelProperty.data.data.inputgroup} ${defvalue}" attKey ="${panelProperty.data.data.attKey}"  data-type="String">
+<select  class="rdialogInput select-${panelProperty.data.data.attKey} ${panelProperty.data.data.inputgroup} ${defvalue}" title="${panelProperty.data.data.tooltip}" attKey ="${panelProperty.data.data.attKey}"  data-type="String">
 `;
                     let options = panelProperty.data.data.listoptions.split(",");
                     for (let j = 0; j < options.length; j++) {
@@ -1017,6 +1035,14 @@ ${dialogPanel.data.data.title}
         let tableinputs = form.getElementsByClassName("sbtable");
         for (let i = 0; i < tableinputs.length; i++) {
             let newAtt = tableinputs[i];
+            let attId = newAtt.getAttribute("attId");
+            await this.setAttributeValues(attId, attData);
+        }
+
+        //For special cases of custom checboxes
+        let custominputs = form.getElementsByClassName("customcheck");
+        for (let i = 0; i < custominputs.length; i++) {
+            let newAtt = custominputs[i];
             let attId = newAtt.getAttribute("attId");
             await this.setAttributeValues(attId, attData);
         }
@@ -1789,7 +1815,7 @@ ${dialogPanel.data.data.title}
                         labelwidth += " label-medlarge";
                     }
 
-                    sLabel.className = labelwidth;
+                    sLabel.className = labelwidth + " " + property.data.attKey + "_label";
                     sLabel.textContent = property.data.tag;
 
                     if (property.data.tooltip != null)
@@ -1843,11 +1869,26 @@ ${dialogPanel.data.data.title}
                 //Check property type
                 if (property.data.datatype === "checkbox") {
 
-                    sInput = deftemplate.createElement("INPUT");
-                    sInput.className = "input-small";
-                    sInput.setAttribute("name", "data.attributes." + property.data.attKey + ".value");
-                    sInput.setAttribute("type", "checkbox");
-                    sInput.setAttribute("toparse", "{{checked actor.data.attributes." + property.data.attKey + ".value}}~~");
+                    if (!property.data.customcheck && (property.data.onPath == "" || property.data.offPath == "")) {
+                        sInput = deftemplate.createElement("INPUT");
+                        sInput.className = "input-small";
+                        if (property.data.labelsize == "T")
+                            sInput.className = "input-tiny";
+                        sInput.setAttribute("name", "data.attributes." + property.data.attKey + ".value");
+                        sInput.setAttribute("type", "checkbox");
+                        sInput.setAttribute("toparse", "{{checked actor.data.attributes." + property.data.attKey + ".value}}~~");
+                    }
+
+                    else {
+                        sInput = deftemplate.createElement("DIV");
+                        sInput.className = "input-small";
+                        if (property.data.inputsize == "T")
+                            sInput.className = "input-tiny";
+                        sInput.setAttribute("attKey", property.data.attKey);
+                        sInput.setAttribute("onPath", property.data.onPath);
+                        sInput.setAttribute("offPath", property.data.offPath);
+                        sInput.className += " customcheck";
+                    }
                 }
 
                 //Check property type
@@ -2641,7 +2682,14 @@ ${dialogPanel.data.data.title}
                 for (let j = 0; j < panelproperties.length; j++) {
                     let property = game.items.get(panelproperties[j].id);
                     if (property != null) {
-                        allProps.push(property.data.data.attKey);
+                        if(property.data.data.datatype=="table" && property.data.data.group.id==null){
+                            compilationMsg += panelproperties[j].name + " table property lacks table group"
+                            hasissue = true;
+                        }
+
+                            allProps.push(property.data.data.attKey);
+
+                        
                     }
                     else {
                         allProps.push(panelproperties[j].name + "_PROP_NONEXISTING");
@@ -3301,7 +3349,7 @@ ${dialogPanel.data.data.title}
                         //Link Element
                         if ((propTable.data.data.onlynames == "DEFAULT" || propTable.data.data.onlynames == "ONLY_NAMES") && !isFree) {
                             let firstcell = document.createElement("TD");
-                            firstcell.className = "input-free linkable";
+                            firstcell.className = "input-free linkable tablenamecell " + propTable.data.data.attKey + "_namecell";
                             firstcell.className += " " + inputgroup;
                             firstcell.textContent = ciObject.name;
                             firstcell.setAttribute("item_id", ciObject.id);
@@ -3562,6 +3610,8 @@ ${dialogPanel.data.data.title}
 
                                                     cellvalue = document.createElement("INPUT");
                                                     cellvalue.className = "input-small";
+                                                    if (propdata.labelsize == "T")
+                                                        cellvalue.className = "input-tiny";
                                                     cellvalue.setAttribute("type", "checkbox");
                                                     let setvalue = false;
                                                     //console.log(ciObject.attributes[propKey].value);
@@ -3624,6 +3674,8 @@ ${dialogPanel.data.data.title}
 
                                                 cellvalue = document.createElement("INPUT");
                                                 cellvalue.className = "input-small";
+                                                if (propdata.labelsize == "T")
+                                                    cellvalue.className = "input-tiny";
                                                 cellvalue.className += " " + inputgroup;
                                                 cellvalue.setAttribute("type", "checkbox");
                                                 let setvalue = false;
@@ -3740,6 +3792,8 @@ ${dialogPanel.data.data.title}
 
                                             }
 
+                                            cellvalue.className += " " + propdata.attKey;
+
                                             if (!isFree) {
 
                                                 new_cell.addEventListener("change", (event) => this.saveNewCIAtt(ciObject.id, groupprops[k].id, event.target.value));
@@ -3836,7 +3890,7 @@ ${dialogPanel.data.data.title}
 
                 }
 
-                if (isFree) {
+                if (isFree && table!=undefined) {
                     let new_row = document.createElement("TR");
                     new_row.className = "transparent-row";
                     if (inputgroup)
@@ -4183,12 +4237,11 @@ ${dialogPanel.data.data.title}
                         for (let x = 0; x < cItemsID.length; x++) {
                             let anycitem = cItemsID[x];
                             for (const [propKey, propValues] of Object.entries(anycitem.attributes)) {
-                                console.log(propKey);
+
                                 if (anycitem.id != ciId) {
                                     let propKeyObj = game.items.find(y => y.data.data.attKey == propKey);
                                     if (propKeyObj != null && propKey != "name") {
-                                        if (propKeyObj.data.data.datatype == "checkbox")
-                                            console.log(propKeyObj);
+
                                         if (propKeyObj.data.data.datatype == "checkbox" && propKeyObj.data.data.checkgroup != "") {
                                             let pointerchkgroupArray = propKeyObj.data.data.checkgroup.split(";");
                                             for (let z = 0; z < pointerchkgroupArray.length; z++) {
@@ -4207,7 +4260,7 @@ ${dialogPanel.data.data.title}
 
 
                             }
-                            console.log(anycitem.name);
+
                         }
 
 
@@ -4225,7 +4278,7 @@ ${dialogPanel.data.data.title}
         else {
             let tokenId = this.id.split("-")[2];
             let mytoken = canvas.tokens.get(tokenId);
-            await mytoken.update({ "data.citems": cItemsID });
+            await mytoken.update({ "actorData.data.citems": cItemsID });
         }
 
 
@@ -4321,14 +4374,14 @@ ${dialogPanel.data.data.title}
         //     citem.isreset = false;
         // }
 
-        if (isactivation){
+        if (isactivation) {
             citem.isactive = value;
         }
 
-        else{
+        else {
             citem.isactive = true;
         }
-            
+
 
         if (citem.isactive)
             citem.isreset = false;
@@ -4686,6 +4739,7 @@ ${dialogPanel.data.data.title}
         }
     }
 
+    //Set external images
     async setImages(basehtml) {
         const html = await basehtml.find(".isimg");
         for (let i = 0; i < html.length; i++) {
@@ -4697,6 +4751,27 @@ ${dialogPanel.data.data.title}
             imgEl.src = imgPath;
 
             imgNode.appendChild(imgEl);
+        }
+    }
+
+    //Set external images
+    async setCheckboxImages(basehtml) {
+        const html = await basehtml.find(".customcheck");
+        for (let i = 0; i < html.length; i++) {
+            let checkNode = html[i];
+            let onPath = checkNode.getAttribute("onPath");
+            let offPath = checkNode.getAttribute("offPath");
+            let propKey = checkNode.getAttribute("attKey");
+
+            if (this.actor.data.data.attributes[propKey]!=null) {
+                let myvalue = this.actor.data.data.attributes[propKey].value;
+
+                let selected = offPath;
+                if (myvalue)
+                    selected = onPath;
+                checkNode.style.backgroundImage = "url('" + selected + "')";
+            }
+
         }
     }
 
