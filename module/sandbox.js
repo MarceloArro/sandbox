@@ -661,13 +661,14 @@ Hooks.on("rendergActorSheet", async (app, html, data) => {
         app.populateRadioInputs(html);
         app.modifyLists(html);
         app.setImages(html);
+        app.setCheckboxImages(html);
         await app.setSheetStyle(actor);
         //app.scrollBarLoad(html);
 
         actor.setInputColor();
 
         html.find('.window-resizable-handle').mouseup(ev => {
-            event.preventDefault();
+            ev.preventDefault();
             app.setSheetStyle(actor);
         });
 
@@ -1029,11 +1030,19 @@ Hooks.on("renderDialog", async (app, html, data) => {
 
         for (let j = 0; j < allfields.length; j++) {
             let thisinput = allfields[j];
-            if (!thisinput.classList.contains("isauto")) {
+            //if (!thisinput.classList.contains("isauto")) {
                 thisinput.addEventListener("change", async (event) => {
                     for (let k = 0; k < autofields.length; k++) {
                         let changedvalue = event.target.value;
                         let changekey = event.target.getAttribute("attKey");
+
+                        let changeProp = game.items.find(y => y.data.data.attKey == changekey);
+                        if(changeProp==null)
+                            return;
+
+                        if(changeProp.data.data.datatype = "checkbox")
+                            changedvalue= event.target.checked;
+
                         dialogProps[changekey].value = changedvalue;
 
                         let autofield = autofields[k];
@@ -1042,15 +1051,16 @@ Hooks.on("renderDialog", async (app, html, data) => {
 
                         let autoexpr = propObj.data.data.auto;
                         autoexpr = await auxMeth.parseDialogProps(autoexpr, dialogProps);
-
+                        //console.log(autoexpr);
                         let finalvalue = await auxMeth.autoParser(autoexpr, app.data.attributes, app.data.citemattributes, false, null, app.data.number);
+                        //console.log(finalvalue);
                         autofield.value = finalvalue;
                     }
 
 
 
                 });
-            }
+            //}
 
         }
     }
