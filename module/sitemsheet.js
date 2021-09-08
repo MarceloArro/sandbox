@@ -106,6 +106,26 @@ export class sItemSheet extends ItemSheet {
             this.adnewCIMod();
         });
 
+        html.find('.checkonPath').click(ev => {
+
+            new FilePicker({
+                type: "image",
+                displayMode: "tiles",
+                current: this.item.data.data.onPath,
+                callback: imagePath => this.item.update({ "data.onPath": imagePath }),
+            }).browse(this.item.data.data.checkonPath);
+        });
+        
+        html.find('.checkoffPath').click(ev => {
+
+            new FilePicker({
+                type: "image",
+                displayMode: "tiles",
+                current: this.item.data.data.offPath,
+                callback: imagePath => this.item.update({ "data.offPath": imagePath }),
+            }).browse(this.item.data.data.checkoffPath);
+        });
+
         html.find('.tokeniconpath').click(ev => {
 
             new FilePicker({
