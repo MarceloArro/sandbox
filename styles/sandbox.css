@@ -1884,6 +1884,16 @@ div.dmtk-tooltip.visible {
     padding: 10px 0px;
 }
 
+.sandbox.sheet .customcheck {
+    background-size: 45px;
+    height: 45px;
+    width: 45px;
+}
+
+.sandbox.sheet .customcheck:hover {
+    filter: drop-shadow(0 0 11px red);
+}
+
 .dialog .window-content{
     text-align:center;
 }
