@@ -86,7 +86,12 @@ export class gActor extends Actor {
             return;
         }
 
-        if (!this.data.data.istemplate && updateData.data != null) {
+        let noTemplate = true;
+        if (updateData.istemplate) {
+            noTemplate = false;
+        }
+
+        if (!this.data.data.istemplate && updateData.data != null && noTemplate) {
 
             let actor = duplicate(this.data);
             let newtoken;
@@ -157,6 +162,12 @@ export class gActor extends Actor {
         //console.log(attKeys);
         if (updateData.attributes)
             attributes = updateData.attributes;
+
+        if (updateData.istemplate)
+            actorData.istemplate = true;
+
+        if (updateData.gtemplate)
+            actorData.gtemplate = updateData.gtemplate;
 
         //console.log(actorData.attributes);
         for (var key in attributes) {
@@ -622,7 +633,7 @@ export class gActor extends Actor {
                         if (actorAtt != null) {
                             if (addsetmods[i].type == "ADD") {
                                 let jumpmod = await this.checkModConditional(this.data, addsetmods[i], _basecitem);
-                                console.log("cItem NO cumple condicional: " + jumpmod);
+                                //console.log("cItem NO cumple condicional: " + jumpmod);
                                 if (((toRemove.isactive && !toRemoveObj.ispermanent) || (toRemoveObj.usetype == "PAS" && !toRemoveObj.selfdestruct)) && !jumpmod) {
                                     if (seedprop.data.data.datatype == "list") {
                                         let options = seedprop.data.data.listoptions.split(",");
@@ -868,7 +879,7 @@ export class gActor extends Actor {
             jumpmod = await this.checkModConditional(data, mod, citem);
             //console.log("Not add mod " + mod.name + " from Citem " + citem.name + " " + jumpmod);
 
-            if (!jumpmod) {
+            //if (!jumpmod) {
                 if (mod.selectnum == 0) {
                     for (let k = 0; k < mod.items.length; k++) {
 
@@ -885,7 +896,7 @@ export class gActor extends Actor {
                         const _mod = await _basecitem.mods.find(x => x.index == mod.index);
 
 
-                        if (_citem.usetype == "PAS" || citem.isactive) {
+                        if ((_citem.usetype == "PAS" || citem.isactive) && !jumpmod) {
 
                             if (!ispresent && !_mod.exec) {
                                 //console.log("adding " + toadd.name);
@@ -920,31 +931,33 @@ export class gActor extends Actor {
                 }
 
                 else {
+                    if (!jumpmod) {
+                        let thiscitem = citemIDs.find(y => y.id == mod.citem);
 
-                    let thiscitem = citemIDs.find(y => y.id == mod.citem);
-
-                    if (!hasProperty(thiscitem, "selection")) {
-                        setProperty(thiscitem, "selection", []);
-                    }
-
-                    let selindex = thiscitem.selection.find(y => y.index == mod.index);
-
-                    if (selindex == null) {
-                        let newindex = {};
-                        newindex.index = mod.index;
-                        newindex.selected = false;
-                        thiscitem.selection.push(newindex);
-                        selector = true;
-                    }
-
-                    else {
-                        if (!selindex.selected) {
+                        if (!hasProperty(thiscitem, "selection")) {
+                            setProperty(thiscitem, "selection", []);
+                        }
+    
+                        let selindex = thiscitem.selection.find(y => y.index == mod.index);
+    
+                        if (selindex == null) {
+                            let newindex = {};
+                            newindex.index = mod.index;
+                            newindex.selected = false;
+                            thiscitem.selection.push(newindex);
                             selector = true;
                         }
+    
+                        else {
+                            if (!selindex.selected) {
+                                selector = true;
+                            }
+                        }
                     }
+                    
 
                 }
-            }
+            //}
 
         }
 
@@ -2045,7 +2058,7 @@ export class gActor extends Actor {
         }
         //console.log(citemIDs);
         //CONSUMABLES ACTIVE TURN BACK INTO INACTIVE, AND DELETE SELFDESTRUCTIBLE
-        if (citemIDs != null) {
+        if (citemIDs != null && !actorData.data.istemplate) {
             for (let n = citemIDs.length - 1; n >= 0; n--) {
                 let citemObj = game.items.get(citemIDs[n].id).data.data;
                 let citmAttr = citemIDs[n].attributes;
@@ -2507,7 +2520,7 @@ export class gActor extends Actor {
         let regArray = [];
         let expreg = expr.match(/(?<=\$\<).*?(?=\>)/g);
         if (expreg != null) {
-            console.log("reg expr: " + expr);
+            //console.log("reg expr: " + expr);
             //Substitute string for current value
             for (let i = 0; i < expreg.length; i++) {
                 let attname = "$<" + expreg[i] + ">";
@@ -2733,9 +2746,10 @@ export class gActor extends Actor {
                     sRoll.expr = "0";
 
                 //1d0 roll protection
+                console.log(sRoll.expr);
                 sRoll.expr = sRoll.expr.replace(/[0-9]+d0/g, "0");
-                sRoll.expr = sRoll.expr.replace(/0x\d+/g, "0");
-
+                sRoll.expr = sRoll.expr.replace(/(?<![0-9])0x\d+/g, "0");
+                console.log(sRoll.expr);
                 let partroll = new Roll(sRoll.expr);
 
                 let finalroll = await partroll.evaluate({ async: true });
@@ -3190,10 +3204,12 @@ export class gActor extends Actor {
             for (let i = 0; i < blocks.length; i++) {
                 let thiscond = blocks[i];
                 if (thiscond.length > 1) {
+                    thiscond = thiscond.replace(/(?<=[\s|;|+|\-|*|\/\(|&|:])total(?=[\s|;|+|\-|*|\/\)])/g, rolltotal);
+
                     let condblocks = thiscond.split(";");
                     let checktype = condblocks[0];
                     let mycondition = 0;
-                    checktype = checktype.replace(/total/g, rolltotal);
+                    checktype = checktype.replace(/(?<=[\s|;|+|\-|*|\/\(|&|:])total(?=[\s|;|+|\-|*|\/\)])/g, rolltotal);
                     //console.log(checktype);
                     if (checktype === "total") {
                         mycondition += rolltotal;
