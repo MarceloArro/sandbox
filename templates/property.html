@@ -433,6 +433,28 @@
                             <input type="text" name="data.checkgroup" value="{{data.data.checkgroup}}"/>
                         </div>
                     </div>
+                    <div class="new-row">
+                        <div class="flexblock-left">
+                            <label class="label-medlarge">Custom Image</label>
+                            <input class="check-customcheck" name="data.customcheck" id="check-customcheck" type="checkbox" {{checked item.data.data.customcheck}}/>
+                        </div>
+                    </div>
+                    {{#if item.data.data.customcheck}}
+                    <div class="new-row">
+                        <div class="flexblock-left">
+                            <label class="label-medlarge">Checked Path</label>
+                            <input class="input-medlarge" type="text" name="data.onPath" value="{{data.data.onPath}}"/>
+                            <a class="checkonPath" title="Browse Image"><i class="fas fa-file-upload fa-2x"></i></a>
+                        </div>
+                    </div>
+                    <div class="new-row">
+                        <div class="flexblock-left">
+                            <label class="label-medlarge">Unchecked Path</label>
+                            <input class="input-medlarge" type="text" name="data.offPath" value="{{data.data.offPath}}"/>
+                            <a class="checkoffPath" title="Browse Image"><i class="fas fa-file-upload fa-2x"></i></a>
+                        </div>
+                    </div>
+                    {{/if}}
                 </div>
             </div>
             {{/ifCond}}
