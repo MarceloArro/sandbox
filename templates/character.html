@@ -31,7 +31,7 @@
                     {{/if}}
                 </div>
 
-                <div class="rightblock">
+                <div class="rightblock gmsetup">
                     {{#if actor.data.istemplate}}
                     {{else}}
                     {{#isGM}}
@@ -213,7 +213,7 @@
                     <h4 class="property-name">{{citem.name}}</h4>
                     <div class="property-row">
                         <a class="property-control citem-edit" title="Edit cItem"><i class="fas fa-edit"></i></a>
-                        <a class="property-control citem-delete" citemid ="{{citem.id}}" title="Delete cItem"><i class="fas fa-trash"></i></a>
+                        <a class="property-control citem-delete" citemid ="{{citem.id}}" ciKey ="{{citem.ciKey}}" title="Delete cItem"><i class="fas fa-trash"></i></a>
                     </div>
                 </li>
                 {{/each}}
