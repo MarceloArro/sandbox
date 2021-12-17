@@ -124,13 +124,22 @@ export class gActorSheet extends ActorSheet {
 
         });
 
+        html.find('.macrobutton').click(ev => {
+            ev.preventDefault();
+            const li = $(ev.currentTarget);
+            let macroId = $(ev.currentTarget).attr("macroid");
+            let macro = game.macros.get(macroId);
+            macro.execute();
+        });
+
         html.find('.badge-click').click(async (ev) => {
             ev.preventDefault();
             const attributes = this.actor.data.data.attributes;
 
             let attKey = $(ev.currentTarget).attr("attKey");
             let attId = $(ev.currentTarget).attr("attId");
-            let property = game.items.get(attId);
+            //let property = game.items.get(attId);
+            let property = await auxMeth.getTElement(attId, "property", attKey);
 
             let oldvalue = parseInt(attributes[attKey].value);
 
@@ -233,8 +242,10 @@ export class gActorSheet extends ActorSheet {
             ev.preventDefault();
             //console.log("Aqui");
             let attId = $(ev.currentTarget).attr("attid");
-            let citemId = $(ev.currentTarget).attr("attid");
-            this._onRollCheck(attId, citemId, false);
+            let citemId;
+            citemId = $(ev.currentTarget).attr("item_id");
+            let attKey = $(ev.currentTarget).attr("id");
+            this._onRollCheck(attId, attKey, citemId, null, false);
 
         });
 
@@ -328,7 +339,8 @@ export class gActorSheet extends ActorSheet {
             if (selectcitems == null)
                 return;
 
-            let citemplate = game.items.get(selectcitems.id);
+            //let citemplate = game.items.get(selectcitems.id);
+            let citemplate = await auxMeth.getcItem(selectcitems.id, selectcitems.ciKey);
             let acitem = selectcitems.selection.find(y => !y.selected);
 
             let modindex = acitem.index;
@@ -361,9 +373,13 @@ export class gActorSheet extends ActorSheet {
                         newcheckBox.className = "dialog-check";
                         newcheckBox.setAttribute("type", "checkbox");
                         newcheckBox.setAttribute("itemId", mod.items[n].id);
+                        newcheckBox.setAttribute("ciKey", mod.items[n].ciKey);
 
                         let itemDescription = document.createElement("LABEL");
                         itemDescription.textContent = mod.items[n].name;
+                        itemDescription.className = "linkable";
+                        itemDescription.setAttribute("itemId", mod.items[n].id);
+                        itemDescription.setAttribute("ciKey", mod.items[n].ciKey);
 
                         newItem.appendChild(newcheckBox);
                         newItem.appendChild(itemDescription);
@@ -385,10 +401,16 @@ export class gActorSheet extends ActorSheet {
                         callback: async (html) => {
                             const flags = this.actor.data.flags;
                             let subitems;
-                            for (let i = 0; i < flags.selection.length; i++) {
-                                let citemId = this.actor.data.flags.selection[i];
+                            var checkedBoxes = html.find('.dialog-check');
+
+                            for (let i = 0; i < checkedBoxes.length; i++) {
+                                if (!checkedBoxes[i].checked)
+                                    continue;
+                                let citemId = checkedBoxes[i].getAttribute("itemid");
+                                let citemIkey = checkedBoxes[i].getAttribute("cikey");
                                 acitem.selected = true;
-                                let selcitem = game.items.get(citemId);
+                                //let selcitem = game.items.get(citemId);
+                                let selcitem = await auxMeth.getcItem(citemId, citemIkey);
                                 subitems = await this.actor.addcItem(selcitem, selectcitems.id);
                             }
                             if (subitems)
@@ -419,10 +441,11 @@ export class gActorSheet extends ActorSheet {
         let istemplate = actor.data.data.istemplate;
 
         // Edit Tab item
-        html.find('.item-edit').click(ev => {
+        html.find('.item-edit').click(async (ev) => {
             const li = $(ev.currentTarget).parents(".property");
             const tab = stabs[li.data("itemId")];
-            const item = game.items.get(tab.id);
+            //const item = game.items.get(tab.id);
+            const item = await auxMeth.getTElement(tab.id, "sheettab", tab.ikey);
             item.sheet.render(true);
         });
 
@@ -437,10 +460,11 @@ export class gActorSheet extends ActorSheet {
         });
 
         // Edit citem
-        html.find('.citem-edit').click(ev => {
+        html.find('.citem-edit').click(async (ev) => {
             const li = $(ev.currentTarget).parents(".property");
             const tab = citems[li.data("itemId")];
-            const item = game.items.get(tab.id);
+            //const item = game.items.get(tab.id);
+            const item = await auxMeth.getcItem(tab.id, tab.ciKey);
             item.sheet.render(true);
         });
 
@@ -496,9 +520,15 @@ export class gActorSheet extends ActorSheet {
 
     }
 
-    async generateRollDialog(dialogID, rollexp, rollname, rollid, actorattributes, citemattributes, number, rollcitemID, targets, useData) {
+    async generateRollDialog(dialogID, dialogName, rollexp, rollname, rollid, actorattributes, citemattributes, number, rollcitemID, targets, useData) {
 
-        let dialogPanel = await game.items.get(dialogID);
+        //let dialogPanel = await game.items.get(dialogID);
+        let dialogPanel = await auxMeth.getTElement(dialogID, "panel", dialogName);
+
+        if (dialogPanel == null) {
+            console.log(dialogName + " not found by ID");
+            ui.notifications.warn("Please readd dialog panel to roll " + rollname);
+        }
 
         let finalContent = "";
 
@@ -584,7 +614,8 @@ export class gActorSheet extends ActorSheet {
 
             for (let i = 0; i < dialogPanel.data.data.panels.length; i++) {
                 let myp = dialogPanel.data.data.panels[i];
-                let getPanel = game.items.get(myp.id);
+                //let getPanel = game.items.get(myp.id);
+                let getPanel = await auxMeth.getTElement(myp.id, "panel", myp.ikey);
 
                 finalContent += await this.generateDialogPanelHTML(getPanel);
             }
@@ -732,7 +763,7 @@ export class gActorSheet extends ActorSheet {
         }
 
         let finalContent = `
-<div class="${divclassName}">
+<div class="${divclassName} ${dialogPanel.data.data.panelKey}">
 `;
         let endDiv = `
 </div>
@@ -741,7 +772,7 @@ export class gActorSheet extends ActorSheet {
 
         if (dialogPanel.data.data.title != "") {
             finalContent += `
-            <div class="panelheader">
+            <div class="panelheader ${dialogPanel.data.data.headergroup}">
 ${dialogPanel.data.data.title}
             </div>
             `;
@@ -751,7 +782,8 @@ ${dialogPanel.data.data.title}
         let currentCol = 0;
         for (let i = 0; i < parseInt(dialogPanel.data.data.properties.length); i++) {
             let panelPropertyRef = dialogPanel.data.data.properties[i];
-            let panelProperty = game.items.get(panelPropertyRef.id);
+            //let panelProperty = game.items.get(panelPropertyRef.id);
+            let panelProperty = await auxMeth.getTElement(panelPropertyRef.id, "property", panelPropertyRef.ikey);
 
             if (currentCol == 0) {
                 //Create first Row
@@ -805,7 +837,7 @@ ${dialogPanel.data.data.title}
             if (panelProperty.data.data.defvalue != "")
                 defvalue = "defvalue";
 
-            if (panelProperty.data.data.datatype != "table" && panelProperty.data.data.datatype != "textarea" && panelProperty.data.data.datatype != "label" && panelProperty.data.data.datatype != "badge") {
+            if (panelProperty.data.data.datatype != "table" && panelProperty.data.data.datatype != "textarea" && panelProperty.data.data.datatype != "badge" && !panelProperty.data.data.ishidden) {
                 if (panelProperty.data.data.haslabel) {
                     finalContent += `
 <label class="${labelwidth} ${textalignment} ${panelProperty.data.data.fontgroup} " title="${panelProperty.data.data.tooltip}">${panelProperty.data.data.tag}</label>
@@ -830,6 +862,10 @@ ${dialogPanel.data.data.title}
                     finalContent += `
 </select>
 `
+                }
+
+                else if (panelProperty.data.data.datatype == "label") {
+
                 }
                 else {
                     let isauto = "";
@@ -859,7 +895,7 @@ ${dialogPanel.data.data.title}
         return finalContent;
     }
 
-    async _onRollCheck(attrID, citemID, ciRoll = false, isFree = false, tableKey = null, useData = null) {
+    async _onRollCheck(attrID, attKey, citemID, citemKey = null, ciRoll = false, isFree = false, tableKey = null, useData = null) {
         //console.log("rolling att " + attrID + " item " + citemID);
 
         let actorattributes = this.actor.data.data.attributes;
@@ -870,6 +906,7 @@ ${dialogPanel.data.data.title}
         let rollid = [];
         let hasDialog = false;
         let dialogID;
+        let dialogName;
         let citem;
         let property;
         let initiative = false;
@@ -881,12 +918,16 @@ ${dialogPanel.data.data.title}
         if (citemID != null) {
             if (!isFree) {
 
-                citem = await game.items.get(citemID);
+                //citem = await game.items.get(citemID);
+                citem = await await auxMeth.getcItem(citemID, citemKey);
                 findcitem = this.actor.data.data.citems.find(y => y.id == citemID);
                 if (findcitem != null) {
                     citemattributes = findcitem.attributes;
-                    rollcitemID = citemID;
+
                 }
+
+                if (citem != null)
+                    rollcitemID = citemID;
 
             }
 
@@ -905,11 +946,12 @@ ${dialogPanel.data.data.title}
         }
 
         if (!ciRoll) {
-            property = await game.items.get(attrID);
+            property = await auxMeth.getTElement(attrID, "property", attKey);
             rollexp = property.data.data.rollexp;
             rollname = property.data.data.rollname;
             hasDialog = property.data.data.hasdialog;
             dialogID = property.data.data.dialogID;
+            dialogName = property.data.data.dialogName;
             rollid.push(property.data.data.rollid);
         }
         else {
@@ -917,6 +959,7 @@ ${dialogPanel.data.data.title}
             rollname = citem.data.data.rollname;
             hasDialog = citem.data.data.hasdialog;
             dialogID = citem.data.data.dialogID;
+            dialogName = citem.data.data.dialogName;
             rollid.push(citem.data.data.rollid);
         }
 
@@ -926,7 +969,7 @@ ${dialogPanel.data.data.title}
             number = findcitem.number;
 
         if (hasDialog) {
-            this.generateRollDialog(dialogID, rollexp, rollname, rollid, actorattributes, citemattributes, number, rollcitemID, targets, useData);
+            this.generateRollDialog(dialogID, dialogName, rollexp, rollname, rollid, actorattributes, citemattributes, number, rollcitemID, targets, useData);
         }
         else {
             this.rollExpression(rollexp, rollname, rollid, actorattributes, citemattributes, number, rollcitemID, targets, null, useData)
@@ -941,11 +984,13 @@ ${dialogPanel.data.data.title}
 
         rollexp = await auxMeth.parseDialogProps(rollexp, dialogProps);
 
+        rollname = await auxMeth.parseDialogProps(rollname, dialogProps);
+
         //console.log(rollexp);
 
         let finalroll;
 
-        if (targets.length > 0 && (rollexp.includes("#{target|") || rollexp.includes("add(")) || rollexp.includes("set(")) {
+        if (targets.length > 0 && ((rollexp.includes("#{target|") || rollexp.includes("add(")) || rollexp.includes("set("))) {
             for (let i = 0; i < targets.length; i++) {
                 let tokenid = canvas.tokens.placeables.find(y => y.id == targets[i]);
                 finalroll = await this.actor.rollSheetDice(rollexp, rollname, rollid, actorattributes, citemattributes, number, tokenid, rollcitemID);
@@ -1010,8 +1055,12 @@ ${dialogPanel.data.data.title}
             let newAtt = inputs[i];
 
             let attId = newAtt.getAttribute("attId");
+            //console.log(newAtt);
+            let attKey = newAtt.getAttribute("name");
+            attKey = attKey.replace("data.attributes.", '');
+            attKey = attKey.replace(".value", '');
             if (attId != null)
-                await this.setAttributeValues(attId, attData);
+                await this.setAttributeValues(attId, attData, attKey);
 
         }
 
@@ -1020,7 +1069,10 @@ ${dialogPanel.data.data.title}
         for (let i = 0; i < radioinputs.length; i++) {
             let newAtt = radioinputs[i];
             let attId = newAtt.getAttribute("attId");
-            await this.setAttributeValues(attId, attData);
+            let attKey = newAtt.getAttribute("name");
+            attKey = attKey.replace("data.attributes.", '');
+            attKey = attKey.replace(".value", '');
+            await this.setAttributeValues(attId, attData, attKey);
         }
 
         //For special cases of badges
@@ -1028,7 +1080,8 @@ ${dialogPanel.data.data.title}
         for (let i = 0; i < badgeinputs.length; i++) {
             let newAtt = badgeinputs[i];
             let attId = newAtt.getAttribute("attId");
-            await this.setAttributeValues(attId, attData);
+            let attKey = newAtt.getAttribute("attKey");
+            await this.setAttributeValues(attId, attData, attKey);
         }
 
         //For special cases of tables
@@ -1036,7 +1089,10 @@ ${dialogPanel.data.data.title}
         for (let i = 0; i < tableinputs.length; i++) {
             let newAtt = tableinputs[i];
             let attId = newAtt.getAttribute("attId");
-            await this.setAttributeValues(attId, attData);
+            let attKey = newAtt.getAttribute("name");
+            attKey = attKey.replace("data.attributes.", '');
+            attKey = attKey.replace(".value", '');
+            await this.setAttributeValues(attId, attData, attKey);
         }
 
         //For special cases of custom checboxes
@@ -1044,7 +1100,17 @@ ${dialogPanel.data.data.title}
         for (let i = 0; i < custominputs.length; i++) {
             let newAtt = custominputs[i];
             let attId = newAtt.getAttribute("attId");
-            await this.setAttributeValues(attId, attData);
+            let attKey = newAtt.getAttribute("name");
+            if (attKey != null) {
+
+                attKey = attKey.replace("data.attributes.", '');
+                attKey = attKey.replace(".value", '');
+            }
+            else {
+                attKey = newAtt.getAttribute("attkey");
+            }
+
+            await this.setAttributeValues(attId, attData, attKey);
         }
 
         //Get token settings
@@ -1088,12 +1154,13 @@ ${dialogPanel.data.data.title}
         await this.actor.update({ "data": actorData.data, "token": mytoken });
     }
 
-    async setAttributeValues(attID, attData) {
+    async setAttributeValues(attID, attData, propName) {
 
         //reference to attribute
-        //console.log(attID);
+        //console.log(attID + " " + propName);
         //const attData = this.actor.data.data.attributes;
-        const property = await game.items.get(attID);
+        //const property = await game.items.get(attID);
+        const property = await auxMeth.getTElement(attID, "property", propName);
 
         const attribute = property.data.data.attKey;
         //console.log(attribute);
@@ -1128,9 +1195,9 @@ ${dialogPanel.data.data.title}
         }
 
         if (property.data.data.datatype == "table") {
-            if (!hasProperty(attData[attribute], "tableitems")) {
-                populate = true;
-            }
+            // if (!hasProperty(attData[attribute], "tableitems")) {
+            populate = true;
+            // }
 
         }
 
@@ -1170,19 +1237,29 @@ ${dialogPanel.data.data.title}
 
             }
             else {
-                //console.log("setting table");
+                //console.log("setting table " + attribute);
                 let tablegroup = property.data.data.group;
-                let groupObj = await game.items.get(tablegroup.id);
+                //let groupObj = await game.items.get(tablegroup.id);
+                //console.log(tablegroup);
+                let groupObj = await auxMeth.getTElement(tablegroup.id, "group", tablegroup.ikey);
+                if (groupObj == null) {
+                    ui.notifications.warn("Please reassign group to table " + attribute);
+                    console.log("Error:Please reassign group to table " + attribute);
+                }
+
                 let groupprops = groupObj.data.data.properties;
                 //console.log(groupprops);
                 setProperty(attData[attribute], "istable", true);
                 setProperty(attData[attribute], "totals", {});
-                if (!hasProperty(attData[attribute], "tableitems"))
+                if (!hasProperty(this.actor.data.data.attributes[attribute], "tableitems")) {
                     setProperty(attData[attribute], "tableitems", []);
+                }
+
                 const attTableKey = attData[attribute];
                 for (let i = 0; i < groupprops.length; i++) {
                     let propId = groupprops[i].id;
-                    let propData = game.items.get(propId);
+                    //let propData = game.items.get(propId);
+                    let propData = await auxMeth.getTElement(propId, "property", groupprops[i].ikey);
                     let propKey = propData.data.data.attKey;
                     setProperty(attTableKey.totals, propKey, {});
                     const tableAtt = attTableKey.totals[propKey];
@@ -1192,6 +1269,19 @@ ${dialogPanel.data.data.title}
                         setProperty(tableAtt, "total", "");
                         setProperty(tableAtt, "prev", "");
                     }
+                    //TO FIX IN FUTURE
+                    // for(let j=0;j<this.actor.data.data.attributes[attribute].tableitems.length;j++){
+                    //     let tableItemProp = this.actor.data.data.attributes[attribute].tableitems[j].attributes;
+                    //     if(tableItemProp[propKey]==null){
+                    //         setProperty(attData[attribute], "tableitems", []);
+                    //         let newtableBlock = attData[attribute];
+                    //         let newtableItem = newtableBlock.tableitems;
+                    //         newtableItem = this.actor.data.data.attributes[attribute].tableitems[j];
+                    //         newtableItem.attributes[propKey] = {};
+                    //         newtableItem.attributes[propKey].value = propData.data.data.defvalue;
+                    //     }
+
+                    // }
 
                 }
             }
@@ -1310,8 +1400,8 @@ ${dialogPanel.data.data.title}
         }
 
         if (tabitem.data.controlby == "gamemaster") {
-            newElement.insertAdjacentHTML('afterbegin', "{{#isGM}}");
-            newElement.insertAdjacentHTML('beforeend', "{{/isGM}}");
+            newElement.insertAdjacentHTML('beforebegin', "{{#isGM}}");
+            newElement.insertAdjacentHTML('afterend', "{{/isGM}}");
         }
 
         else {
@@ -1359,7 +1449,7 @@ ${dialogPanel.data.data.title}
         return finalreturn;
     }
 
-    async addNewPanel(newHTML, tabpanel, tabKey, tabname, firstmrow, multiID = null, multiName = null, _paneldata = null) {
+    async addNewPanel(newHTML, tabpanel, tabKey, tabname, firstmrow, multiID = null, multiName = null, _paneldata = null, multiheadergroup = null) {
         //Variables
         console.log("adding Panel " + tabpanel.name + " in " + tabKey);
         console.log(tabpanel);
@@ -1639,6 +1729,8 @@ ${dialogPanel.data.data.title}
             console.log("PRE _ " + tabpanel.name + " maxrows: " + flags.maxrows + " multiwidth: " + flags.multiwidth + "maxwidth: " + flags.maxwidth);
         }
 
+        div6.className += " " + tabpanel.data.panelKey + "_container";
+
         if (flags.rwidth > 0.95 && flags.rwidth <= 1)
             flags.rwidth = 1.015;
 
@@ -1713,9 +1805,10 @@ ${dialogPanel.data.data.title}
         var new_row = deftemplate.createElement("DIV");
 
         //LOAD THE PROPERTIES INPUT FIELDS
-        await properties.forEach(function (rawproperty) {
+        //await properties.forEach(function (rawproperty) {
+        for (let n = 0; n < properties.length; n++) {
 
-
+            let rawproperty = properties[n];
 
             //label alignment
             if (tabpanel.data.alignment == "right") {
@@ -1730,7 +1823,8 @@ ${dialogPanel.data.data.title}
             }
 
             console.log(rawproperty);
-            let propertybase = game.items.get(rawproperty.id);
+            //let propertybase = game.items.get(rawproperty.id);
+            let propertybase = await auxMeth.getTElement(rawproperty.id, "property", rawproperty.ikey);
 
 
 
@@ -1774,10 +1868,10 @@ ${dialogPanel.data.data.title}
                     divtemp = deftemplate.createElement("DIV");
 
                     if (tabpanel.data.contentalign == "center") {
-                        divtemp.className = "flexblock-center";
+                        divtemp.className = "flexblock-center " + tabpanel.data.panelKey + "_row";
                     }
                     else {
-                        divtemp.className = "flexblock-left";
+                        divtemp.className = "flexblock-left " + tabpanel.data.panelKey + "_row";
                     }
 
 
@@ -1786,12 +1880,12 @@ ${dialogPanel.data.data.title}
                 }
 
                 //Attribute input
-                var sInput;
-                var sInputMax;
-                var sInputArrows;
+                let sInput;
+                let sInputMax;
+                let sInputArrows;
 
                 //Set Label
-                if (property.data.haslabel && property.data.datatype != "table" && property.data.datatype != "badge") {
+                if (property.data.haslabel && property.data.datatype != "table" && property.data.datatype != "badge" && property.data.datatype != "button") {
                     //Attribute label
                     var sLabel = deftemplate.createElement("H3");
 
@@ -1970,7 +2064,31 @@ ${dialogPanel.data.data.title}
                 else if (property.data.datatype === "list") {
 
                     sInput = deftemplate.createElement("SELECT");
-                    sInput.className = "input-med";
+                    if (property.data.inputsize == "F") {
+                        sInput.className = "input-free";
+                    }
+
+                    else if (property.data.labelsize == "S") {
+                        sInput.className = "input-small";
+                    }
+
+                    else if (property.data.labelsize == "T") {
+                        sInput.className = "input-tiny";
+                    }
+
+                    else if (property.data.labelsize == "M") {
+                        sInput.className = "input-med";
+                    }
+
+                    else if (property.data.labelsize == "L") {
+                        sInput.className = "input-medlarge";
+                    }
+
+                    else {
+                        sInput.className = "input-med";
+                    }
+
+                    //sInput.className = "input-med";
                     sInput.setAttribute("name", "data.attributes." + property.data.attKey + ".value");
                     sInput.insertAdjacentHTML('beforeend', "{{#select data.data.attributes." + property.data.attKey + ".value}}");
 
@@ -1990,8 +2108,18 @@ ${dialogPanel.data.data.title}
                     sInput.insertAdjacentHTML('beforeend', "{{/select}}");
                 }
 
+                else if (property.data.datatype === "button") {
+                    sInput = deftemplate.createElement("a");
+                    sInput.className = "sbbutton";
+                    let buttonContent = deftemplate.createElement("i");
+                    buttonContent.className = property.data.attKey + "_button macrobutton";
+                    buttonContent.textContent = property.data.tag;
+                    buttonContent.setAttribute("macroid", property.data.macroid);
+                    sInput.appendChild(buttonContent);
+                }
+
                 else if (property.data.datatype === "table") {
-                    new_row.className = "table-row";
+                    new_row.className = "table-row " + property.data.attKey + "_row";
 
                     //TABLE LAYOUT
                     sInput = deftemplate.createElement("TABLE");
@@ -2017,7 +2145,8 @@ ${dialogPanel.data.data.title}
                     sInput.innerHTML = '';
 
                     //get group
-                    const group = game.items.get(property.data.group.id);
+                    //const group = game.items.get(property.data.group.id);
+                    const group = await auxMeth.getTElement(property.data.group.id, "group", property.data.group.ikey);
 
                     //Create header
                     let header = deftemplate.createElement("THEAD");
@@ -2073,13 +2202,13 @@ ${dialogPanel.data.data.title}
                         if (group != null) {
 
                             const groupprops = group.data.data.properties;
-
+                            //let isfirstFree = true;
                             for (let i = 0; i < groupprops.length; i++) {
-                                let propTable = game.items.get(groupprops[i].id);
+                                console.log(groupprops[i].id + " key:" + groupprops[i].ikey + " name:" + groupprops[i].name);
+
+                                //let propTable = game.items.get(groupprops[i].id);
+                                let propTable = await auxMeth.getTElement(groupprops[i].id, "property", groupprops[i].ikey);
                                 let hCell = deftemplate.createElement("TH");
-
-
-
 
                                 hCell.className = "input-med";
 
@@ -2106,6 +2235,11 @@ ${dialogPanel.data.data.title}
                                     hCell.className = "label-med";
                                 }
 
+                                // if(property.data.isfreetable && isfirstFree){
+                                //     hCell.className += " firstcol";
+                                //     isfirstFree = false;
+                                // }
+
 
                                 hCell.className += " tableheader propheader";
                                 hCell.setAttribute("attKey", propTable.data.data.attKey);
@@ -2126,7 +2260,7 @@ ${dialogPanel.data.data.title}
 
                     //Add delete column
                     let deleteCell = deftemplate.createElement("TH");
-                    deleteCell.className = "cell-empty";
+                    deleteCell.className = " tableheader cell-empty";
                     header_row.appendChild(deleteCell);
 
                     let tbody = deftemplate.createElement("TBODY");
@@ -2158,7 +2292,7 @@ ${dialogPanel.data.data.title}
                         }
 
                         if (property.data.automax != "" && property.data.maxvisible) {
-                            sInputMax = deftemplate.createElement("INPUT");
+                            sInputMax = await deftemplate.createElement("INPUT");
                             sInputMax.setAttribute("type", "text");
                             sInput.className = "input-ahalf ";
                             sInputMax.className = "input-bhalf input-disabled inputGM " + property.data.attKey + ".max";
@@ -2238,23 +2372,22 @@ ${dialogPanel.data.data.title}
 
                 if (property.data.ishidden) {
                     sInput.style.display = "none";
-                    if (sLabel != null)
+                    if (sLabel != null && property.data.haslabel)
                         sLabel.style.display = "none";
                 }
 
 
                 if (property.data.datatype != "label")
-                    divtemp.appendChild(sInput);
+                    await divtemp.appendChild(sInput);
 
-                if (sInputMax != null) {
-                    sInputMax.className += " " + inputgroup;
-                    divtemp.appendChild(sInputMax);
+                if (property.data.automax != "" && property.data.maxvisible && sInputMax != null) {
+                    //sInputMax.className += " " + inputgroup;
+                    //divtemp.insertBefore(sInputMax, sInput.nextSibling);
+                    await divtemp.appendChild(sInputMax);
                 }
                 if (sInputArrows != null) {
-                    divtemp.appendChild(sInputArrows);
+                    await divtemp.appendChild(sInputArrows);
                 }
-
-
 
                 count++;
 
@@ -2263,7 +2396,8 @@ ${dialogPanel.data.data.title}
                 }
 
             }
-        }, this);
+            //}, this);
+        }
 
         //GEt final HTML
         var parentRow;
@@ -2304,9 +2438,9 @@ ${dialogPanel.data.data.title}
                     else {
                         new_header.className = "panelheader";
                     }
-
+                    new_header.className += " " + multiheadergroup;
                     new_header.textContent = multiName;
-                    parentGranda.appendChild(new_header);
+                    await parentGranda.appendChild(new_header);
                 }
 
 
@@ -2319,17 +2453,17 @@ ${dialogPanel.data.data.title}
                     parentRoot.className = 'new-block';
                     console.log("creating row: " + flags.rows);
                     parentRoot.setAttribute('id', tabname + "row" + flags.rows);
-                    parentNode.appendChild(parentRoot);
-                    parentRoot.appendChild(parentGranda);
+                    await parentNode.appendChild(parentRoot);
+                    await parentRoot.appendChild(parentGranda);
                 }
 
                 else {
                     parentRoot = deftemplate.getElementById(tabname + "row" + flags.rows);
-                    parentNode.appendChild(parentRoot);
-                    parentRoot.appendChild(parentGranda);
+                    await parentNode.appendChild(parentRoot);
+                    await parentRoot.appendChild(parentGranda);
                 }
 
-                parentGranda.appendChild(parentRow);
+                await parentGranda.appendChild(parentRow);
 
                 //parentGranda conditional visibility, to reorganize in method with previous ones
                 //                if(_paneldata.condop!="NON"){
@@ -2388,7 +2522,7 @@ ${dialogPanel.data.data.title}
                     parentRow.setAttribute('id', multiID + "multirow" + flags.maxrows);
 
                     if (flags.rwidth == 0) {
-                        parentRoot = docudeftemplatement.createElement("DIV");
+                        parentRoot = deftemplate.createElement("DIV");
                         parentRoot.className = 'new-block';
                         console.log("creating row: " + flags.rows);
                         parentRoot.setAttribute('id', tabname + "row" + flags.rows);
@@ -2399,9 +2533,9 @@ ${dialogPanel.data.data.title}
 
                     }
 
-                    parentNode.appendChild(parentRoot);
-                    parentRoot.appendChild(parentGranda);
-                    parentGranda.appendChild(parentRow);
+                    await parentNode.appendChild(parentRoot);
+                    await parentRoot.appendChild(parentGranda);
+                    await parentGranda.appendChild(parentRow);
                 }
                 else {
                     parentRow = deftemplate.getElementById(multiID + "multirow" + flags.maxrows);
@@ -2418,7 +2552,7 @@ ${dialogPanel.data.data.title}
         if (tabpanel.data.condop != "NON") {
             let attProp = ".value";
             if (tabpanel.data.condat != null) {
-                if (tabpanel.data.condat.includes("max")) {
+                if (tabpanel.data.condat.includes(".max")) {
                     attProp = "";
                 }
             }
@@ -2523,100 +2657,131 @@ ${dialogPanel.data.data.title}
 
     }
 
+    async setcItemsKey() {
+        let gamecItems = game.items.filter(y => y.data.type == "cItem");
+        for (let i = 0; i < gamecItems.length; i++) {
+            const mycitem = gamecItems[i];
+            if (mycitem.data.data.ciKey == "")
+                await mycitem.update({ "data.data.ciKey": mycitem.id });
+        }
+    }
+
     async checkConsistency() {
 
         let gamecItems = game.items.filter(y => y.data.type == "cItem");
+        let toupdate = false;
         for (let i = 0; i < gamecItems.length; i++) {
             const mycitem = gamecItems[i];
             const mycitemmods = mycitem.data.data.mods;
             for (let j = 0; j < mycitemmods.length; j++) {
                 let mymod = mycitemmods[j];
-                setProperty(mymod, "citem", mycitem.data.id);
-                if (!hasProperty(mymod, "index"))
-                    setProperty(mymod, "index", j);
+                //setProperty(mymod, "citem", mycitem.data.id);
+                // if (!hasProperty(mymod, "index")) {
+                //     setProperty(mymod, "index", j);
+                //     toupdate = true;
+                // }
 
-            }
-            await mycitem.update({ "data": mycitem.data.data });
-        }
-
-        let gameactors = game.actors;
-        for (let i = 0; i < gameactors.entities.length; i++) {
-
-            const myactor = gameactors.entities[i];
-            const myactorcitems = myactor.data.data.citems;
-            //console.log("checking actor " + myactor.name);
-            //console.log(myactorcitems);
-            if (!myactor.data.data.istemplate) {
-                if (myactorcitems != null) {
-                    for (let j = myactorcitems.length - 1; j >= 0; j--) {
-                        let mycitem = myactorcitems[j];
-                        //console.log(mycitem);
-                        if (mycitem != null) {
-                            let templatecItem = game.items.get(mycitem.id);
-                            //console.log(templatecItem);
-
-                            if (templatecItem != null) {
-                                let isconsistent = true;
-                                let mymods = mycitem.mods;
-                                if (mymods != null) {
-                                    for (let r = 0; r < mymods.length; r++) {
-                                        if (mycitem.id != mymods[r].citem)
-                                            mymods[r].citem = mycitem.id;
-                                        if (!hasProperty(mymods[r], "index"))
-                                            setProperty(mymods[r], "index", 0);
-
-                                        if (templatecItem.data.data.mods[mymods[r].index] == null) {
-                                            //console.log(templatecItem.name);
-                                            //isconsistent = false;
-                                        }
-
-                                        else {
-                                            if (mymods[r].expr != templatecItem.data.data.mods[mymods[r].index].value)
-                                                isconsistent = false;
-                                        }
-
-
-                                    }
-                                }
-
-                                //MOD change consistency checker
-                                if (!isconsistent) {
-                                    //console.log(templatecItem.name + " is fucked in " + myactor.name);
-                                    let newData = await myactor.deletecItem(templatecItem.id, true);
-                                    await this.actor.update({ "data": newData.data });
-                                    let subitems = await myactor.addcItem(templatecItem);
-                                    if (subitems)
-                                        this.updateSubItems(false, subitems);
-                                    //await myactor.update(myactor.data);
-                                }
-
-                            }
-
-                            else {
-                                delete myactorcitems[j];
+                if (mymod.items.length > 0) {
+                    for (let h = 0; h < mymod.items.length; h++) {
+                        if (mymod.items[h].ciKey == null) {
+                            let toaddotem = await auxMeth.getcItem(mymod.items[h].id, mymod.items[h].ciKey);
+                            if (toaddotem) {
+                                toupdate = true;
+                                mymod.items[h].ciKey = toaddotem.data.data.ciKey;
                             }
 
                         }
-
-                        else {
-                            //myactorcitems.split(myactorcitems[j],1);
-                            delete myactorcitems[j];
-                        }
-
 
                     }
                 }
 
-                try {
-                    await myactor.update({ "data": myactor.data.data }, { stopit: true });
-                }
-                catch (err) {
-                    ui.notifications.warn("Character " + myactor.name + " has consistency problems");
-                }
+            }
+            if (toupdate) {
+                console.log("updating consistency");
+                await mycitem.update({ "data": mycitem.data.data });
             }
 
-
         }
+
+        // let gameactors = game.actors;
+        // for (let i = 0; i < gameactors.entities.length; i++) {
+
+        //     const myactor = gameactors.entities[i];
+        //     const myactorcitems = myactor.data.data.citems;
+        //     //console.log("checking actor " + myactor.name);
+        //     //console.log(myactorcitems);
+        //     if (!myactor.data.data.istemplate) {
+        //         if (myactorcitems != null) {
+        //             for (let j = myactorcitems.length - 1; j >= 0; j--) {
+        //                 let mycitem = myactorcitems[j];
+        //                 //console.log(mycitem);
+        //                 if (mycitem != null) {
+        //                     //let templatecItem = game.items.get(mycitem.id);
+        //                     let templatecItem = await auxMeth.getcItem(mycitem.id, mycitem.iKey);
+        //                     //console.log(templatecItem);
+
+        //                     if (templatecItem != null) {
+        //                         let isconsistent = true;
+        //                         let mymods = mycitem.mods;
+        //                         if (mymods != null) {
+        //                             for (let r = 0; r < mymods.length; r++) {
+        //                                 if (mycitem.id != mymods[r].citem)
+        //                                     mymods[r].citem = mycitem.id;
+        //                                 if (!hasProperty(mymods[r], "index"))
+        //                                     setProperty(mymods[r], "index", 0);
+
+        //                                 if (templatecItem.data.data.mods[mymods[r].index] == null) {
+        //                                     //console.log(templatecItem.name);
+        //                                     //isconsistent = false;
+        //                                 }
+
+        //                                 else {
+        //                                     if (mymods[r].expr != templatecItem.data.data.mods[mymods[r].index].value)
+        //                                         isconsistent = false;
+        //                                 }
+
+
+        //                             }
+        //                         }
+
+        //                         //MOD change consistency checker
+        //                         if (!isconsistent) {
+        //                             console.log(templatecItem.name + " is fucked in " + myactor.name);
+        //                             let newData = await myactor.deletecItem(templatecItem.id, true);
+        //                             await this.actor.update({ "data": newData.data });
+        //                             let subitems = await myactor.addcItem(templatecItem);
+        //                             if (subitems)
+        //                                 this.updateSubItems(false, subitems);
+        //                             //await myactor.update(myactor.data);
+        //                         }
+
+        //                     }
+
+        //                     else {
+        //                         delete myactorcitems[j];
+        //                     }
+
+        //                 }
+
+        //                 else {
+        //                     //myactorcitems.split(myactorcitems[j],1);
+        //                     delete myactorcitems[j];
+        //                 }
+
+
+        //             }
+        //         }
+
+        //         try {
+        //             await myactor.update({ "data": myactor.data.data }, { stopit: true });
+        //         }
+        //         catch (err) {
+        //             ui.notifications.warn("Character " + myactor.name + " has consistency problems");
+        //         }
+        //     }
+
+
+        // }
     }
 
     async checkTemplateKeys(tabs) {
@@ -2638,7 +2803,8 @@ ${dialogPanel.data.data.title}
         let allTabs = [];
         let allPanels = [];
         for (let y = 0; y < tabs.length; y++) {
-            let titem = game.items.get(tabs[y].id);
+            //let titem = game.items.get(tabs[y].id);
+            let titem = await auxMeth.getTElement(tabs[y].id, "sheettab", tabs[y].ikey);
             let tabitempanels = [];
             if (titem != null) {
                 tabitempanels = titem.data.data.panels;
@@ -2653,15 +2819,28 @@ ${dialogPanel.data.data.title}
                 tabitempanels = [];
 
             for (let i = 0; i < tabitempanels.length; i++) {
-                let tabpanel = game.items.get(tabitempanels[i].id);
+                //let tabpanel = game.items.get(tabitempanels[i].id);
+                let tabpanel = await auxMeth.getTElement(tabitempanels[i].id, "panel", tabitempanels[i].ikey);
+                console.log("building panel with Key: " + tabitempanels[i].ikey);
+                if (tabpanel == null)
+                    console.log("PANEL NOT FOUND");
+                //console.log(tabpanel.name);
                 let panelproperties = [];
                 if (tabpanel != null) {
                     if (tabpanel.data.type == "multipanel") {
                         for (let b = 0; b < tabpanel.data.data.panels.length; b++) {
-                            let subpanel = game.items.get(tabpanel.data.data.panels[b].id);
-                            let subproperties = subpanel.data.data.properties;
-                            allPanels.push(subpanel.data.data.panelKey);
-                            panelproperties = [].concat(panelproperties, subproperties);
+                            //let subpanel = game.items.get(tabpanel.data.data.panels[b].id);
+                            console.log(tabpanel.data.data.panels[b]);
+                            //console.log(tabpanel.data.data.panels[b].ikey);
+                            let subpanel = await auxMeth.getTElement(tabpanel.data.data.panels[b].id, "panel", tabpanel.data.data.panels[b].ikey);
+                            if (subpanel) {
+                                let subproperties = subpanel.data.data.properties;
+                                allPanels.push(subpanel.data.data.panelKey);
+                                panelproperties = [].concat(panelproperties, subproperties);
+                            }
+                            else {
+                                ui.notifications.warn("Please remove panel " + tabpanel.data.data.panels[b].name + " at multipanel " + tabpanel.name);
+                            }
 
                         }
                     }
@@ -2680,16 +2859,17 @@ ${dialogPanel.data.data.title}
                     panelproperties = [];
 
                 for (let j = 0; j < panelproperties.length; j++) {
-                    let property = game.items.get(panelproperties[j].id);
+                    //let property = game.items.get(panelproperties[j].id);
+                    let property = await auxMeth.getTElement(panelproperties[j].id, "property", panelproperties[j].ikey);
                     if (property != null) {
-                        if(property.data.data.datatype=="table" && property.data.data.group.id==null){
+                        if (property.data.data.datatype == "table" && property.data.data.group.id == null) {
                             compilationMsg += panelproperties[j].name + " table property lacks table group"
                             hasissue = true;
                         }
 
-                            allProps.push(property.data.data.attKey);
+                        allProps.push(property.data.data.attKey);
 
-                        
+
                     }
                     else {
                         allProps.push(panelproperties[j].name + "_PROP_NONEXISTING");
@@ -2785,16 +2965,19 @@ ${dialogPanel.data.data.title}
 
         let newHTML;
 
-        if (game.settings.get("sandbox", "consistencycheck") != "") {
-            await this.checkConsistency();
-        }
+        //if (game.settings.get("sandbox", "consistencycheck") != "") {
+        await this.checkConsistency();
+        //}
 
 
         const flags = this.actor.data.flags;
         for (let y = 0; y < tabs.length; y++) {
 
-            const titem = game.items.get(tabs[y].id).data;
-
+            //const titem = game.items.get(tabs[y].id).data;
+            let titemfinder = await auxMeth.getTElement(tabs[y].id, "sheettab", tabs[y].ikey);
+            const titem = titemfinder.data;
+            console.log(titem);
+            console.log(tabs[y].ikey);
             flags.rwidth = 0;
             newHTML = await this.addNewTab(newHTML, titem, y + 1);
             //console.log(newHTML);
@@ -2808,7 +2991,8 @@ ${dialogPanel.data.data.title}
 
 
             for (let i = 0; i < tabitempanels.length; i++) {
-                let tabpanel = game.items.get(tabitempanels[i].id);
+                //let tabpanel = game.items.get(tabitempanels[i].id);
+                let tabpanel = await auxMeth.getTElement(tabitempanels[i].id, "panel", tabitempanels[i].ikey);
                 //console.log(tabpanel);
 
 
@@ -2834,10 +3018,11 @@ ${dialogPanel.data.data.title}
                     let firstmrow = true;
                     let ismulti = true;
                     for (let j = 0; j < multipanels.length; j++) {
-                        let singlepanel = game.items.get(multipanels[j].id);
+                        //let singlepanel = game.items.get(multipanels[j].id);
+                        let singlepanel = await auxMeth.getTElement(multipanels[j].id, "panel", multipanels[j].ikey);
                         //console.log(multipanels[j]);
                         //LAst argument is only to pass the conditionals. Poorly done, to fix in the future.
-                        newHTML = await this.addNewPanel(newHTML, singlepanel.data, titem.data.tabKey, tabname, firstmrow, tabpanel.data.data.panelKey, tabpanel.data.data.title);
+                        newHTML = await this.addNewPanel(newHTML, singlepanel.data, titem.data.tabKey, tabname, firstmrow, tabpanel.data.data.panelKey, tabpanel.data.data.title, null, tabpanel.data.data.headergroup);
                         newHTML = await this.addMultipanelVisibility(newHTML, tabpanel.data.data.panelKey, tabpanel.data.data.condat, tabpanel.data.data.condop, tabpanel.data.data.condvalue);
                         if (firstmrow)
                             flags.rwidth += multiwidth;
@@ -2873,7 +3058,7 @@ ${dialogPanel.data.data.title}
         if (op != "NON") {
             let attProp = ".value";
             if (att != null) {
-                if (att.includes("max")) {
+                if (att.includes(".max")) {
                     attProp = "";
                 }
             }
@@ -3061,6 +3246,8 @@ ${dialogPanel.data.data.title}
         await this.actor.update();
 
         await auxMeth.getSheets();
+
+        await this.setcItemsKey();
 
         //Comment this for debug
         location.reload();
@@ -3286,7 +3473,8 @@ ${dialogPanel.data.data.title}
 
             if (propTable != null) {
                 groupID = propTable.data.data.group;
-                group = game.items.get(groupID.id);
+                //group = game.items.get(groupID.id);
+                group = await auxMeth.getTElement(groupID.id, "group", groupID.ikey);
                 tableKey = propTable.data.data.attKey;
                 isFree = propTable.data.data.isfreetable;
             }
@@ -3302,7 +3490,7 @@ ${dialogPanel.data.data.title}
 
                         if (this.sortOption != null) {
                             if (this.sortOption[tableKey] != null) {
-                                groupcitems = groupcitems.sort(auxMeth.aTdynamicSort(this.sortOption[tableKey]));
+                                groupcitems = groupcitems.sort(auxMeth.aTdynamicSort(this.sortOption[tableKey], propTable.data.data.datatype));
                             }
 
                         }
@@ -3313,12 +3501,12 @@ ${dialogPanel.data.data.title}
 
                 }
                 else {
-                    groupcitems = await citems.filter(y => y.groups.find(item => item.id == groupID.id));
+                    groupcitems = await citems.filter(y => y.groups.find(item => item.id == groupID.id || item.ikey == groupID.ikey));
                     groupcitems = groupcitems.sort(auxMeth.dynamicSort("name"));
 
                     if (this.sortOption != null) {
                         if (this.sortOption[tableKey] != null && this.sortOption[tableKey] != "name") {
-                            groupcitems = groupcitems.sort(auxMeth.aTdynamicSort(this.sortOption[tableKey]));
+                            groupcitems = groupcitems.sort(auxMeth.aTdynamicSort(this.sortOption[tableKey], propTable.data.data.datatype));
                         }
 
                     }
@@ -3328,20 +3516,51 @@ ${dialogPanel.data.data.title}
                     let ciObject = groupcitems[n];
                     let ciTemplate;
                     if (!isFree) {
-                        ciTemplate = game.items.get(ciObject.id);
-                        if (ciTemplate == null) {
-                            citems.splice(citems.indexOf(ciObject), 1);
-                            forceUpdate = true;
-                            continue;
-                        }
+                        //ciTemplate = game.items.get(ciObject.id);
+                        ciTemplate = await auxMeth.getcItem(ciObject.id, ciObject.ciKey);
+                        // if (ciTemplate == null) {
+                        //     //game.actors.importFromCompendium(<PACK>, <ID>, {}, {keepId: true})
+
+                        //     let locatedPack;
+                        //     let locatedId;
+                        //     for (let pack of game.packs) {
+                        //         const packContents = await pack.getDocuments();
+                        //         let citems = packContents.filter(y => Boolean(y.data.data));
+                        //         let is_here = citems.find(y => y.data.data.ciKey == ciObject.id);
+                        //         if (is_here) {
+                        //             locatedPack = pack;
+                        //             locatedId = is_here.id;
+                        //         }
+
+
+                        //     }
+
+                        //     if (locatedPack != null) {
+                        //         let importedobject = await game.items.importFromCompendium(locatedPack, locatedId, { folder: locatedPack.name, keepId: true });
+                        //         console.log(importedobject);
+                        //         ciTemplate = importedobject;
+                        //         ciObject.id = ciTemplate.id;
+                        //     }
+
+                        //     else {
+                        //         citems.splice(citems.indexOf(ciObject), 1);
+                        //         forceUpdate = true;
+                        //         continue;
+                        //     }
+
+
+                        // }
                     }
 
                     //console.log(ciObject.name);
                     let new_row = document.createElement("TR");
-                    new_row.className = "table-row " + inputgroup;
-
+                    new_row.className = "table-row " + inputgroup + " " + propTable.data.data.attKey + "_row";
+                    let rowname = "table-row-" + ciObject.id;
+                    if (!isFree)
+                        rowname = ciObject.name;
                     new_row.setAttribute("name", ciObject.name);
                     new_row.setAttribute("id", ciObject.id);
+                    new_row.setAttribute("ciKey", ciObject.ciKey);
                     if (table != null)
                         table.appendChild(new_row);
 
@@ -3353,6 +3572,7 @@ ${dialogPanel.data.data.title}
                             firstcell.className += " " + inputgroup;
                             firstcell.textContent = ciObject.name;
                             firstcell.setAttribute("item_id", ciObject.id);
+                            firstcell.setAttribute("item_ciKey", ciObject.ciKey);
                             firstcell.addEventListener("click", this.linkCItem, false);
                             new_row.appendChild(firstcell);
                         }
@@ -3372,7 +3592,7 @@ ${dialogPanel.data.data.title}
                                     activeinput.type = "checkbox";
                                     activeinput.checked = ciObject.isactive;
 
-                                    activeinput.addEventListener("change", (event) => this.useCIIcon(ciObject.id, activeinput.checked, false, true));
+                                    activeinput.addEventListener("change", (event) => this.useCIIcon(ciObject.id, ciObject.ciKey, activeinput.checked, false, true));
 
                                     activecell.appendChild(activeinput);
                                 }
@@ -3382,7 +3602,7 @@ ${dialogPanel.data.data.title}
                                     let torecharge = false;
 
                                     if (ciObject.uses > 0 || ciObject.maxuses == 0) {
-                                        inputwrapper.addEventListener("click", (event) => this.useCIIcon(ciObject.id, false, true));
+                                        inputwrapper.addEventListener("click", (event) => this.useCIIcon(ciObject.id, ciObject.ciKey, false, true));
                                     }
 
                                     else {
@@ -3413,7 +3633,7 @@ ${dialogPanel.data.data.title}
 
                                     if (torecharge) {
                                         activeinput.className = "fas fa-recycle";
-                                        inputwrapper.addEventListener("click", (event) => this.rechargeCI(ciObject.id));
+                                        inputwrapper.addEventListener("click", (event) => this.rechargeCI(ciObject.id, ciObject.ciKey));
                                     }
 
 
@@ -3429,13 +3649,13 @@ ${dialogPanel.data.data.title}
                                 new_row.appendChild(numcell);
 
                                 let numinput = document.createElement("INPUT");
-                                numinput.className = "table-input table-free centertext";
+                                numinput.className = "table-input table-num centertext";
                                 numinput.className += " " + inputgroup;
 
                                 let ciNumber = ciObject.number;
 
                                 numinput.value = ciObject.number;
-                                numinput.addEventListener("change", (event) => this.changeCINum(ciObject.id, event.target.value));
+                                numinput.addEventListener("change", (event) => this.changeCINum(ciObject.id, ciObject.ciKey, event.target.value));
 
                                 numcell.appendChild(numinput);
                             }
@@ -3448,7 +3668,7 @@ ${dialogPanel.data.data.title}
                                 new_row.appendChild(usescell);
 
                                 let usevalue = document.createElement("INPUT");
-                                usevalue.className = "table-input table-tiny centertext";
+                                usevalue.className = "table-num centertext";
                                 usevalue.className += " " + inputgroup;
 
                                 usescell.appendChild(usevalue);
@@ -3480,16 +3700,21 @@ ${dialogPanel.data.data.title}
                                     }
 
                                     else {
+                                        let separator = document.createElement("DIV");
+                                        separator.className = "table-sepnum";
+                                        separator.textContent = "/";
+
                                         let maxusevalue = document.createElement("DIV");
 
                                         let numberuses = ciObject.number;
                                         if (numberuses == 0)
                                             numberuses = 1;
 
-                                        maxusevalue.className = "table-num";
+                                        maxusevalue.className = "table-maxuse table-num centertext";
                                         // maxusevalue.textContent = "/ " + parseInt(numberuses * maxuses);
-                                        maxusevalue.textContent = "/ " + parseInt(ciObject.maxuses);
+                                        maxusevalue.textContent = parseInt(ciObject.maxuses);
                                         usevalue.addEventListener("change", (event) => this.changeCIUses(ciObject.id, event.target.value));
+                                        usescell.appendChild(separator);
                                         usescell.appendChild(maxusevalue);
                                     }
 
@@ -3506,9 +3731,12 @@ ${dialogPanel.data.data.title}
 
                             }
 
+                            let isfirstFree = true;
+
                             for (let k = 0; k < groupprops.length; k++) {
                                 let propRef = groupprops[k].id;
-                                let propObj = game.items.get(groupprops[k].id);
+                                //let propObj = game.items.get(groupprops[k].id);
+                                let propObj = await auxMeth.getTElement(groupprops[k].id, "property", groupprops[k].ikey);
                                 let propdata = propObj.data.data;
                                 let propKey = propObj.data.data.attKey;
                                 let new_cell = document.createElement("TD");
@@ -3551,7 +3779,17 @@ ${dialogPanel.data.data.title}
                                         let constantvalue;
                                         if (propdata.datatype != "label")
                                             if (!isFree) {
+                                                if (ciTemplate.data.data.attributes[propKey] == null) {
+                                                    ui.notifications.warn("Inconsistent cItem. Please remove and readd cItem " + ciTemplate.data.name + " to Actor");
+                                                    console.log(propKey + " fails from " + ciTemplate.data.name);
+                                                }
+
                                                 constantvalue = ciTemplate.data.data.attributes[propKey].value;
+                                                let cvalueToString = constantvalue.toString();
+                                                let nonumsum = /[#@]{|\%\[|\if\[|\?\[/g;
+                                                let checknonumsum = cvalueToString.match(nonumsum);
+                                                if (checknonumsum)
+                                                    constantvalue = await auxMeth.autoParser(constantvalue, this.actor.data.data.attributes, ciObject.attributes, true, false, ciObject.number);
                                             }
 
                                             else {
@@ -3661,7 +3899,7 @@ ${dialogPanel.data.data.title}
 
                                             if (propdata.hasroll) {
                                                 new_cell.className += " rollable";
-                                                new_cell.addEventListener('click', this._onRollCheck.bind(this, groupprops[k].id, ciObject.id, false, isFree, tableKey, null), false);
+                                                new_cell.addEventListener('click', this._onRollCheck.bind(this, groupprops[k].id, propdata.attKey, ciObject.id, ciObject.ciKey, false, isFree, tableKey, null), false);
                                             }
                                         }
 
@@ -3689,8 +3927,33 @@ ${dialogPanel.data.data.title}
                                             else if (propdata.datatype === "list") {
 
                                                 cellvalue = document.createElement("SELECT");
-                                                cellvalue.className = "table-input table-free centertext";
+                                                cellvalue.className = "table-input centertext";
+
                                                 cellvalue.className += " " + inputgroup;
+
+                                                if (propdata.inputsize == "F") {
+                                                    cellvalue.className += "  table-free";
+                                                }
+
+                                                else if (propdata.inputsize == "S") {
+                                                    cellvalue.className += " input-small";
+                                                }
+
+                                                else if (propdata.inputsize == "T") {
+                                                    cellvalue.className += " input-tiny";
+                                                }
+
+                                                else if (propdata.inputsize == "M") {
+                                                    cellvalue.className += " input-med";
+                                                }
+
+                                                else if (propdata.inputsize == "L") {
+                                                    cellvalue.className += " input-large";
+                                                }
+
+                                                else {
+                                                    cellvalue.className += "  table-free";
+                                                }
 
                                                 //IM ON IT
                                                 var rawlist = propdata.listoptions;
@@ -3711,7 +3974,7 @@ ${dialogPanel.data.data.title}
 
                                                 cellvalue.className = "table-input";
                                                 cellvalue.className += " " + inputgroup;
-                                                if (propdata.inputsize != null && k > 0) {
+                                                if (propdata.inputsize != null && (((k > 0) && !isFree) || isFree)) {
                                                     if (propdata.inputsize == "F") {
                                                         cellvalue.className += "  table-free";
                                                     }
@@ -3793,10 +4056,15 @@ ${dialogPanel.data.data.title}
                                             }
 
                                             cellvalue.className += " " + propdata.attKey;
+                                            // if (isFree && isfirstFree) {
+                                            //     if (propdata.inputsize == "F")
+                                            //         cellvalue.className += " firstcol";
+                                            //     isfirstFree = false;
+                                            // }
 
                                             if (!isFree) {
 
-                                                new_cell.addEventListener("change", (event) => this.saveNewCIAtt(ciObject.id, groupprops[k].id, event.target.value));
+                                                new_cell.addEventListener("change", (event) => this.saveNewCIAtt(ciObject.id, groupprops[k].id, propdata.attKey, event.target.value));
                                             }
                                             else {
                                                 let ischeck = false;
@@ -3890,7 +4158,7 @@ ${dialogPanel.data.data.title}
 
                 }
 
-                if (isFree && table!=undefined) {
+                if (isFree && table != undefined) {
                     let new_row = document.createElement("TR");
                     new_row.className = "transparent-row";
                     if (inputgroup)
@@ -3924,10 +4192,11 @@ ${dialogPanel.data.data.title}
                     let lastRow = table.children[table.children.length - 1];
                     let cellTotal = lastRow.children.length;
                     let cellcounter = 0;
+                    let totalin = false;
 
                     if (propTable.data.data.onlynames != "ONLY_NAMES" && lastRow.children[cellcounter] != null) {
 
-                        if (propTable.data.data.onlynames != "NO_NAMES") {
+                        if (propTable.data.data.onlynames != "NO_NAMES" && !isFree) {
                             let empty_cell = document.createElement("TD");
                             empty_cell.textContent = "TOTAL";
                             empty_cell.className = lastRow.children[cellcounter].className;
@@ -3935,6 +4204,7 @@ ${dialogPanel.data.data.title}
                             empty_cell.className = empty_cell.className.replace("linkable", "");
                             new_row.appendChild(empty_cell);
                             cellcounter += 1;
+                            totalin = true;
                         }
 
                         if (propTable.data.data.hasactivation) {
@@ -3942,6 +4212,7 @@ ${dialogPanel.data.data.title}
                             empty_cell.className = lastRow.children[cellcounter] != null ? lastRow.children[cellcounter].className : "";
                             new_row.appendChild(empty_cell);
                             cellcounter += 1;
+
                         }
 
                         if (propTable.data.data.hasunits) {
@@ -3961,7 +4232,8 @@ ${dialogPanel.data.data.title}
                         for (let k = 0; k < groupprops.length; k++) {
 
                             let propRef = groupprops[k].id;
-                            let propObj = game.items.get(groupprops[k].id);
+                            //let propObj = game.items.get(groupprops[k].id);
+                            let propObj = await auxMeth.getTElement(groupprops[k].id, "property", groupprops[k].ikey);
                             let propdata = propObj.data.data;
                             let propKey = propObj.data.data.attKey;
 
@@ -3971,12 +4243,14 @@ ${dialogPanel.data.data.title}
                                     let newtotal;
                                     if (myactor.attributes[tableKey] != null) {
                                         let totalvalue = myactor.attributes[tableKey].totals[propKey];
-                                        newtotal = totalvalue.total;
+                                        if (totalvalue)
+                                            newtotal = totalvalue.total;
                                     }
 
                                     if (newtotal == null || isNaN(newtotal))
                                         newtotal = 0;
                                     total_cell.className = lastRow.children[cellcounter] != null ? lastRow.children[cellcounter].className : "";
+                                    total_cell.className += " centertext";
                                     total_cell.textContent = newtotal;
                                     new_row.appendChild(total_cell);
                                     cellcounter += 1;
@@ -3986,6 +4260,13 @@ ${dialogPanel.data.data.title}
                                     empty_cell.className = lastRow.children[cellcounter] != null ? lastRow.children[cellcounter].className : "";
                                     new_row.appendChild(empty_cell);
                                     cellcounter += 1;
+
+                                    if (!totalin) {
+                                        empty_cell.textContent = "TOTAL";
+                                        empty_cell.className += " boldtext";
+                                        totalin = true;
+                                    }
+
                                 }
                             }
 
@@ -4121,14 +4402,28 @@ ${dialogPanel.data.data.title}
 
     showTextAreaDialog(citemID, citemAttribute, disabled) {
         let citem = this.actor.data.data.citems.find(y => y.id == citemID);
+        let ciProp = game.items.find(y => y.data.data.attKey == citemAttribute);
+        if (ciProp == null)
+            return;
         let isdisabled = ""
         if (disabled)
             isdisabled = "disabled";
 
 
+        let content = `
+            <textarea id="dialog-textarea-${citemID}-${citemAttribute}" class="textdialog texteditor-large ${ciProp.data.data.inputgroup}" ${isdisabled}>${citem.attributes[citemAttribute].value}</textarea>
+            `;
+        content += `
+            <div class="new-row">
+                <div class="lockcontent">
+                    <a class="dialoglock-${citemID}-${citemAttribute} lock centertext" title="Edit"><i class="fas fa-lock fa-2x"></i></a>
+                    <a class="dialoglock-${citemID}-${citemAttribute} lockopen centertext" title="Edit"><i class="fas fa-lock-open fa-2x"></i></a>
+                </div>
+            </div>
+            `;
         let d = new Dialog({
             title: citem.name + "-" + citemAttribute,
-            content: '<textarea id="dialog-textarea" class="texteditor-large"' + isdisabled + '>' + citem.attributes[citemAttribute].value + '</textarea>',
+            content: content,
             buttons: {
                 one: {
                     icon: '<i class="fas fa-check"></i>',
@@ -4161,14 +4456,32 @@ ${dialogPanel.data.data.title}
     showFreeTextAreaDialog(freeId, freeTableKey, freePropKey, disabled) {
 
         let freeitem = this.actor.data.data.attributes[freeTableKey].tableitems.find(y => y.id == freeId);
+        let ciProp = game.items.find(y => y.data.data.attKey == freePropKey);
+        if (ciProp == null)
+            return;
         let isdisabled = ""
         if (disabled)
             isdisabled = "disabled";
 
 
+        let content = `
+            <textarea id="dialog-textarea-${freeId}-${freePropKey}" class="textdialog texteditor-large" ${isdisabled}>${freeitem.attributes[freePropKey].value}</textarea>
+            `
+        if (game.user.isGM || ciProp.data.data.editable)
+            content += `
+            <div class="new-row">
+                <div class="lockcontent">
+                    <a class="dialoglock-${freeId}-${freePropKey} lock centertext" title="Edit"><i class="fas fa-lock fa-2x"></i></a>
+                    <a class="dialoglock-${freeId}-${freePropKey} lockopen centertext" title="Edit"><i class="fas fa-lock-open fa-2x"></i></a>
+                </div>
+            </div>
+            `
+
+        //'<textarea id="dialog-textarea-' + freeId + "-" + freePropKey + '" class="texteditor-large ' + ciProp.data.data.inputgroup + '"' + isdisabled + '>' + freeitem.attributes[freePropKey].value + '</textarea>'
+
         let d = new Dialog({
             title: "Item Num " + freeId,
-            content: '<textarea id="dialog-textarea" class="texteditor-large"' + isdisabled + '>' + freeitem.attributes[freePropKey].value + '</textarea>',
+            content: content,
             buttons: {
                 one: {
                     icon: '<i class="fas fa-check"></i>',
@@ -4201,15 +4514,15 @@ ${dialogPanel.data.data.title}
         d.render(true);
     }
 
-    async saveNewCIAtt(ciId, propId, value) {
+    async saveNewCIAtt(ciId, propId, propKey, value) {
         //console.log("changing citem");
         let cItemsID = duplicate(this.actor.data.data.citems);
         let citem = cItemsID.find(y => y.id == ciId);
-        let propObj = game.items.get(propId);
+        let propObj = await auxMeth.getTElement(propId, "property", propKey);
         //console.log(value);
 
         if (propObj.data.data.datatype != "checkbox") {
-            citem.attributes[propObj.data.data.attKey].value = value;
+            citem.attributes[propKey].value = value;
 
         }
 
@@ -4332,14 +4645,16 @@ ${dialogPanel.data.data.title}
         await this.actor.update({ [`data.attributes.${tableKey}.tableitems`]: myfreeItems });
     }
 
-    linkCItem(evt) {
+    async linkCItem(evt) {
         //console.log();
-        let item = game.items.get(evt.currentTarget.getAttribute("item_id"));
+        let item = await auxMeth.getcItem(evt.currentTarget.getAttribute("item_id"), evt.currentTarget.getAttribute("item_ciKey"));
         item.sheet.render(true);
     }
 
-    async useCIIcon(itemId, value, iscon = false, isactivation = false) {
-        const citemObj = game.items.get(itemId).data.data;
+    async useCIIcon(itemId, ciKey, value, iscon = false, isactivation = false) {
+        //const citemObj = game.items.get(itemId).data.data;
+        let citemObjfinder = await auxMeth.getcItem(itemId, ciKey);
+        const citemObj = citemObjfinder.data.data;
 
 
         if (citemObj.roll != "" && (!isactivation || (isactivation && value))) {
@@ -4347,7 +4662,7 @@ ${dialogPanel.data.data.title}
             cItemData.id = itemId;
             cItemData.value = value;
             cItemData.iscon = iscon;
-            this._onRollCheck(null, itemId, true, null, null, cItemData);
+            this._onRollCheck(null, null, itemId, ciKey, true, null, null, cItemData);
         }
 
         else {
@@ -4360,19 +4675,10 @@ ${dialogPanel.data.data.title}
         const citems = actorData.citems;
         const citem = citems.find(y => y.id == itemId);
         const attributes = this.actor.data.data.attributes;
-        const citemObj = game.items.get(itemId).data.data;
+
+        let citemObjfinder = await auxMeth.getcItem(itemId, citem.ciKey);
+        const citemObj = citemObjfinder.data.data;
         let objectUses = duplicate(citem.uses);
-
-        console.log("Is activation:" + isactivation + " isOn:" + value);
-
-        // if (value) {
-        //     citem.isactive = false;
-        // }
-
-        // else {
-        //     citem.isactive = true;
-        //     citem.isreset = false;
-        // }
 
         if (isactivation) {
             citem.isactive = value;
@@ -4389,7 +4695,7 @@ ${dialogPanel.data.data.title}
         //console.log(citem.maxuses);
         if (iscon && citem.maxuses > 0) {
             objectUses -= 1;
-            let thismaxuses = parseInt(citemObj.maxuses) * parseInt(citem.number);
+            let thismaxuses = parseInt(citem.maxuses);
             if (citem.uses > 0 && citemObj.usetype == "CON") {
                 let actualItems = Math.ceil(parseInt(objectUses) / (thismaxuses / citem.number));
 
@@ -4418,10 +4724,12 @@ ${dialogPanel.data.data.title}
         await this.actor.update({ "data.citems": citems });
     }
 
-    async rechargeCI(itemId) {
+    async rechargeCI(itemId, ciKey) {
         const citems = duplicate(this.actor.data.data.citems);
         const citem = citems.find(y => y.id == itemId);
-        const citemObj = game.items.get(itemId).data.data;
+        //const citemObj = game.items.get(itemId).data.data;
+        let citemObjfinder = await auxMeth.getcItem(itemId, ciKey);
+        const citemObj = citemObjfinder.data.data;
 
         let totalnumber = citem.number;
         if (totalnumber == 0)
@@ -4469,16 +4777,18 @@ ${dialogPanel.data.data.title}
         newItem.id = lastIndex + 1;
 
         //Get element values
-        let tableTemplate = game.items.find(y => y.data.type == "property" && y.data.data.datatype == "table" && y.data.data.attKey == tableKey);
+        //let tableTemplate = game.items.find(y => y.data.type == "property" && y.data.data.datatype == "table" && y.data.data.attKey == tableKey);
+        let tableTemplate = await auxMeth.getTElement(null, "property", tableKey);
 
         if (tableTemplate != null) {
             let tableGroup = tableTemplate.data.data.group.id;
             if (tableGroup != null) {
-                let groupTemplate = game.items.get(tableGroup);
+                let groupTemplate = await auxMeth.getTElement(tableTemplate.data.data.group.id, "group", tableTemplate.data.data.group.ikey);
                 let groupProps = groupTemplate.data.data.properties;
                 if (groupProps.length > 0) {
                     for (let i = 0; i < groupProps.length; i++) {
-                        let propTemplate = game.items.get(groupProps[i].id);
+                        //let propTemplate = game.items.get(groupProps[i].id);
+                        let propTemplate = await auxMeth.getTElement(groupProps[i].id, "property", groupProps[i].ikey);
                         newItem.attributes[propTemplate.data.data.attKey] = {};
                         newItem.attributes[propTemplate.data.data.attKey].value = propTemplate.data.data.defvalue;
                     }
@@ -4514,7 +4824,7 @@ ${dialogPanel.data.data.title}
         }
     }
 
-    async changeCINum(itemID, value) {
+    async changeCINum(itemID, ciKey, value) {
 
         let citemIDs = duplicate(this.actor.data.data.citems);
         let citem = this.actor.data.data.citems.find(y => y.id == itemID);
@@ -4532,11 +4842,12 @@ ${dialogPanel.data.data.title}
 
         citemNew.number = value;
 
-        let cItemTemp = game.items.get(itemID);
-        let tempmaxuses = await auxMeth.autoParser(cItemTemp.data.data.maxuses, this.actor.data.data.attributes, cItemTemp.data.data.attributes, false);
+        //let cItemTemp = game.items.get(itemID);
+        // let cItemTemp = await auxMeth.getcItem(itemID, ciKey);
+        // let tempmaxuses = await auxMeth.autoParser(cItemTemp.data.data.maxuses, this.actor.data.data.attributes, cItemTemp.data.data.attributes, false);
 
-        citemNew.maxuses = parseInt(value * tempmaxuses);
-        citemNew.uses = citemNew.maxuses;
+        // citemNew.maxuses = parseInt(value * tempmaxuses);
+        //citemNew.uses = citemNew.maxuses;
 
         //await this.scrollbarSet(false);
         //this.actor.update(this.actor.data);
@@ -4551,10 +4862,10 @@ ${dialogPanel.data.data.title}
         let myindex = citemIDs.indexOf(citem);
 
         citem.uses = value;
-        console.log("changing");
-        if (parseInt(citem.uses) >= parseInt(citem.maxuses)) {
-            citem.maxuses = parseInt(citem.uses);
-        }
+        // console.log("changing");
+        // if (parseInt(citem.uses) >= parseInt(citem.maxuses)) {
+        //     citem.maxuses = parseInt(citem.uses);
+        // }
 
         //await this.scrollbarSet(false);
         //await this.actor.update(this.actor.data);
@@ -4680,60 +4991,69 @@ ${dialogPanel.data.data.title}
             const attributes = this.actor.data.data.attributes;
             let value = 0;
             let propId = radioNode.getAttribute("attId");
-            let property = game.items.get(propId);
-            let attKey = property.data.data.attKey;
-            let radiotype = property.data.data.radiotype;
+            let propRawName = radioNode.getAttribute("name");
+            propRawName = propRawName.replace("data.attributes.", '');
+            propRawName = propRawName.replace(".value", '');
+            //let property = game.items.get(propId);
+            let property = await auxMeth.getTElement(propId, "property", propRawName);
 
-            if (attributes[attKey] != null) {
-                let maxRadios = attributes[attKey].max;
-                value = attributes[attKey].value;
+            if (property != null) {
 
-                radioNode.innerHTML = '';
-                //console.log(value);
-                if (maxRadios > 0) {
-                    for (let j = 0; j <= parseInt(maxRadios); j++) {
-                        let radiocontainer = document.createElement('a');
-                        let clickValue = j;
-                        radiocontainer.setAttribute("clickValue", clickValue);
-                        radiocontainer.className = "radio-element";
-                        radiocontainer.style = "font-size:14px;";
-                        if (radiotype == "S")
-                            radiocontainer.style = "font-size:16px;";
+                let attKey = property.data.data.attKey;
+                let radiotype = property.data.data.radiotype;
+
+                if (attributes[attKey] != null) {
+                    let maxRadios = attributes[attKey].max;
+                    value = attributes[attKey].value;
+
+                    radioNode.innerHTML = '';
+                    //console.log(value);
+                    if (maxRadios > 0) {
+                        for (let j = 0; j <= parseInt(maxRadios); j++) {
+                            let radiocontainer = document.createElement('a');
+                            let clickValue = j;
+                            radiocontainer.setAttribute("clickValue", clickValue);
+                            radiocontainer.className = "radio-element";
+                            radiocontainer.style = "font-size:14px;";
+                            if (radiotype == "S")
+                                radiocontainer.style = "font-size:16px;";
 
 
-                        let radiobutton = document.createElement('i');
+                            let radiobutton = document.createElement('i');
 
-                        if (j == 0) {
-                            radiobutton.className = "far fa-times-circle";
-                        }
-
-                        else if (value >= clickValue) {
-                            radiobutton.className = "fas fa-circle";
-                            if (radiotype == "S") {
-
-                                radiobutton.className = "fas fa-square";
+                            if (j == 0) {
+                                radiobutton.className = "far fa-times-circle";
                             }
 
+                            else if (value >= clickValue) {
+                                radiobutton.className = "fas fa-circle";
+                                if (radiotype == "S") {
 
-                        }
-                        else {
-                            radiobutton.className = "far fa-circle";
-                            if (radiotype == "S") {
-                                radiobutton.className = "far fa-square";
+                                    radiobutton.className = "fas fa-square";
+                                }
+
+
+                            }
+                            else {
+                                radiobutton.className = "far fa-circle";
+                                if (radiotype == "S") {
+                                    radiobutton.className = "far fa-square";
+                                }
+
+
                             }
 
+                            radiocontainer.appendChild(radiobutton);
+
+                            radiobutton.addEventListener("click", (event) => this.clickRadioInput(clickValue, propId, event.target));
+
+                            await radioNode.appendChild(radiocontainer);
 
                         }
-
-                        radiocontainer.appendChild(radiobutton);
-
-                        radiobutton.addEventListener("click", (event) => this.clickRadioInput(clickValue, propId, event.target));
-
-                        await radioNode.appendChild(radiocontainer);
 
                     }
-
                 }
+
             }
 
         }
@@ -4754,6 +5074,29 @@ ${dialogPanel.data.data.title}
         }
     }
 
+    async addHeaderButtons(basehtml) {
+        // const headerElm = await basehtml.find(".window-header");
+
+        // if (headerElm.length == 0)
+        //     return;
+
+        // let atagEl = document.createElement('a');
+        // atagEl.className = "header-button hide-template";
+
+        // let imgEl = document.createElement('i');
+        // imgEl.className = "far fa-eye";
+        // imgEl.textContent = "Hide";
+
+        // atagEl.appendChild(imgEl);
+
+        // headerElm[0].insertBefore(atagEl, headerElm[0].children[0].nextSibling);
+
+        // imgEl.addEventListener("click", async (event) => {
+        //     event.preventDefault();
+        //     console.log("muestrate");
+        // });
+    }
+
     //Set external images
     async setCheckboxImages(basehtml) {
         const html = await basehtml.find(".customcheck");
@@ -4763,7 +5106,7 @@ ${dialogPanel.data.data.title}
             let offPath = checkNode.getAttribute("offPath");
             let propKey = checkNode.getAttribute("attKey");
 
-            if (this.actor.data.data.attributes[propKey]!=null) {
+            if (this.actor.data.data.attributes[propKey] != null) {
                 let myvalue = this.actor.data.data.attributes[propKey].value;
 
                 let selected = offPath;
@@ -4776,7 +5119,8 @@ ${dialogPanel.data.data.title}
     }
 
     async clickRadioInput(clickValue, propId, target) {
-        let property = game.items.get(propId);
+        //let property = game.items.get(propId);
+        let property = await auxMeth.getTElement(propId);
         let radiotype = property.data.data.radiotype;
         let attKey = property.data.data.attKey;
         const attributes = this.actor.data.data.attributes;
