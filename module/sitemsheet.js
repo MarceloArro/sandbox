@@ -115,7 +115,7 @@ export class sItemSheet extends ItemSheet {
                 callback: imagePath => this.item.update({ "data.onPath": imagePath }),
             }).browse(this.item.data.data.checkonPath);
         });
-        
+
         html.find('.checkoffPath').click(ev => {
 
             new FilePicker({
@@ -156,10 +156,12 @@ export class sItemSheet extends ItemSheet {
             this.deletemodInput(index);
         });
 
-        html.find('.modcitem-edit').click(ev => {
+        html.find('.modcitem-edit').click(async (ev) => {
 
             let citemId = ev.target.parentElement.getAttribute("citemId");
-            let citem = game.items.get(citemId);
+            let ciKey = ev.target.parentElement.getAttribute("ciKey");
+            //let citem = game.items.get(citemId);
+            let citem = await auxMeth.getcItem(citemId, ciKey);
             citem.sheet.render(true);
         });
 
@@ -183,20 +185,32 @@ export class sItemSheet extends ItemSheet {
         }
 
         // Edit Tab item
-        html.find('.item-edit').click(ev => {
+        html.find('.item-edit').click(async (ev) => {
             const li = $(ev.currentTarget).parents(".property");
             const toedit = subitems[li.data("itemId")];
-            const item = game.items.get(toedit.id);
+            //console.log(this.item.type);
+            //const item = game.items.get(toedit.id);
+            let mysubtype;
+            if (this.item.type == "sheettab" || this.item.type == "multipanel")
+                mysubtype = "panel";
+            if (this.item.type == "panel" || this.item.type == "group")
+                mysubtype = "property";
+            if (this.item.type == "cItem")
+                mysubtype = "group";
+
+            //console.log(mysubtype);
+            const item = await auxMeth.getTElement(toedit.id, mysubtype, toedit.ikey);
             item.sheet.render(true);
         });
 
         // Delete tab Item
-        html.find('.item-delete').click(ev => {
+        html.find('.item-delete').click(async (ev) => {
             const li = $(ev.currentTarget).parents(".property");
             let todelete = li.data("itemId");
             let obj = subitems[todelete];
             if (this.item.data.type == "cItem") {
-                let group = game.items.get(obj.id);
+                //let group = game.items.get(obj.id);
+                let group = await auxMeth.getTElement(obj.id, "group", obj.ikey);
                 if (group.data.data.isUnique) {
                     this.item.data.data.isUnique = false;
                 }
@@ -224,6 +238,50 @@ export class sItemSheet extends ItemSheet {
             this.updateLists(subitems);
         });
 
+        html.find('.macroselector').change(ev => {
+            ev.preventDefault();
+            const li = $(ev.currentTarget);
+            this.item.update({ "data.macroid": li.value });
+        });
+
+    }
+
+    async listMacros() {
+        let macros = this._element[0].getElementsByClassName("macroselector");
+
+        if (macros == null)
+            return;
+
+        let selector = macros[0];
+
+        if (selector == null)
+            return;
+
+        var length = selector.options.length;
+
+        for (let j = length - 1; j >= 0; j--) {
+            selector.options[j] = null;
+        }
+
+        var opt = document.createElement('option');
+        opt.appendChild(document.createTextNode("No Macro"));
+        opt.value = "";
+        selector.appendChild(opt);
+
+        for (let k = 0; k < game.macros.contents.length; k++) {
+            var opt = document.createElement('option');
+            opt.appendChild(document.createTextNode(game.macros.contents[k].name));
+            opt.value = game.macros.contents[k].id;
+            selector.appendChild(opt);
+        }
+
+        if (this.item.data.data.macroid == "") {
+            selector.value = ""
+        }
+        else {
+            selector.value = this.item.data.data.macroid;
+        }
+
     }
 
     async checkItemsExisting() {
@@ -232,7 +290,8 @@ export class sItemSheet extends ItemSheet {
         let changed = false;
 
         for (let i = 0; i < panels.length; i++) {
-            if (!game.items.get(panels[i].id)) {
+            let anitem = await auxMeth.getTElement(panels[i].id, "panel", panels[i].ikey)
+            if (!anitem) {
                 let index = panels.indexOf(panels[i]);
                 if (index > -1) {
                     panels.splice(index, 1);
@@ -308,11 +367,11 @@ export class sItemSheet extends ItemSheet {
 
                 else if (this.item.data.type == "cItem" && dropitem.data.type == "cItem" && dropmod) {
                     dropmodcitem = true;
-                    await this.addItemToMod(modId, dropitem.id);
+                    await this.addItemToMod(modId, dropitem.id, dropitem.data.data.ciKey);
                 }
 
 
-                else if (this.item.data.type == "cItem" && dropitem.data.type == "panel" && this.item.data.data.hasdialog) {
+                else if (this.item.data.type == "cItem" && (dropitem.data.type == "panel" || dropitem.data.type == "multipanel") && this.item.data.data.hasdialog) {
 
                 }
 
@@ -353,6 +412,7 @@ export class sItemSheet extends ItemSheet {
         if (this.item.data.type == "group" && dropitem.data.type == "property") {
             newItem[itemKey].isconstant = true;
         }
+
         //console.log(newItem);
 
         if (this.item.data.type != "property") {
@@ -374,15 +434,12 @@ export class sItemSheet extends ItemSheet {
             if (this.item.data.type == "cItem" && dropitem.data.type == "group" && dropitem.data.data.isUnique) {
                 itemData.isUnique = true;
                 itemData.uniqueGID = dropitem.data.id;
-                //this.item.data.data = itemData;
-                //await this.item.update(this.item.data);
                 await this.item.update({ "data": itemData });
             }
 
             else if (this.item.data.data.hasdialog && (dropitem.data.type == "panel" || dropitem.data.type == "multipanel")) {
                 const myitem = this.item.data.data;
-
-                await this.item.update({ "data.dialogID": dropitem.id, "data.dialogName": dropitem.name });
+                await this.item.update({ "data.dialogID": dropitem.id, "data.dialogName": dropitem.data.data.panelKey });
             }
 
             else {
@@ -410,7 +467,7 @@ export class sItemSheet extends ItemSheet {
             else if (this.item.data.data.hasdialog && (dropitem.data.type == "panel" || dropitem.data.type == "multipanel")) {
                 const myitem = this.item.data.data;
 
-                await this.item.update({ "data.dialogID": dropitem.id, "data.dialogName": dropitem.name });
+                await this.item.update({ "data.dialogID": dropitem.id, "data.dialogName": dropitem.data.data.panelKey });
             }
 
 
@@ -488,7 +545,8 @@ export class sItemSheet extends ItemSheet {
         const groups = this.item.data.data.groups;
         for (let j = groups.length - 1; j >= 0; j--) {
             let groupId = groups[j].id;
-            let groupObj = game.items.get(groupId);
+            //let groupObj = game.items.get(groupId);
+            let groupObj = await auxMeth.getTElement(groupId, "group", groups[j].ikey);
 
             //Checks if group still exist
             if (groupObj != null) {
@@ -523,18 +581,27 @@ export class sItemSheet extends ItemSheet {
         let attrArray = [];
         let tosave = false;
 
-        const attributes = this.item.data.data.attributes;
-        const groups = this.item.data.data.groups;
+        let attributes = this.item.data.data.attributes ?? this.options.data.data.attributes;
+        let groups = this.item.data.data.groups ?? this.options.data.data.groups;
+        let newgroups = duplicate(groups);
+        let changegroups = false;
         for (let j = groups.length - 1; j >= 0; j--) {
             let groupId = groups[j].id;
-            let propObj = game.items.get(groupId);
+            //let propObj = game.items.get(groupId);
+            let propObj = await auxMeth.getTElement(groupId, "group", groups[j].ikey);
+
+            if (groupId != propObj.id) {
+                changegroups = true;
+                newgroups[j].id = propObj.id;
+            }
 
             if (propObj != null) {
                 let propertyIds = propObj.data.data.properties;
 
                 for (let i = propertyIds.length - 1; i >= 0; i--) {
                     let propertyId = propertyIds[i].id;
-                    let ppObj = game.items.get(propertyId);
+                    //let ppObj = game.items.get(propertyId);
+                    let ppObj = await auxMeth.getTElement(propertyId, "property", propertyIds[i].ikey);
 
                     if (ppObj != null) {
                         if (!ppObj.data.data.ishidden || game.user.isGM) {
@@ -573,11 +640,11 @@ export class sItemSheet extends ItemSheet {
 
                                 let attribute = attributes[property.attKey];
 
-                                if(attribute.ishidden==null){
+                                if (attribute.ishidden == null) {
                                     attribute.ishidden = false;
                                     tosave = true;
                                 }
-                                    
+
 
                                 if (attribute.value == "" || attribute.value == null) {
                                     if (property.datatype === "simplenumeric") {
@@ -678,10 +745,10 @@ export class sItemSheet extends ItemSheet {
                                 }
 
                                 input.className += " att-input";
-                                input.addEventListener("change", (event) => this.updateFormInput(event.target.name, event.target.value, propertyId));
+                                input.addEventListener("change", (event) => this.updateFormInput(event.target.name, event.target.value, propertyId, propertyIds[i].ikey));
 
                                 label.className += " att-input-label";
-                                
+
                                 if (!game.user.isGM) {
                                     input.setAttribute("readonly", "true");
                                 }
@@ -702,26 +769,26 @@ export class sItemSheet extends ItemSheet {
                                 //     mode_block.setAttribute("id", i);
                                 //     mode_block.setAttribute("type", "checkbox");
                                 //     let setvalue = false;
-            
+
                                 //     if (attribute.ishidden == null)
                                 //         attribute.ishidden = false;
-    
+
                                 //     if (attribute.ishidden === true || attribute.ishidden === "true") {
                                 //         setvalue = true;
                                 //     }
-    
+
                                 //     if (attribute.ishidden === "false")
                                 //         attribute.ishidden = false;
-    
-    
+
+
                                 //     mode_block.checked = setvalue;
                                 //     mode_block.addEventListener("change", (event) => this.updateAttVisibility(property.attKey, event.target.checked));
                                 //     //TEST END
-                                    
+
                                 //     new_div.appendChild(mode_block);
                                 //     await new_row.appendChild(new_div);
                                 // }
-                                
+
                                 await html.appendChild(new_container);
 
                             }
@@ -744,25 +811,33 @@ export class sItemSheet extends ItemSheet {
 
         }
         //console.log(html);
-        if (tosave) {
-            this.item.update({ "data.attributes": attributes });
-            //this.item.data.data.attributes = attributes;
-            //this.item.update(this.item.data);
+        if (this.item.data.permission.default > CONST.ENTITY_PERMISSIONS.OBSERVER || this.item.data.permission[game.user.id] > CONST.ENTITY_PERMISSIONS.OBSERVER || game.user.isGM) {
+            if (tosave) {
+                this.item.update({ "data.attributes": attributes });
+                //this.item.data.data.attributes = attributes;
+                //this.item.update(this.item.data);
+            }
+
+            if (changegroups) {
+                this.item.update({ "data.groups": newgroups });
+            }
         }
+
 
 
     }
 
-    async updateAttVisibility(name,value){
+    async updateAttVisibility(name, value) {
 
         await this.item.update({ [`data.attributes.${name}.ishidden`]: value });
     }
 
-    async updateFormInput(name, value, propId) {
+    async updateFormInput(name, value, propId, propKey) {
         //console.log(value);
         let setvalue;
 
-        let propObj = await game.items.get(propId);
+        //let propObj = await game.items.get(propId);
+        let propObj = await auxMeth.getTElement(propId, "property", propKey);
         if (propObj.data.data.datatype == "checkbox") {
             setvalue = true;
             let attKey = [propObj.data.data.attKey];
@@ -843,14 +918,16 @@ export class sItemSheet extends ItemSheet {
         //this.item.update(this.item.data);
     }
 
-    async addItemToMod(modId, citemId) {
+    async addItemToMod(modId, citemId, ciKey) {
         //console.log(citemId);
         const mods = this.item.data.data.mods;
         const mod = mods[modId];
-        let citem = game.items.get(citemId);
+        //let citem = game.items.get(citemId);
+        let citem = await auxMeth.getcItem(citemId, ciKey);
         let arrayItem = {};
         arrayItem.id = citemId;
         arrayItem.name = citem.name;
+        arrayItem.ciKey = ciKey;
 
         if (!mod.items.includes(citemId))
             mod.items.push(arrayItem);
