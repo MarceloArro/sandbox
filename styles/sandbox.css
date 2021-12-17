@@ -164,8 +164,6 @@
 }
 
 .sandbox.sheet .scrollable-bio{
-    height:auto;
-    max-height: 320px;
     overflow-y: auto;
 }
 
@@ -846,13 +844,13 @@
     height: 26px;
 }
 .sandbox.sheet .flexblock-left input[type=text].input-bhalf{
-    width:35px;
+    max-width:35px;
     height: 26px;
     border-radius: 0px 3px 3px 0px;
 }
 
 .sandbox.sheet .flexblock-left input[type=text].input-ahalf{
-    width:35px;
+    max-width:35px;
     height: 26px;
     border-radius: 3px 0px 0px 3px;
 }
@@ -930,6 +928,10 @@
     height: 26px;
 }
 
+/* .sandbox.sheet select.input-free{
+    width:100%;
+} */
+
 .sandbox.sheet .boldtext {
     font-weight: bold;
 }
@@ -971,14 +973,14 @@
 .sandbox.sheet .texteditor-large {
     height: 210px;
     resize: vertical;
-    padding: 4px 5px;
+    padding: 4px 7px;
 
 }
 
 .texteditor-large {
     height: 210px;
     resize: vertical;
-    padding: 4px 5px;
+    padding: 4px 7px;
 
 }
 
@@ -1101,9 +1103,9 @@
 .sandbox.sheet td{
     height: 26px;
     padding: 2px 1px;
-
     font-family: Arial Narrow, sans-serif;
     font-size: 14px;
+    
 }
 
 .sandbox.sheet td.input-min {
@@ -1114,7 +1116,6 @@
 }
 
 .sandbox.sheet td.pluscell {
-    width:100%;
     text-align: center;
 
 }
@@ -1175,7 +1176,6 @@
 
 .sandbox.sheet th.nameheader,th.propheader {
     cursor:pointer;
-
 }
 
 .sandbox.sheet td.ci-delete{
@@ -1203,6 +1203,11 @@
 
 }
 
+.sandbox.sheet .table-maxuse {
+    font-size:11px;
+    width: 30px;
+}
+
 .sandbox.sheet input.table-input{
     background-color: darkgrey;
     border:none;
@@ -1211,6 +1216,15 @@
 }
 
 .sandbox.sheet input.table-free{
+    width:100%;
+    min-width: 100px;
+}
+
+.sandbox.sheet select.table-free{
+    width:100%;
+}
+
+.sandbox.sheet input.firstcol{
     width:100%;
 }
 
@@ -1224,18 +1238,31 @@
     padding:0px 0px;
 }
 
-.sandbox.sheet input-tiny{
+.sandbox.sheet input.table-num{
+    width:35px;
+    padding:0px 0px;
+    border: none;
+    background-color: darkgrey;
+}
+
+.sandbox.sheet input.table-sepnum{
+    width:5px;
+    padding:0px 0px;
+    border: none;
+}
+
+.sandbox.sheet select.input-tiny{
     width:50px;
 }
-.sandbox.sheet input-small{
+.sandbox.sheet select.input-small{
     width:70px;
 }
 
-.sandbox.sheet input-med{
+.sandbox.sheet select.input-med{
     width:110px;
 }
 
-.sandbox.sheet input-large{
+.sandbox.sheet select.input-large{
     width:150px;
 }
 .sandbox.sheet div.label-tiny,input.input-tiny,td.input-tiny,td.label-tiny{
@@ -1412,13 +1439,6 @@
     margin:0;
 }
 
-.sandbox.sheet .table-num{
-    width:40px;
-    padding:0px 3px;
-    border:none;
-    margin:0;
-}
-
 .sandbox.sheet .att-input-label{
     white-space: nowrap;
 }
@@ -1434,9 +1454,9 @@
     width:100%;
 }
 
-.roll-content{
+/* .roll-content{
 
-}
+} */
 
 .roll-flexrow{
     display: flex;
@@ -1526,9 +1546,9 @@
     width:100%;
 }
 
-.sbchat-content{
+/* .sbchat-content{
 
-}
+} */
 
 .sbchat-whisper{
     text-align:center;
@@ -1546,9 +1566,9 @@
     margin:0;
 }
 
-.sbchat-header{
+/* .sbchat-header{
 
-}
+} */
 
 .sbchat-sender-name{
     font-family: Tahoma, sans-serif;
@@ -1894,6 +1914,21 @@ div.dmtk-tooltip.visible {
     filter: drop-shadow(0 0 11px red);
 }
 
+.sandbox.sheet .sbbutton {
+    background-color: darkgrey;
+    border:1px solid;
+    padding: 3px 3px;
+}
+
+.sandbox.sheet .macrobutton {
+    font-style:normal;
+    font-family: Arial;
+    font-size: 13px;
+}
+.sandbox.sheet .biography {
+    font-size: 18px;
+}
+
 .dialog .window-content{
     text-align:center;
 }
@@ -2162,4 +2197,29 @@ div.dmtk-tooltip.visible {
 
 .dialog .arrdown:hover {
     filter: drop-shadow(0 0 11px red);
+}
+
+.dialog .exportbrowser{
+    height: 300px;
+    overflow-y: auto;
+}
+
+.dialog .lockcontent{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    margin:auto;
+}
+
+.dialog .linkable {
+    cursor: pointer; 
+}
+
+.dialog .linkable:hover{
+    color: dodgerblue;
+    font-weight: bold;
+}
+
+textarea:disabled {
+    color: black;
 }
