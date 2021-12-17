@@ -41,12 +41,14 @@
                             </select>
                         </div>
                     </div>
+                    {{#ifNot item.data.data.datatype "button"}}
                     <div class="new-row">
                         <div class="flexblock-left">
                             <label class="label-medlarge">Hidden</label>
                             <input class="check-ishidden" name="data.ishidden" id="check-ishidden" type="checkbox" {{checked item.data.data.ishidden}}/>
                         </div>
                     </div>
+                    {{/ifNot}}
 
                     {{#if item.data.data.ishidden}}
                     {{else}}
@@ -57,6 +59,7 @@
                             <input type="text" name="data.tag" value="{{data.data.tag}}"/>
                         </div>
                     </div>
+                    {{#ifNot item.data.data.datatype "button"}}
                     <div class="new-row">
                         <div class="flexblock-left">
                             <label class="label-medlarge">Rollable</label>
@@ -77,6 +80,7 @@
                         </div>
                     </div>
                     {{/ifCond}}
+                    {{/ifNot}}
                     {{/ifNot}}
                     {{#ifCond item.data.data.datatype "table"}}
                     <div class="new-row">
@@ -191,6 +195,7 @@
 
                     {{#ifNot item.data.data.datatype "table"}}
                     {{#ifNot item.data.data.datatype "label"}}
+                    {{#ifNot item.data.data.datatype "button"}}
                     <div class="new-row">
 
                         <div class="flexblock-left">
@@ -198,14 +203,17 @@
                             <input type="text" name="data.defvalue" value="{{data.data.defvalue}}"/>
                         </div>
                     </div>
+                    {{/ifNot}}
                     {{#if item.data.data.ishidden}}
                     {{else}}
+                    {{#ifNot item.data.data.datatype "button"}}
                     <div class="new-row">
                         <div class="flexblock-left">
                             <label class="label-medlarge">Editable</label>
                             <input class="check-editable" name="data.editable" id="check-editable" type="checkbox" {{checked item.data.data.editable}}/>
                         </div>
                     </div>
+                    {{/ifNot}}
                     <div class="new-row">
                         <div class="flexblock-left">
                             <label class="label-medlarge">Has Label?</label>
@@ -310,6 +318,23 @@
                         </div>
                     </div>
                     {{/ifCond}}
+
+                    {{#ifCond item.data.data.datatype "list"}}
+                    <div class="new-row">
+                        <div class="flexblock-left">
+                            <label class="label-medlarge">Input Size</label>
+                            <select  name="data.inputsize"  data-type="String">
+                                {{#select item.data.data.inputsize}}
+                                <option  value="F">Fit</option>
+                                <option  value="T">Tiny</option>
+                                <option  value="S">Small</option>
+                                <option  value="M">Medium</option>
+                                <option  value="L">Large</option>
+                                {{/select}}
+                            </select>
+                        </div>
+                    </div>
+                    {{/ifCond}}
                 </div>
 
             </div>
@@ -330,6 +355,7 @@
 
             {{#if item.data.data.hasroll}}
             {{#ifNot item.data.data.datatype "table"}}
+            {{#ifNot item.data.data.datatype "button"}}
             <div class="flexblock">
                 <div class="col-1-1">
                     <div class="new-row">
@@ -357,6 +383,7 @@
                 </div>
             </div>
             {{/ifNot}}
+            {{/ifNot}}
             {{/if}}
 
             {{#ifNot item.data.data.datatype "table"}}
@@ -367,6 +394,7 @@
 
             <div class="flexblock">
                 {{#ifNot item.data.data.datatype "simpletext"}}
+                {{#ifNot item.data.data.datatype "button"}}
                 <div class="col-1-2">
                     <div class="new-row">
                         <div class="flexblock-left">
@@ -392,8 +420,9 @@
                     </div>
                 </div>
                 {{/ifNot}}
+                {{/ifNot}}
             </div>
-
+            {{#ifNot item.data.data.datatype "button"}}
             <div class="col-1-1">
                 <div class="new-row">
                     <div class="flexblock-left">
@@ -402,6 +431,7 @@
                     </div>
                 </div>
             </div>
+            {{/ifNot}}
 
 
 
@@ -418,6 +448,20 @@
                         <div class="flexblock-left">
                             <label class="label-medlarge">Options (a,b,c)</label>
                             <input type="text" name="data.listoptions" value="{{data.data.listoptions}}"/>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {{/ifCond}}
+
+            {{#ifCond item.data.data.datatype "button"}}
+            <div class="flexblock">
+                <div class="col-1-1">
+                    <div class="new-row">
+                        <div class="flexblock-left">
+                            <label class="label-medlarge">Choose a macro</label>
+                            <select  class="macroselector" name="data.macroid"  data-type="String">
+                            </select>
                         </div>
                     </div>
                 </div>
