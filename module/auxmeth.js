@@ -23,6 +23,183 @@ export class auxMeth {
 
     }
 
+    static async registerDicID(relativeID, objectID, ciKey = null) {
+
+        let jsontxt = game.settings.get("sandbox", "idDict");
+        let idDict = {};
+
+        if (jsontxt != "") {
+            idDict = JSON.parse(jsontxt);
+        }
+
+        else {
+            idDict.ids = {};
+        }
+        if (ciKey) {
+            if (ciKey != relativeID)
+                idDict.ids[ciKey] = objectID;
+        }
+
+        idDict.ids[relativeID] = objectID;
+
+
+        const myJSON = JSON.stringify(idDict);
+        if (game.user.isGM)
+            await game.settings.set("sandbox", "idDict", myJSON);
+    }
+
+    static async getcItem(id, ciKey = null) {
+        //console.log("getting cItem");
+        let ciTemplate = game.items.get(id);
+
+        if (ciTemplate == null) {
+            let jsontxt = game.settings.get("sandbox", "idDict");
+
+            if (jsontxt != "") {
+                let idDict = JSON.parse(jsontxt);
+                if (idDict.ids[id] != null) {
+                    ciTemplate = game.items.get(idDict.ids[id]);
+                }
+                if (ciTemplate == null) {
+                    if (idDict.ids[ciKey] != null) {
+                        ciTemplate = game.items.get(idDict.ids[ciKey]);
+                    }
+                }
+            }
+
+
+        }
+
+        if (ciTemplate == null) {
+            //let allcitems = ;
+            let is_here = game.items.filter(y => Boolean(y.data.data.ciKey)).find(y => y.data.data.ciKey == id);
+            if (!is_here)
+                is_here = game.items.filter(y => Boolean(y.data.data.ciKey)).find(y => y.data.data.ciKey == ciKey);
+
+            if (is_here) {
+                ciTemplate = is_here;
+                await auxMeth.registerDicID(id, is_here.id, ciKey);
+            }
+        }
+
+        //To correct post 0.9
+        if (ciTemplate == null) {
+            //let allcitems = ;
+            let is_here = game.items.filter(y => Boolean(y.data._source.data.ciKey)).find(y => y.data._source.data.ciKey == id);
+            if (!is_here)
+                is_here = game.items.filter(y => Boolean(y.data._source.ciKey)).find(y => y.data._source.ciKey == ciKey);
+            if (is_here) {
+                ciTemplate = is_here;
+                await auxMeth.registerDicID(id, is_here.id, ciKey);
+            }
+        }
+
+        if (ciTemplate == null) {
+
+            let locatedPack;
+            let locatedId;
+            let found = false;
+            for (let pack of game.packs) {
+                if (found)
+                    continue;
+                const packContents = await pack.getDocuments();
+                //let citems = ;
+                let newciKey = id;
+                if (ciKey != null)
+                    newciKey = ciKey;
+                let is_here = packContents.filter(y => Boolean(y.data.data)).find(y => y.data.data.ciKey == id || y.id == id || y.data.data.ciKey == newciKey);
+                if (is_here) {
+                    locatedPack = pack;
+                    locatedId = is_here.id;
+                    found = true;
+                }
+
+
+            }
+
+
+
+            if (locatedPack != null) {
+                let findFolder = game.folders.find(y => y.name == locatedPack.title);
+
+                if (!findFolder)
+                    findFolder = await Folder.create({ name: locatedPack.title, type: "Item" });
+
+                let importedobject = await game.items.importFromCompendium(locatedPack, locatedId, { folder: findFolder.id }, { keepId: true });
+                //console.log(importedobject);
+                ciTemplate = importedobject;
+
+                //ciObject.id = ciTemplate.id;
+            }
+
+
+        }
+
+        return ciTemplate;
+    }
+
+    static async getTElement(id, type = null, key = null) {
+        //console.log(id + " " + type + " " + key);
+        let myElem = game.items.get(id);
+
+        let propKey = "";
+
+        if (type == "property") {
+            propKey = "attKey";
+        }
+        if (type == "panel" || type == "multipanel") {
+            propKey = "panelKey";
+        }
+        if (type == "sheettab") {
+            propKey = "tabKey";
+        }
+        if (type == "group") {
+            propKey = "groupKey";
+        }
+        if (key != null && myElem != null)
+            if (myElem.data.data[propKey] != key)
+                myElem = null;
+        if (myElem == null) {
+            myElem = await game.items.filter(y => Boolean(y.data.data[propKey])).find(y => y.data.data[propKey] == key);
+        }
+
+        //To correct post 0.9
+        if (myElem == null) {
+            let is_here = game.items.filter(y => Boolean(y.data._source.data[propKey])).find(y => y.data._source.data[propKey] == id);
+            if (is_here) {
+                myElem = is_here;
+            }
+        }
+
+        if (myElem == null && key != null) {
+            let locatedPack;
+            let locatedId;
+            for (let pack of game.packs) {
+                const packContents = await pack.getDocuments();
+                let is_here = packContents.filter(y => Boolean(y.data.data)).find(y => y.data.data[propKey] == key);
+                if (is_here) {
+                    locatedPack = pack;
+                    locatedId = is_here.id;
+                }
+
+
+            }
+
+            if (locatedPack != null) {
+                let findFolder = game.folders.find(y => y.name == locatedPack.title);
+
+                if (!findFolder)
+                    findFolder = await Folder.create({ name: locatedPack.title, type: "Item" });
+
+                let importedobject = await game.items.importFromCompendium(locatedPack, locatedId, { folder: findFolder.id }, { keepId: true });
+                //console.log(importedobject);
+                myElem = importedobject;
+            }
+        }
+        //console.log(myElem);
+        return myElem;
+    }
+
     static async getTempHTML(gtemplate, istemplate = false) {
 
         let html = "";
@@ -83,6 +260,164 @@ export class auxMeth {
     }
 
     //EXPORT TEST
+
+    static exportBrowser() {
+
+        let entities = {};
+
+        entities.actors = [];
+        entities.items = [];
+        entities.folders = [];
+
+        let allfolders = game.folders.contents.filter(y => y.type == "Item" || y.type == "Actor");
+        let itemfolders = game.folders.contents.filter(y => y.type == "Item" && y.data.parent == null);
+        let actorfolders = game.folders.contents.filter(y => y.type == "Actor" && y.data.parent == null);
+        //console.log(itemfolders);
+        let finalContent = `
+<div class="exportbrowser">
+`;
+        let endDiv = `
+</div>
+
+`;
+
+        finalContent += `
+<div class="new-row">ITEM FOLDERS</DIV>
+`;
+        for (let i = 0; i < itemfolders.length; i++) {
+            let thisfolder = itemfolders[i];
+
+            finalContent += `
+            <div class="new-row"><input class="exportDialog checkbox check-folder${i}" folderid ="${thisfolder.id}" type="checkbox">	
+`;
+            finalContent += `
+    <label class="exportlabel">${thisfolder.name}</label></div>
+    `;
+            let containedfolders = thisfolder.children;
+            for (let j = 0; j < containedfolders.length; j++) {
+                let subfolder = containedfolders[j];
+
+                finalContent += `
+                <div class="new-row" style="margin-left:30px"><input class="exportDialog checkbox check-folder${i}" folderid ="${subfolder.id}" parentid="${thisfolder.id}" type="checkbox">	
+    `;
+                finalContent += `
+        <label class="exportlabel">${subfolder.name}</label></div>
+        `;
+                let subcontainedfolders = subfolder.children;
+                for (let k = 0; k < subcontainedfolders.length; k++) {
+                    let subsubfolder = subcontainedfolders[k];
+
+                    finalContent += `
+            <div class="new-row" style="margin-left:60px"><input class="exportDialog checkbox check-folder${i}" folderid ="${subsubfolder.id}" parentid="${subfolder.id}" type="checkbox">	
+`;
+                    finalContent += `
+    <label class="exportlabel">${subsubfolder.name}</label></div>
+    `;
+                }
+            }
+        }
+
+        finalContent += `
+<div class="new-row">ACTOR FOLDERS</DIV>
+`;
+        for (let i = 0; i < actorfolders.length; i++) {
+            let thisfolder = actorfolders[i];
+
+            finalContent += `
+            <div class="new-row"><input class="exportDialog checkbox check-folder${i}" folderid ="${thisfolder.id}" type="checkbox">	
+`;
+            finalContent += `
+    <label class="exportlabel">${thisfolder.name}</label></div>
+    `;
+            let containedfolders = thisfolder.children;
+            for (let j = 0; j < containedfolders.length; j++) {
+                let subfolder = containedfolders[j];
+
+                finalContent += `
+                <div class="new-row" style="margin-left:30px"><input class="exportDialog checkbox check-folder${i}" folderid ="${subfolder.id}" parentid="${thisfolder.id}" type="checkbox">	
+    `;
+                finalContent += `
+        <label class="exportlabel">${subfolder.name}</label></div>
+        `;
+                let subcontainedfolders = subfolder.children;
+                for (let k = 0; k < subcontainedfolders.length; k++) {
+                    let subsubfolder = subcontainedfolders[k];
+
+                    finalContent += `
+            <div class="new-row" style="margin-left:60px"><input class="exportDialog checkbox check-folder${i}" folderid ="${subsubfolder.id}" parentid="${subfolder.id}" type="checkbox">	
+`;
+                    finalContent += `
+    <label class="exportlabel">${subsubfolder.name}</label></div>
+    `;
+                }
+            }
+        }
+
+
+        //         for (let i = 0; i < entities.folders.length; i++) {
+        //             finalContent += `
+        //     <div class="new-row">
+        //     `;
+
+        //             finalContent += `
+        //     <input class="exportDialog checkbox check-folder${i}" folderid ="${entities.folders[i].id}" type="checkbox">	
+        // `;
+        //             finalContent += `
+        //     <label class="exportlabel">${entities.folders[i].name}</label>
+        //     `;
+        //             finalContent += endDiv;
+        //         }
+
+        finalContent += endDiv;
+
+        let d = new Dialog({
+            title: "Choose folders to export",
+            content: finalContent,
+            buttons: {
+                one: {
+                    icon: '<i class="fas fa-check"></i>',
+                    label: "OK",
+                    callback: async (html) => {
+                        let selectedfolder = html[0].getElementsByClassName("exportDialog");
+
+                        for (let k = 0; k < selectedfolder.length; k++) {
+                            let folderKey = selectedfolder[k].getAttribute("folderid");
+
+                            if (selectedfolder[k].checked) {
+
+                                let theFolder = allfolders.find(y => y.id == folderKey);
+                                entities.folders.push(theFolder);
+                                for (let n = 0; n < theFolder.contents.length; n++) {
+                                    if (theFolder.contents[n].entity == "Item") {
+                                        entities.items.push(theFolder.contents[n]);
+                                    }
+                                    if (theFolder.contents[n].entity == "Actor") {
+                                        entities.actors.push(theFolder.contents[n]);
+                                    }
+                                }
+                            }
+
+                        }
+
+                        auxMeth.exportTree(true, entities);
+
+                    }
+                },
+                two: {
+                    icon: '<i class="fas fa-times"></i>',
+                    label: "Cancel",
+                    callback: () => { console.log("canceling selection"); }
+                }
+            },
+            default: "one",
+            exportDialog: true,
+            close: () => console.log("cItem selection dialog was shown to player.")
+        });
+        d.render(true);
+
+
+
+    }
 
     static exportTree(writeFile = true, groups = null) {
         let allData = null;
@@ -161,8 +496,11 @@ export class auxMeth {
                 folder.update({ "parent": idCollection[folder.realparent] });
         }
 
+        console.log("folders imported");
+
         for (let item of game.items.contents) {
             let finalitem = await duplicate(item);
+            //console.log("importing item: " + finalitem.name);
 
             if (item.data.type == "property") {
                 if (hasProperty(idCollection, finalitem.data.dialogID) && finalitem.data.dialogID != "")
@@ -175,8 +513,19 @@ export class auxMeth {
             if (item.data.type == "panel" || item.data.type == "group") {
                 if (finalitem.data.properties.length > 0) {
                     for (let property of finalitem.data.properties) {
-                        if (hasProperty(idCollection, property.id))
+                        if (hasProperty(idCollection, property.id)) {
                             property.id = idCollection[property.id];
+                        }
+                        else {
+                            let findprop = game.items.get(property.id);
+                            if (findprop == null) {
+                                findprop = game.items.find(y => y.data.type == "property" && y.data.data.attKey == property.ikey);
+                            }
+                            if (findprop != null)
+                                property.id = findprop.id;
+
+                        }
+
                     }
                 }
             }
@@ -193,8 +542,19 @@ export class auxMeth {
             if (item.data.type == "cItem") {
                 if (finalitem.data.groups.length > 0) {
                     for (let group of finalitem.data.groups) {
-                        if (hasProperty(idCollection, group.id))
+                        if (hasProperty(idCollection, group.id)) {
                             group.id = idCollection[group.id];
+                        }
+                        else {
+                            let findgroup = game.items.get(group.id);
+                            if (findgroup == null) {
+                                findgroup = game.items.find(y => y.data.type == "group" && y.data.data.groupKey == group.ikey);
+                            }
+                            if (findgroup != null)
+                                group.id = findgroup.id;
+
+                        }
+
                     }
                 }
 
@@ -202,8 +562,25 @@ export class auxMeth {
                     for (let mod of finalitem.data.mods) {
                         if (mod.items.length > 0) {
                             for (let moditem of mod.items) {
-                                if (hasProperty(idCollection, moditem.id))
+                                if (hasProperty(idCollection, moditem.id)) {
                                     moditem.id = idCollection[moditem.id];
+                                }
+
+                                else {
+                                    let findcitem = game.items.get(moditem.id);
+                                    if (findcitem == null) {
+                                        findcitem = game.items.find(y => y.data.type == "cItem" && y.data.data.ciKey == moditem.id);
+                                    }
+
+                                    if (findcitem == null) {
+                                        findcitem = game.items.find(y => y.data.type == "cItem" && y.name == moditem.name);
+                                    }
+
+                                    if (findcitem != null)
+                                        moditem.id = findcitem.id;
+
+                                }
+
                             }
                         }
                     }
@@ -214,13 +591,22 @@ export class auxMeth {
             }
 
             let folderlink = idCollection[item.getFlag("sandbox", "folder")];
+            if (folderlink) {
+                await item.update({ "data": finalitem.data, "folder": folderlink });
+            }
+            else {
+                await item.update({ "data": finalitem.data });
+            }
 
-            await item.update({ "data": finalitem.data, "folder": folderlink });
+
 
         }
 
+        console.log("items imported");
+
         for (let actor of game.actors.contents) {
             let finalactor = await duplicate(actor);
+            //console.log("importing actor: " + finalactor.name);
             if (finalactor.token != null)
                 if (finalactor.token.actorId != null)
                     if (hasProperty(idCollection, finalactor.token.actorId))
@@ -230,6 +616,7 @@ export class auxMeth {
                 for (let citem of finalactor.data.citems) {
                     if (hasProperty(idCollection, citem.id)) {
                         citem.id = idCollection[citem.id];
+                        citem.addedBy = idCollection[citem.addedBy];
 
                         if (citem.groups) {
                             for (let group of citem.groups) {
@@ -264,11 +651,17 @@ export class auxMeth {
             let folderlink = await idCollection[actor.getFlag("sandbox", "folder")];
             finalactor.data.istemplate = await actor.getFlag("sandbox", "istemplate");
 
-            await actor.update({ "data": finalactor.data, "folder": folderlink });
+            if (folderlink) {
+                await actor.update({ "data": finalactor.data, "folder": folderlink });
+            }
+            else {
+                await actor.update({ "data": finalactor.data });
+            }
+
 
         }
 
-        console.log("IMport Finished");
+        console.log("Actors & Import Finished");
     }
 
     /* -------------------------------------------- */
@@ -300,6 +693,8 @@ export class auxMeth {
 
     static async registerIfGreaterHelper() {
         Handlebars.registerHelper('ifGreater', function (v1, v2, options) {
+            // console.log(v1);
+            // console.log(v2);
             if (parseInt(v1) > parseInt(v2)) {
                 return options.fn(this);
             }
@@ -629,7 +1024,8 @@ export class auxMeth {
                     if (myatt != null) {
                         if (attTotal != null && attTotal != "")
                             myatt = attributes[rawattname].totals[attTotal];
-                        attvalue = myatt[attProp];
+                        if (myatt != null)
+                            attvalue = myatt[attProp];
                     }
                     else {
                         let fromcItem = false;
@@ -1708,7 +2104,7 @@ export class auxMeth {
         }
     }
 
-    static aTdynamicSort(property) {
+    static aTdynamicSort(property, datatype) {
         var sortOrder = 1;
         if (property[0] === "-") {
             sortOrder = -1;
@@ -1719,7 +2115,16 @@ export class auxMeth {
             * and you may want to customize it to your needs
             */
             if (hasProperty(a.attributes[property], "value")) {
-                var result = (a.attributes[property].value < b.attributes[property].value) ? -1 : (a.attributes[property].value > b.attributes[property].value) ? 1 : 0;
+
+                let valA = a.attributes[property].value;
+                let valB = b.attributes[property].value;
+
+                if (datatype == "simplenumeric") {
+                    valA = Number(valA);
+                    valB = Number(valB);
+                }
+
+                var result = (valA < valB) ? -1 : (valA > valB) ? 1 : 0;
                 return result * sortOrder;
             }
 
