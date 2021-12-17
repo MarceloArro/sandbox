@@ -22,7 +22,7 @@
     {{!-- Sheet Body --}}
     <section class="sheet-body">
         {{!-- Description Tab --}}
-        <div class="tab biography active scrollable-bio" data-group="primary" data-tab="description">
+        <div class="tab biography citem-bio active scrollable" data-group="primary" data-tab="description">
             {{editor content=data.data.description target="data.description" button=true owner=owner editable=editable}}
         </div>
 
@@ -257,7 +257,7 @@
                                                     <div class="mod-row-input mod-row-itemdrop itemdrop-area" mod="{{id}}">
                                                         {{#each mod.items as |citem cid|}}
 
-                                                        <div class="flexblock-center itemdrop-area" citemId="{{citem.id}}" cindex={{cid}} mod="{{id}}">
+                                                        <div class="flexblock-center itemdrop-area" citemId="{{citem.id}}" ciKey="{{citem.ciKey}}" cindex={{cid}} mod="{{id}}">
                                                             <a class="modcitem-edit mod-citem" >{{citem.name}}</a>
                                                             <a class="modcitem-delete mod-citem" ><i class="fas fa-times-circle"></i></a>
                                                         </div>
