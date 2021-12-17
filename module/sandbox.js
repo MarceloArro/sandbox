@@ -46,8 +46,6 @@ Hooks.once("init", async function () {
     Items.unregisterSheet("core", ItemSheet);
     Items.registerSheet("dnd5e", sItemSheet, { makeDefault: true });
 
-
-
     game.settings.register("sandbox", "showADV", {
         name: "Show Roll with Advantage option",
         hint: "If checked, 1d20,ADV,DIS options will be displayed under the Actor's name",
@@ -147,6 +145,15 @@ Hooks.once("init", async function () {
         type: String,
     });
 
+    game.settings.register("sandbox", "idDict", {
+        name: "Dictionary IDs for importing cItems",
+        hint: "As cItems dont have word keys, this ensures faster lokup",
+        scope: "world",
+        config: false,
+        default: null,
+        type: String,
+    });
+
     Combat.prototype.rollInitiative = async function (ids, { formula = null, updateTurn = true, messageOptions = {} } = {}) {
 
         // Structure input data
@@ -234,6 +241,98 @@ Hooks.once("init", async function () {
 
     };
 
+    CompendiumCollection.prototype.importAll = async function ({ folderId = null, folderName = "", options = {} } = {}) {
+
+        // Optionally, create a folder
+        if (CONST.FOLDER_ENTITY_TYPES.includes(this.documentName)) {
+            const f = folderId ? game.folders.get(folderId, { strict: true }) : await Folder.create({
+                name: folderName || this.title,
+                type: this.documentName,
+                parent: null
+            });
+            folderId = f.id;
+            folderName = f.name;
+        }
+
+        // Load all content
+        const documents = await this.getDocuments();
+        ui.notifications.info(game.i18n.format("COMPENDIUM.ImportAllStart", {
+            number: documents.length,
+            type: this.documentName,
+            folder: folderName
+        }));
+
+        // Prepare import data
+        const collection = game.collections.get(this.documentName);
+        const createData = documents.map(doc => {
+            const data = collection.fromCompendium(doc);
+            data.folder = folderId;
+            return data;
+        })
+
+        // Create World Documents in batches
+        const chunkSize = 100;
+        const nBatches = Math.ceil(createData.length / chunkSize);
+        let created = [];
+        for (let n = 0; n < nBatches; n++) {
+            const chunk = createData.slice(n * chunkSize, (n + 1) * chunkSize);
+            const docs = await this.documentClass.createDocuments(chunk, options);
+            let dictext = game.settings.get("sandbox", "idDict");
+            let arrdisct = {};
+            if (dictext != "")
+                arrdisct = JSON.parse(dictext);
+            else {
+                arrdisct.ids = {};
+            }
+            let register = false;
+            for (let i = 0; i < docs.length; i++) {
+                let mydoc = docs[i];
+                if (hasProperty(mydoc, "data"))
+                    if (hasProperty(mydoc.data, "data"))
+                        if (hasProperty(mydoc.data.data, "ciKey")) {
+                            arrdisct.ids[mydoc.data.data.ciKey] = mydoc.id;
+                            register = true;
+                        }
+
+
+            }
+
+            const myJSON = JSON.stringify(arrdisct);
+            if (register)
+                await game.settings.set("sandbox", "idDict", myJSON);
+
+            created = created.concat(docs);
+        }
+
+        // Notify of success
+        ui.notifications.info(game.i18n.format("COMPENDIUM.ImportAllFinish", {
+            number: created.length,
+            type: this.documentName,
+            folder: folderName
+        }));
+        return created;
+    };
+
+    WorldCollection.prototype.importFromCompendium = async function (pack, id, updateData = {}, options = {}) {
+        //console.log("importing");
+        const cls = this.documentClass;
+        if (pack.metadata.entity !== cls.documentName) {
+            throw new Error(`The ${pack.documentName} Document type provided by Compendium ${pack.collection} is incorrect for this Collection`);
+        }
+
+        // Prepare the source data from which to create the Entity
+        const document = await pack.getDocument(id);
+        const sourceData = this.fromCompendium(document);
+        const createData = foundry.utils.mergeObject(sourceData, updateData);
+
+        // Create the Entity
+        console.log(`${vtt} | Importing ${cls.documentName} ${document.name} from ${pack.collection}`);
+        this.directory.activate();
+        let newObj = await this.documentClass.create(createData, options);
+        await auxMeth.registerDicID(id, newObj.id, newObj.data.data.ciKey);
+        return newObj;
+    };
+
     CONFIG.Combat.initiative = {
         formula: "1d20",
         decimals: 2
@@ -259,6 +358,7 @@ Hooks.once("init", async function () {
 Hooks.once('ready', async () => {
     //console.log("ready!");
     //Custom styling
+
     if (game.settings.get("sandbox", "customStyle") != "") {
         const link = document.createElement('link');
         link.type = 'text/css';
@@ -382,7 +482,7 @@ function createExportButtons(sidebar, jq) {
     if (sidebar._element[0].id != "settings")
         return;
 
-    if(!game.user.isGM)
+    if (!game.user.isGM)
         return;
     //NEW SETTINGS OPTIONS
     let settingstab = jq.get(0).querySelector('#settings-game');
@@ -390,15 +490,8 @@ function createExportButtons(sidebar, jq) {
     let exportButton = document.createElement("BUTTON");
     exportButton.textContent = "EXPORT SANDBOX JSON";
 
-
-    let entities = {};
-
-    entities.actors = game.actors.contents;
-    entities.items = game.items.contents;
-    entities.folders = game.folders.contents;
-
     exportButton.addEventListener("click", (event) => {
-        auxMeth.exportTree(true, entities);
+        auxMeth.exportBrowser();
 
     });
 
@@ -490,6 +583,29 @@ Hooks.on("preUpdateActor", async (actor, updateData, options, userId) => {
 
 });
 
+Hooks.on("preUpdateItem", async (item, updateData, options, userId) => {
+    //console.log(actor);
+    //console.log(updateData);
+    //console.log(data.data.istemplate);
+    //console.log("preup");
+
+    //await actor.sheet.setTokenOptions(actor.data);
+    //    let newname = actor.data.name;
+    //
+    if (item.data.type == "cItem" && game.user.isGM) {
+
+        if (item.data.data.ciKey == "") {
+            if (!hasProperty(updateData, "data"))
+                setProperty(updateData, "data", {});
+            updateData.data.ciKey = item.id;
+        }
+
+
+    }
+
+
+});
+
 Hooks.on("createToken", async (token, options, userId) => {
 
     if (game.settings.get("sandbox", "tokenOptions")) {
@@ -501,8 +617,12 @@ Hooks.on("createToken", async (token, options, userId) => {
             if (sameTokens.length > 0) {
                 tokennumber = sameTokens.length;
             }
+            let newname = token.name + " " + tokennumber.toString();
 
-            token.update({ name: token.name + " " + tokennumber });
+            if (tokennumber < 2)
+                newname = token.name;
+
+            token.update({ name: newname });
         }
 
 
@@ -573,11 +693,7 @@ Hooks.on("preCreateItem", (entity, options, userId) => {
     //    console.log(entity.img);
     //    if(entity.img == "icons/svg/item-bag.svg"){
     //        console.log("aqui");
-    //        if(entity.type=="cItem"){
-    //            image="systems/sandbox/docs/icons/sh_citem_icon.png";
-    //
-    //
-    //        }
+
     //
     //        if(entity.type=="sheettab"){
     //            image="systems/sandbox/docs/icons/sh_tab_icon.png";
@@ -604,15 +720,31 @@ Hooks.on("preCreateItem", (entity, options, userId) => {
     //    }
     //
     //    console.log(image);
+    
 
 
 });
 
 Hooks.on("createItem", async (entity) => {
+    //console.log(entity);
     let do_update = false;
     let image = "";
-    if (entity.type == "cItem") {
+    if (entity.type == "cItem" && game.user.isGM) {
         //console.log(entity);
+
+        if (entity.data.data.ciKey == "") {
+            entity.data.data.ciKey = entity.id;
+            //do_update = true;
+        }
+        // else {
+        //     let is_here = game.items.filter(y => Boolean(y.data.data.ciKey)).find(y => y.data.data.ciKey == entity.data.data.ciKey && y.id != entity.id);
+        //     if (is_here){
+        //         entity.data.data.ciKey = entity.id;
+        //         do_update = true;
+        //     }
+                
+        // }
+
         for (let i = 0; i < entity.data.data.mods.length; i++) {
             const mymod = entity.data.data.mods[i];
             if (mymod.citem != entity.data.id) {
@@ -635,11 +767,16 @@ Hooks.on("rendersItemSheet", async (app, html, data) => {
         app.refreshCIAttributes(html);
     }
 
+    if (app.object.data.type == "property") {
+        app.listMacros(html);
+    }
+
     await app.scrollBarTest(html);
     app._setScrollStates();
 
+
     html.find('.window-resizable-handle').mouseup(ev => {
-        event.preventDefault();
+        ev.preventDefault();
         app.scrollBarTest(html);
     });
 
@@ -662,6 +799,7 @@ Hooks.on("rendergActorSheet", async (app, html, data) => {
         app.modifyLists(html);
         app.setImages(html);
         app.setCheckboxImages(html);
+        app.addHeaderButtons(html);
         await app.setSheetStyle(actor);
         //app.scrollBarLoad(html);
 
@@ -763,16 +901,19 @@ Hooks.on("renderChatMessage", async (app, html, data) => {
 
     let deletebutton = $(html).find(".roll-message-delete")[0];
     //console.log(deletebutton);
-    if (game.user.isGM) {
-        $(html).find(".roll-message-delete").click(async ev => {
-            msg.delete(html);
-        });
-        auxMeth.rollToMenu();
+    if (deletebutton != null) {
+        if (game.user.isGM) {
+            $(html).find(".roll-message-delete").click(async ev => {
+                msg.delete(html);
+            });
+            auxMeth.rollToMenu();
+        }
+
+        else {
+            deletebutton.style.display = "none";
+        }
     }
 
-    else {
-        deletebutton.style.display = "none";
-    }
 
 
     //console.log(html);
@@ -870,6 +1011,7 @@ Hooks.on("renderDialog", async (app, html, data) => {
         let checkbtns = htmlDom.getElementsByClassName("dialog-check");
         let dialogDiv = htmlDom.getElementsByClassName("item-dialog");
         let button = htmlDom.getElementsByClassName("dialog-button")[0];
+        let links = htmlDom.getElementsByClassName("linkable");
 
         let actorId = dialogDiv[0].getAttribute("actorId");
         let selectnum = dialogDiv[0].getAttribute("selectnum");
@@ -901,6 +1043,15 @@ Hooks.on("renderDialog", async (app, html, data) => {
 
             });
         }
+        for (let j = 0; j < links.length; j++) {
+            links[j].addEventListener("click", async (event) => {
+                let itemId = event.target.getAttribute("itemId");
+                let ciKey = event.target.getAttribute("ciKey");
+                let citem = await auxMeth.getcItem(itemId, ciKey);
+                citem.sheet.render(true);
+            });
+        }
+
     }
 
     if (app.data.citemText) {
@@ -911,10 +1062,75 @@ Hooks.on("renderDialog", async (app, html, data) => {
 
         let t_area = htmlDom.getElementsByClassName("texteditor-large");
         //console.log(t_area);
+        t_area[0].disabled = true;
         t_area[0].addEventListener("change", (event) => {
             app.data.dialogValue = event.target.value;
 
         });
+
+        let lock_content = htmlDom.getElementsByClassName("lockcontent");
+        let lock_button = htmlDom.getElementsByClassName("lock");
+        let lock_open = htmlDom.getElementsByClassName("lockopen");
+
+        let button = htmlDom.getElementsByClassName("dialog-button")[0];
+        button.disabled = true;
+
+        lock_open[0].style.display = "none";
+        lock_button[0].addEventListener("click", function (event) {
+            event.stopPropagation();
+            //console.log("locking");
+            lock_open[0].style.display = "block";
+            lock_button[0].style.display = "none";
+            t_area[0].disabled = false;
+            button.disabled = true;
+        }, true);
+
+        lock_open[0].addEventListener("click", function (event) {
+            event.stopPropagation();
+            //console.log("unlocking");
+            lock_button[0].style.display = "block";
+            lock_open[0].style.display = "none";
+            button.disabled = false;
+            t_area[0].disabled = true;
+        }, true);
+    }
+
+    if (app.data.exportDialog) {
+        let checkbtns = htmlDom.getElementsByClassName("checkbox");
+        for (let i = 0; i < checkbtns.length; i++) {
+            let check = checkbtns[i];
+            check.addEventListener("change", (event) => {
+
+                let checkgroup = event.target.getAttribute("folderid");
+                var newevent = new Event('change');
+
+                if (checkgroup != null) {
+                    for (let j = 0; j < checkbtns.length; j++) {
+                        let othercheck = checkbtns[j];
+                        if (othercheck.getAttribute("parentid") == checkgroup && othercheck != check) {
+                            if (event.target.checked) {
+                                if (!othercheck.checked) {
+                                    othercheck.checked = true;
+                                    othercheck.dispatchEvent(newevent);
+                                }
+
+                            }
+                            else {
+                                if (othercheck.checked) {
+                                    othercheck.checked = false;
+                                    othercheck.dispatchEvent(newevent);
+                                }
+                            }
+
+
+
+                        }
+
+                    }
+                }
+
+            });
+        }
     }
 
     if (app.data.rollDialog) {
@@ -1005,17 +1221,17 @@ Hooks.on("renderDialog", async (app, html, data) => {
                         finalvalue = await auxMeth.autoParser(defexpr, app.data.attributes, app.data.citemattributes, false, null, app.data.number);
                     }
 
-                    if(propDef.data.data.datatype=="checkbox"){
+                    if (propDef.data.data.datatype == "checkbox") {
                         let checkfinal = false;
-                        if(finalvalue === "true" || finalvalue)
+                        if (finalvalue === "true" || finalvalue)
                             checkfinal = true;
-                        
+
                         finalvalue = checkfinal;
                     }
-                    else{
+                    else {
                         deffield.value = finalvalue;
                     }
-                    
+
                 }
             }
 
@@ -1031,35 +1247,35 @@ Hooks.on("renderDialog", async (app, html, data) => {
         for (let j = 0; j < allfields.length; j++) {
             let thisinput = allfields[j];
             //if (!thisinput.classList.contains("isauto")) {
-                thisinput.addEventListener("change", async (event) => {
-                    for (let k = 0; k < autofields.length; k++) {
-                        let changedvalue = event.target.value;
-                        let changekey = event.target.getAttribute("attKey");
+            thisinput.addEventListener("change", async (event) => {
+                for (let k = 0; k < autofields.length; k++) {
+                    let changedvalue = event.target.value;
+                    let changekey = event.target.getAttribute("attKey");
 
-                        let changeProp = game.items.find(y => y.data.data.attKey == changekey);
-                        if(changeProp==null)
-                            return;
+                    let changeProp = game.items.find(y => y.data.data.attKey == changekey);
+                    if (changeProp == null)
+                        return;
 
-                        if(changeProp.data.data.datatype = "checkbox")
-                            changedvalue= event.target.checked;
+                    if (changeProp.data.data.datatype = "checkbox")
+                        changedvalue = event.target.checked;
 
-                        dialogProps[changekey].value = changedvalue;
+                    dialogProps[changekey].value = changedvalue;
 
-                        let autofield = autofields[k];
-                        let propKey = autofield.getAttribute("attKey");
-                        let propObj = await game.items.find(y => y.data.data.attKey == propKey);
+                    let autofield = autofields[k];
+                    let propKey = autofield.getAttribute("attKey");
+                    let propObj = await game.items.find(y => y.data.data.attKey == propKey);
 
-                        let autoexpr = propObj.data.data.auto;
-                        autoexpr = await auxMeth.parseDialogProps(autoexpr, dialogProps);
-                        //console.log(autoexpr);
-                        let finalvalue = await auxMeth.autoParser(autoexpr, app.data.attributes, app.data.citemattributes, false, null, app.data.number);
-                        //console.log(finalvalue);
-                        autofield.value = finalvalue;
-                    }
+                    let autoexpr = propObj.data.data.auto;
+                    autoexpr = await auxMeth.parseDialogProps(autoexpr, dialogProps);
+                    //console.log(autoexpr);
+                    let finalvalue = await auxMeth.autoParser(autoexpr, app.data.attributes, app.data.citemattributes, false, null, app.data.number);
+                    //console.log(finalvalue);
+                    autofield.value = finalvalue;
+                }
 
 
 
-                });
+            });
             //}
 
         }
