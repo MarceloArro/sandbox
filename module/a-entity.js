@@ -3759,7 +3759,7 @@ export class gActor extends Actor {
                     let _combatant = await combatants.get(combatKey);
                     if (_combatant.token.id == tokenID) {
                         //console.log(_combatant);
-                        game.combat.updateCombatant({ _id: _combatant.id, initiative: roll });
+                        game.combat.updateEmbeddedDocuments("Combatant",[{ _id: _combatant.id, initiative: roll }]);
                         //_combatant.rollInitiative(roll);
                     }
 
