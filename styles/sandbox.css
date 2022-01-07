@@ -719,6 +719,18 @@
     justify-content: center;
 }
 
+.sandbox.sheet .flexblock-right {
+    display: flex;
+    flex-direction:row;
+    height:100%;
+    flex: 0 0 100px;
+    font-family: Didot, sans-serif;
+    padding: 2px 0px;
+    align-items: flex-end;
+    justify-content: flex-end;
+
+}
+
 .sandbox.sheet .tabblock-center {
     display: flex;
     flex-direction:row;
@@ -924,6 +936,56 @@
 }
 
 .sandbox.sheet .flexblock-center input[type=text].input-free{
+    width:100%;
+    height: 26px;
+}
+
+.sandbox.sheet .flexblock-right input[type=number]{
+    width:45px;
+    height: 26px;
+}
+
+.sandbox.sheet .flexblock-right input[type=number].input-med{
+    width:60px;
+    height: 26px;
+}
+
+.sandbox.sheet .flexblock-right input[type=text].input-min{
+    width:40px;
+    min-width:40px;
+    height: 26px;
+}
+.sandbox.sheet .flexblock-right input[type=text].input-bhalf{
+    width:35px;
+    height: 26px;
+    border-radius: 0px 3px 3px 0px;
+}
+
+.sandbox.sheet .flexblock-right input[type=text].input-ahalf{
+    width:35px;
+    height: 26px;
+    border-radius: 3px 0px 0px 3px;
+}
+.sandbox.sheet .flexblock-right input.input-disabled {
+    background-color: lightgrey;
+}
+
+.sandbox.sheet .flexblock-right input[type=text].input-small{
+    width:80px;
+    height: 26px;
+}
+
+.sandbox.sheet .flexblock-right input[type=text].input-med{
+    width:130px;
+    height: 26px;
+}
+
+.sandbox.sheet .flexblock-right input[type=text].input-medlarge{
+    width:180px;
+    height: 26px;
+}
+
+.sandbox.sheet .flexblock-right input[type=text].input-free{
     width:100%;
     height: 26px;
 }
