@@ -381,6 +381,7 @@ Hooks.once('ready', async () => {
 
         let hotbar = document.createElement("DIV");
         hotbar.className = "dcroll-bar";
+        hotbar.setAttribute("id", "dcroll-bar");
 
         basedoc[0].appendChild(hotbar);
 
