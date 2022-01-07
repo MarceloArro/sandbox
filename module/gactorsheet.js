@@ -525,7 +525,7 @@ export class gActorSheet extends ActorSheet {
         //let dialogPanel = await game.items.get(dialogID);
         let dialogPanel = await auxMeth.getTElement(dialogID, "panel", dialogName);
 
-        if (dialogPanel == null) {
+        if (dialogPanel == null || dialogPanel == undefined) {
             console.log(dialogName + " not found by ID");
             ui.notifications.warn("Please readd dialog panel to roll " + rollname);
         }
@@ -986,19 +986,23 @@ ${dialogPanel.data.data.title}
 
         rollname = await auxMeth.parseDialogProps(rollname, dialogProps);
 
+        let tokenid;
+
         //console.log(rollexp);
 
         let finalroll;
 
         if (targets.length > 0 && ((rollexp.includes("#{target|") || rollexp.includes("add(")) || rollexp.includes("set("))) {
             for (let i = 0; i < targets.length; i++) {
-                let tokenid = canvas.tokens.placeables.find(y => y.id == targets[i]);
+                tokenid = canvas.tokens.placeables.find(y => y.id == targets[i]);
                 finalroll = await this.actor.rollSheetDice(rollexp, rollname, rollid, actorattributes, citemattributes, number, tokenid, rollcitemID);
             }
         }
 
         else {
-            finalroll = await this.actor.rollSheetDice(rollexp, rollname, rollid, actorattributes, citemattributes, number, null, rollcitemID);
+            if (this.actor.isToken && this.token!=null)
+                tokenid = this.token.id;
+            finalroll = await this.actor.rollSheetDice(rollexp, rollname, rollid, actorattributes, citemattributes, number, null, rollcitemID,tokenid);
         }
 
         if (useData != null) {
@@ -1869,6 +1873,9 @@ ${dialogPanel.data.data.title}
 
                     if (tabpanel.data.contentalign == "center") {
                         divtemp.className = "flexblock-center " + tabpanel.data.panelKey + "_row";
+                    }
+                    else if(tabpanel.data.contentalign == "right"){
+                        divtemp.className = "flexblock-right " + tabpanel.data.panelKey + "_row";
                     }
                     else {
                         divtemp.className = "flexblock-left " + tabpanel.data.panelKey + "_row";
