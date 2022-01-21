@@ -388,10 +388,10 @@ export class auxMeth {
                                 let theFolder = allfolders.find(y => y.id == folderKey);
                                 entities.folders.push(theFolder);
                                 for (let n = 0; n < theFolder.contents.length; n++) {
-                                    if (theFolder.contents[n].entity == "Item") {
+                                    if (theFolder.contents[n].documentName == "Item") {
                                         entities.items.push(theFolder.contents[n]);
                                     }
-                                    if (theFolder.contents[n].entity == "Actor") {
+                                    if (theFolder.contents[n].documentName == "Actor") {
                                         entities.actors.push(theFolder.contents[n]);
                                     }
                                 }
