@@ -3380,7 +3380,7 @@ ${dialogPanel.data.data.title}
             //await this.actor.update(this.actor.data);
             if (this.actor.isToken) {
                 let myToken = canvas.tokens.get(this.actor.token.id);
-                await myToken.update({ "actorData.data.citems": subitems });
+                await myToken.document.update({ "actorData.data.citems": subitems });
             }
 
             else {
