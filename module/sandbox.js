@@ -1190,7 +1190,9 @@ Hooks.on("renderDialog", async (app, html, data) => {
 
                         let attKey = event.target.parentElement.getAttribute("attkey");
 
-                        dialogProps[attKey].value = parseInt(dialogProps[attKey].value) + 1;
+                        let currentValue = await auxMeth.autoParser(dialogProps[attKey].value,app.data.attributes, app.data.citemattributes, false, null, app.data.number);
+
+                        dialogProps[attKey].value = parseInt(currentValue) + 1;
 
                         allfields[k].value = dialogProps[attKey].value;
 
@@ -1203,7 +1205,9 @@ Hooks.on("renderDialog", async (app, html, data) => {
 
                         let attKey = event.target.parentElement.getAttribute("attkey");
 
-                        dialogProps[attKey].value = parseInt(dialogProps[attKey].value) - 1;
+                        let currentValue = await auxMeth.autoParser(dialogProps[attKey].value,app.data.attributes, app.data.citemattributes, false, null, app.data.number);
+
+                        dialogProps[attKey].value = parseInt(currentValue) - 1;
 
                         allfields[k].value = dialogProps[attKey].value;
                         var newevent = new Event('change');
