@@ -102,6 +102,8 @@ export class auxMeth {
             for (let pack of game.packs) {
                 if (found)
                     continue;
+                if (pack.documentName != "Item")
+                    continue;
                 const packContents = await pack.getDocuments();
                 //let citems = ;
                 let newciKey = id;
@@ -175,6 +177,8 @@ export class auxMeth {
             let locatedPack;
             let locatedId;
             for (let pack of game.packs) {
+                if (pack.documentName != "Item")
+                    continue;
                 const packContents = await pack.getDocuments();
                 let is_here = packContents.filter(y => Boolean(y.data.data)).find(y => y.data.data[propKey] == key);
                 if (is_here) {
