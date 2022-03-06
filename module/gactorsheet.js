@@ -111,10 +111,16 @@ export class gActorSheet extends ActorSheet {
             ev.preventDefault();
 
             const tabs = $(this._element)[0].getElementsByClassName("tab-button");
+            let firstpassed = false;
 
             for (let x = 0; x < tabs.length; x++) {
                 if (tabs[x].classList.contains("underlined"))
                     tabs[x].className = tabs[x].className.replace("underlined", "");
+
+                if (tabs[x].classList.contains("visible-tab") && !firstpassed) {
+                    firstpassed = true;
+                    this._tabs[0].firstvisible = tabs[x].dataset.tab;
+                }
 
             }
 
@@ -161,6 +167,7 @@ export class gActorSheet extends ActorSheet {
             await this.actor.update({ [`data.attributes.${attKey}.value`]: stringvalue });
 
             this.actor.sendMsgChat("USES 1 ", property.data.data.tag, "TOTAL: " + newvalue);
+            this._onRollCheck(attId, attKey, null, null, false);
             //this.actor.sendMsgChat("Utiliza 1",property.data.data.tag, "Le quedan " + newvalue); to  this.actor.sendMsgChat("Uses 1",property.data.data.tag, "Remains " + newvalue);
 
         });
@@ -1000,9 +1007,9 @@ ${dialogPanel.data.data.title}
         }
 
         else {
-            if (this.actor.isToken && this.token!=null)
+            if (this.actor.isToken && this.token != null)
                 tokenid = this.token.id;
-            finalroll = await this.actor.rollSheetDice(rollexp, rollname, rollid, actorattributes, citemattributes, number, null, rollcitemID,tokenid);
+            finalroll = await this.actor.rollSheetDice(rollexp, rollname, rollid, actorattributes, citemattributes, number, null, rollcitemID, tokenid);
         }
 
         if (useData != null) {
@@ -1874,7 +1881,7 @@ ${dialogPanel.data.data.title}
                     if (tabpanel.data.contentalign == "center") {
                         divtemp.className = "flexblock-center " + tabpanel.data.panelKey + "_row";
                     }
-                    else if(tabpanel.data.contentalign == "right"){
+                    else if (tabpanel.data.contentalign == "right") {
                         divtemp.className = "flexblock-right " + tabpanel.data.panelKey + "_row";
                     }
                     else {
@@ -3680,7 +3687,7 @@ ${dialogPanel.data.data.title}
 
                                 usescell.appendChild(usevalue);
 
-                                if (!game.user.isGM) {
+                                if (!propTable.data.data.editable && !game.user.isGM) {
                                     //usevalue.setAttribute("readonly", "true");  
                                     usevalue.className += " inputGM";
                                 }
@@ -5148,118 +5155,11 @@ ${dialogPanel.data.data.title}
 
     }
 
-    displaceTabs(prev, newhtml) {
-        //console.log("retabbing");
-        const flags = this.actor.data.flags;
-
-        if (!hasProperty(flags, "activetab")) {
-            setProperty(flags, "activetab", 0);
-        }
-
-        if (!hasProperty(flags, "selectedtab")) {
-            setProperty(flags, "selectedtab", 0);
-        }
-
-        const tabs = $(this._element)[0].getElementsByClassName("tab-button");
-
-        //        console.log(tabs);
-        //        console.log($(newhtml).find(".tab-button"));
-
-        const sheettabs = [];
-        var oneactive = false;
-        for (let x = 0; x < tabs.length; x++) {
-            let tabid = tabs[x].getAttribute("id");
-            let tabtext = tabs[x].textContent;
-
-            if (tabtext == "") {
-                tabs[x].style.display = 'none';
-            }
-
-            if (tabid != "tab-last" && tabtext != "") {
-
-                if (tabs[x].classList.contains("active")) {
-                    flags.selectedtab = x;
-                }
-
-                if (tabid == "tab-0" && !this.actor.data.data.biovisible) {
-                    tabs[x].style.display = 'none';
-                    if (tabs[x].classList.contains("active")) {
-                        oneactive = true;
-                    }
-
-                }
-                else {
-                    sheettabs.push(tabs[x]);
-                }
-
-            }
-
-        }
-
-        if (oneactive) {
-            sheettabs[0].click();
-            this.displaceTabs(1)
-            return;
-        }
-
-        if (!this.actor.data.data.biovisible)
-            flags.selectedtab -= 1;
-
-        let visibletab = flags.selectedtab;
-
-        const totaltabs = sheettabs.length;
-
-        let newtab = 0;
-
-        if (flags.activetab != null)
-            newtab = flags.activetab;
-
-        let maxtabs = this.actor.data.data.visitabs;
-        if (maxtabs == null)
-            maxtabs = 3;
-
-        if (prev != null) {
-            if (prev) {
-                newtab -= 1;
-                if (newtab < 0) {
-                    newtab = 0;
-
-                }
-            }
-            else {
-                newtab += 1;
-                if (newtab > totaltabs - maxtabs) {
-                    newtab -= 1;
-
-                }
-            }
-        }
-
-        //console.log("selected " + flags.selectedtab);
-
-
-        flags.activetab = newtab;
-
-        for (let n = 0; n < totaltabs; n++) {
-            sheettabs[n].style.display = 'none';
-        }
-
-        //console.log(sheettabs);
-
-
-        for (let i = 0; i < maxtabs; i++) {
-            let newnumber = parseInt(newtab) + i;
-            if (sheettabs[parseInt(newnumber)] != null)
-                sheettabs[parseInt(newnumber)].style.display = "";
-
-        }
-
-    }
-
-    async displaceTabs2(next = null, newhtml) {
+    async displaceTabs2(next = null, newhtml, updated = false) {
         //console.log("displacing");
         let tabs;
         let nonbio = false;
+        let actorsheet = this;
 
         //console.log(newhtml);
 
@@ -5305,155 +5205,64 @@ ${dialogPanel.data.data.title}
 
         let tabcounter = 0;
         let firsthidden = false;
+        let firstpassed = false;
+        let displaying = false;
+        let displaycounter = 0;
+        let fvble = actorsheet._tabs[0].active;
+        if (actorsheet._tabs[0].firstvisible != null)
+            fvble = actorsheet._tabs[0].firstvisible;
+
         tabs.each(async function (i, tab) {
 
-            let nexttab = tabs[i + 1];
-            let lasttab = tabs[i + maxtabs + 1];
-            let isvisible = false;
-
-            if (tab.textContent == "") {
-                if (!tab.classList.contains("hidden-tab"))
-                    tab.classList.add("hidden-tab");
-                tab.classList.remove("visible-tab");
-                return false;
+            if (tab.dataset.tab == fvble && !foundfirst) {
+                let nexttab = tabs[i + 1];
+                let prevtab = tabs[i - 1];
+                let lasttab = tabs[i + maxtabs + 1];
+                if (next == "prev") {
+                    if (prevtab != null)
+                        fvble = prevtab.dataset.tab;
+                }
+                else if (next == "next") {
+                    if (nexttab != null && lasttab!=null)
+                        fvble = nexttab.dataset.tab;
+                }
+                foundfirst = true;
             }
+        })
 
+        tabs.each(async function (i, tab) {
 
-            if (nonbio) {
-                if (tab.classList.contains("desc-tab")) {
+            if (displaying) {
+                if (displaycounter <= maxtabs) {
+                    if (!tab.classList.contains("visible-tab"))
+                        tab.classList.add("visible-tab");
+                    tab.classList.remove("hidden-tab");
+                    displaycounter += 1;
+                }
+                else {
+                    displaying = false;
                     if (!tab.classList.contains("hidden-tab"))
                         tab.classList.add("hidden-tab");
                     tab.classList.remove("visible-tab");
-
-                    if (tab.classList.contains("active")) {
-                        tab.classList.remove("active");
-                        nexttab.classList.add("active");
-                    }
-
                 }
 
             }
-
-            if (tab.classList.contains("active")) {
-                if (!tab.classList.contains("hidden-tab"))
-                    tab.classList.add("visible-tab");
-            }
-
-            if (tab.classList.contains("visible-tab")) {
-                isvisible = true;
-            }
-
-            if (next == "next" && lasttab != null) {
-                //console.log("next");
-
-                if (isvisible) {
-                    if (!firsthidden) {
-                        //console.log("hiding " + i);
-                        if (!tab.classList.contains("hidden-tab"))
-                            tab.classList.add("hidden-tab");
-                        tab.classList.remove("visible-tab");
-                        firsthidden = true;
-                    }
-
-                    else {
-                        tabcounter += 1;
-                    }
-
-                }
-
-                else {
-                    if (tabcounter > maxtabs || !firsthidden) {
-                        //console.log("hiding " + i);
-
-                        if (!tab.classList.contains("hidden-tab"))
-                            tab.classList.add("hidden-tab");
-                        tab.classList.remove("visible-tab");
-
-
-                    }
-
-                    else {
-                        //console.log("showing " + i);
-                        tabcounter += 1;
-                        if (!tab.classList.contains("visible-tab"))
-                            tab.classList.add("visible-tab");
-                        tab.classList.remove("hidden-tab");
-                    }
-                }
-
-
-            }
-
-            else if (next == "prev") {
-                //console.log("prev");
-
-                if (isvisible) {
-                    if (tabcounter > maxtabs) {
-                        //console.log("hiding " + i);
-                        if (!tab.classList.contains("hidden-tab"))
-                            tab.classList.add("hidden-tab");
-                        tab.classList.remove("visible-tab");
-                        firsthidden = true;
-                    }
-
-                    else {
-                        //console.log("keep showing " + i);
-                        tabcounter += 1;
-                    }
-
-                }
-
-                else {
-                    if (nexttab != null) {
-
-                        if (nexttab.classList.contains("visible-tab") && !firsthidden) {
-                            //console.log("showing " + i);
-                            if ((nonbio && !tab.classList.contains("desc-tab")) || (!nonbio)) {
-                                tabcounter += 1;
-                                if (!tab.classList.contains("visible-tab"))
-                                    tab.classList.add("visible-tab");
-                                tab.classList.remove("hidden-tab");
-                                firsthidden = true;
-                            }
-                        }
-                    }
-
-                }
-            }
-
             else {
-                //console.log("idle");
-
-                if (isvisible) {
-                    if (tabcounter > maxtabs) {
-                        if (!tab.classList.contains("hidden-tab"))
-                            tab.classList.add("hidden-tab");
-                        tab.classList.remove("visible-tab");
-                    }
-
-                    else {
-
-                        tabcounter += 1;
-                    }
-
+                if (tab.dataset.tab == fvble) {
+                    if (!tab.classList.contains("visible-tab"))
+                        tab.classList.add("visible-tab");
+                    tab.classList.remove("hidden-tab");
+                    displaying = true;
+                    displaycounter += 1;
                 }
-
                 else {
-                    if (tabcounter <= maxtabs && tabcounter > 0) {
-                        tabcounter += 1;
-                        if (!tab.classList.contains("visible-tab"))
-                            tab.classList.add("visible-tab");
-                        tab.classList.remove("hidden-tab");
-                    }
-
-                    else {
-                        if (!tab.classList.contains("hidden-tab"))
-                            tab.classList.add("hidden-tab");
-                        tab.classList.remove("visible-tab");
-
-                    }
+                    if (!tab.classList.contains("hidden-tab"))
+                        tab.classList.add("hidden-tab");
+                    tab.classList.remove("visible-tab");
                 }
+
             }
+
 
         })
 
@@ -5654,7 +5463,8 @@ ${dialogPanel.data.data.title}
 
                 let attri = target.split(".")[2];
                 //console.log(attri);
-                property = game.items.find(y => y.data.type == "property" && y.data.data.attKey == attri);
+                //property = game.items.find(y => y.data.type == "property" && y.data.data.attKey == attri);
+                property = await auxMeth.getTElement("NONE", "property", attri);
                 //console.log(property);
             }
 
