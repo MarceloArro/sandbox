@@ -180,6 +180,10 @@ export class gActor extends Actor {
                 if (attributes[key].checkgroup != null)
                     actorData.attributes[key].checkgroup = attributes[key].checkgroup;
 
+                // if (actorData.attributes[key].checkgroup != null) {
+                //     if (attributes[key].value == "on")
+                //         attributes[key].value = true;
+                // }
 
                 //Checkbox group implementation
                 if (actorData.attributes[key].checkgroup != null && attributes[key].modified) {
@@ -734,7 +738,7 @@ export class gActor extends Actor {
                     let ccmod = await _ccitem.mods.find(x => x.index == ccmodID);
                     let ccAtt = ccmod.attribute;
                     if (ccmod.exec)
-                        if (attributes[ccAtt]!=null)
+                        if (attributes[ccAtt] != null)
                             attributes[ccAtt].value = attributes[ccAtt].prev;
 
                 }
@@ -1581,8 +1585,8 @@ export class gActor extends Actor {
 
 
 
-                //let _citem = await game.items.get(mod.citem).data.data;
-                let _citemfinder = await auxMeth.getcItem(mod.citem);
+                //let _citem = await game.items.get(mod.citem).data.data; CUIDAO AQUI mod.cIKEy as puesto
+                let _citemfinder = await auxMeth.getcItem(mod.citem, mod.ciKey);
                 let _citem = _citemfinder.data.data;
 
                 finalvalue = await auxMeth.autoParser(value, attributes, citem.attributes, true, false, citem.number);
@@ -3589,7 +3593,7 @@ export class gActor extends Actor {
         if (getRollableTables != null) {
             for (let i = 0; i < getRollableTables.length; i++) {
                 let blocks = getRollableTables[i].split(";");
-                const table = game.tables.entities.find(t => t.name === blocks[0]);
+                const table = game.tables.getName(blocks[0]);
 
                 let rmode = "";
                 if (gmmode)
@@ -3759,7 +3763,7 @@ export class gActor extends Actor {
                     let _combatant = await combatants.get(combatKey);
                     if (_combatant.token.id == tokenID) {
                         //console.log(_combatant);
-                        game.combat.updateEmbeddedDocuments("Combatant",[{ _id: _combatant.id, initiative: roll }]);
+                        game.combat.updateEmbeddedDocuments("Combatant", [{ _id: _combatant.id, initiative: roll }]);
                         //_combatant.rollInitiative(roll);
                     }
 
