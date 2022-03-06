@@ -5155,7 +5155,7 @@ ${dialogPanel.data.data.title}
 
     }
 
-    async displaceTabs2(next = null, newhtml, updated = false) {
+    async displaceTabs2(next = null, newhtml) {
         //console.log("displacing");
         let tabs;
         let nonbio = false;
