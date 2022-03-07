@@ -5226,6 +5226,7 @@ ${dialogPanel.data.data.title}
                     if (nexttab != null && lasttab!=null)
                         fvble = nexttab.dataset.tab;
                 }
+                actorsheet._tabs[0].firstvisible = fvble;
                 foundfirst = true;
             }
         })
