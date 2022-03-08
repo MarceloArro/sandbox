@@ -3670,7 +3670,11 @@ export class gActor extends Actor {
 
                 if (targetattributes != null && targetattributes[parseprop] != null) {
                     let attvalue = parseInt(targetattributes[parseprop].value);
-                    attvalue += parseInt(parsevalue);
+                    let parsedPropDatatype = game.items.find(y => y.id == targetattributes[parseprop].id).data.data.datatype;
+                    if (parsedPropDatatype == "simplenumeric" || parsedPropDatatype == "simpletext" || parsedPropDatatype == "badge" || parsedPropDatatype == "radio")
+                        attvalue += parseInt(parsevalue);
+                    else
+                        break;
 
                     if (target == "SELF")
                         await this.update({ [`data.attributes.${parseprop}.value`]: attvalue });
@@ -3705,10 +3709,13 @@ export class gActor extends Actor {
 
                 if (targetattributes != null && targetattributes[parseprop] != null) {
                     let attvalue = targetattributes[parseprop].value;
-                    if (game.items.find(y => y.id == targetattributes[parseprop].id).data.data.datatype != "simplenumeric")
+                    let parsedPropDatatype = game.items.find(y => y.id == targetattributes[parseprop].id).data.data.datatype;
+                    if (parsedPropDatatype == "simpletext" || parsedPropDatatype == "checkbox" || parsedPropDatatype == "textarea")
                         attvalue = parsevalue;
-                    else
+                    else if (parsedPropDatatype == "simplenumeric" || parsedPropDatatype == "badge" || parsedPropDatatype == "radio")
                         attvalue = parseInt(parsevalue);
+                    else
+                        break;
 
                     if (target == "SELF")
                         await this.update({ [`data.attributes.${parseprop}.value`]: attvalue });
