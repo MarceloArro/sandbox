@@ -2908,12 +2908,10 @@ export class gActor extends Actor {
             blindmode = true;
 
         //Check roll ids
-        if (rollid == null)
+        if (rollid == null || rollid == "")
             rollid = [];
 
-        if (rollid == "")
-            rollid = [];
-
+        //Checking Roll ID's
         for (let n = 0; n < rollid.length; n++) {
             //console.log(rollid[n]);
             if (rollid[n] == "init")
@@ -2989,6 +2987,12 @@ export class gActor extends Actor {
 
         //Preparsing TO CHECK IF VALID EXPRESSION!!!
         rollexp = await auxMeth.autoParser(rollexp, actorattributes, citemattributes, true, false, number);
+
+        // Early check for ~nochat~ so to prevent 3D Dice from rolling
+        if (rollexp.includes("~nochat~"))
+            nochat = true;
+
+        // Check and parse roll() expressions
         while (rollexp.match(/(?<=\broll\b\().*?(?=\))/g) != null) {
 
             let rollmatch = /\broll\(/g;
@@ -3097,6 +3101,7 @@ export class gActor extends Actor {
             //}
         }
 
+        // Check and parse rollp() expressions
         ///////////////ALONDAAR/////////////// BEGIN rollp() test implementation
         // DOCUMENTATION:
         // This new and simplified rollp() function is BEST SUITED for singular dice rolls.
@@ -3274,7 +3279,6 @@ export class gActor extends Actor {
 
         rollexp = await auxMeth.autoParser(rollexp, actorattributes, citemattributes, true, false, number);
 
-
         //PARSING FOLL FORMULA, TO IMPROVE!!!
         var sumResult = rollformula.match(/(?<=\bsum\b\().*?(?=\))/g);
         if (sumResult != null) {
@@ -3328,7 +3332,6 @@ export class gActor extends Actor {
         let parseid = rollexp.match(/(?<=\~)\S*?(?=\~)/g);
 
         //ADV & DIS to rolls
-
         var findIF = rollexp.search("if");
         var findADV = rollexp.search("~ADV~");;
         var findDIS = rollexp.search("~DIS~");
@@ -3355,10 +3358,10 @@ export class gActor extends Actor {
                 if (parseid[j] == "gm")
                     gmmode = true;
 
-                if (parseid[j] == "blind")
+                if (parseid[j] == "blind") // TODO: This is checked early... Remove?
                     blindmode = true;
 
-                if (parseid[j] == "nochat")
+                if (parseid[j] == "nochat") // TODO: This is checked early... Remove?
                     nochat = true;
 
                 if (findIF != -1) {
