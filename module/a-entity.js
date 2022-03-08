@@ -3653,10 +3653,13 @@ export class gActor extends Actor {
                     target = "SELF";
                 }
 
-                let parsevalue = 0;
                 blocks[1] = blocks[1].replace(/\btotal\b/g, rolltotal);
-                parsevalue = await auxMeth.autoParser(blocks[1], actorattributes, citemattributes, false, false, number);
+                let parsevalue = await auxMeth.autoParser(blocks[1], actorattributes, citemattributes, false, false, number);
                 parsevalue = Number(parsevalue);
+                if (isNaN(parsevalue)) {
+                    ui.notifications.warn("add(" + adder[i] + ") NaN detected.");
+                    break;
+                }
 
                 let targetattributes = null;
                 let tokenId = null;
@@ -3669,10 +3672,14 @@ export class gActor extends Actor {
                 }
 
                 if (targetattributes != null && targetattributes[parseprop] != null) {
-                    let attvalue = parseInt(targetattributes[parseprop].value);
+                    let attvalue = Number(targetattributes[parseprop].value);
+                    if (isNaN(attvalue)) {
+                        ui.notifications.warn("add(" + adder[i] + ") NaN detected.");
+                        break;
+                    }
                     let parsedPropDatatype = game.items.find(y => y.id == targetattributes[parseprop].id).data.data.datatype;
                     if (parsedPropDatatype == "simplenumeric" || parsedPropDatatype == "simpletext" || parsedPropDatatype == "badge" || parsedPropDatatype == "radio")
-                        attvalue += parseInt(parsevalue);
+                        attvalue += parsevalue;
                     else
                         break;
 
@@ -3712,8 +3719,14 @@ export class gActor extends Actor {
                     let parsedPropDatatype = game.items.find(y => y.id == targetattributes[parseprop].id).data.data.datatype;
                     if (parsedPropDatatype == "simpletext" || parsedPropDatatype == "checkbox" || parsedPropDatatype == "textarea")
                         attvalue = parsevalue;
-                    else if (parsedPropDatatype == "simplenumeric" || parsedPropDatatype == "badge" || parsedPropDatatype == "radio")
-                        attvalue = parseInt(parsevalue);
+                    else if (parsedPropDatatype == "simplenumeric" || parsedPropDatatype == "badge" || parsedPropDatatype == "radio") {
+                        parsevalue = Number(parsevalue);
+                        if (isNaN(parsevalue)) {
+                            ui.notifications.warn("set(" + setter[i] + ") NaN detected.");
+                            break;
+                        }
+                        attvalue = parsevalue;
+                    }
                     else
                         break;
 
