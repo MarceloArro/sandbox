@@ -3690,10 +3690,8 @@ export class gActor extends Actor {
                     target = "SELF";
                 }
 
-                let parsevalue = 0;
                 blocks[1] = blocks[1].replace(/\btotal\b/g, rolltotal);
-                parsevalue = await auxMeth.autoParser(blocks[1], actorattributes, citemattributes, false, false, number);
-                parsevalue = Number(parsevalue);
+                let parsevalue = await auxMeth.autoParser(blocks[1], actorattributes, citemattributes, false, false, number);
 
                 let targetattributes = null;
                 let tokenId = null;
@@ -3706,8 +3704,11 @@ export class gActor extends Actor {
                 }
 
                 if (targetattributes != null && targetattributes[parseprop] != null) {
-                    let attvalue = parseInt(targetattributes[parseprop].value);
-                    attvalue = parseInt(parsevalue);
+                    let attvalue = targetattributes[parseprop].value;
+                    if (game.items.find(y => y.id == targetattributes[parseprop].id).data.data.datatype != "simplenumeric")
+                        attvalue = parsevalue;
+                    else
+                        attvalue = parseInt(parsevalue);
 
                     if (target == "SELF")
                         await this.update({ [`data.attributes.${parseprop}.value`]: attvalue });
