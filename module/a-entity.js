@@ -2907,6 +2907,28 @@ export class gActor extends Actor {
         if (rollexp.includes("~blind~"))
             blindmode = true;
 
+        //Check roll ids
+        if (rollid == null)
+            rollid = [];
+
+        if (rollid == "")
+            rollid = [];
+
+        for (let n = 0; n < rollid.length; n++) {
+            //console.log(rollid[n]);
+            if (rollid[n] == "init")
+                initiative = true;
+
+            if (rollid[n] == "gm")
+                gmmode = true;
+
+            if (rollid[n] == "blind")
+                blindmode = true;
+
+            if (rollid[n] == "nochat")
+                nochat = true;
+        }
+
         let linkmode = false;
 
         if (rollcitemID)
@@ -3015,7 +3037,7 @@ export class gActor extends Actor {
 
                 finalroll.extraroll = true;
 
-                if (game.dice3d != null) {
+                if (game.dice3d != null && !nochat) {
 
                     await game.dice3d.showForRoll(partroll, game.user, true, ToGM, blindmode);
                 }
@@ -3131,7 +3153,7 @@ export class gActor extends Actor {
                 if (keepImpMod[i].mod)
                     finalroll.dice[i].modifiers.push(keepImpMod[i].mod);
 
-            if (game.dice3d != null) //Dice So Nice Module
+            if (game.dice3d != null  && !nochat) //Dice So Nice Module
                 await game.dice3d.showForRoll(partroll, game.user, true, ToGM, blindmode);
 
             sRoll.results = finalroll;
@@ -3301,28 +3323,6 @@ export class gActor extends Actor {
             }
         }
         rollformula = rollformula.replace(/\bcountE\b\(.*?\)/g, "");
-
-        //Check roll ids
-        if (rollid == null)
-            rollid = [];
-
-        if (rollid == "")
-            rollid = [];
-
-        for (let n = 0; n < rollid.length; n++) {
-            //console.log(rollid[n]);
-            if (rollid[n] == "init")
-                initiative = true;
-
-            if (rollid[n] == "gm")
-                gmmode = true;
-
-            if (rollid[n] == "blind")
-                blindmode = true;
-
-            if (rollid[n] == "nochat")
-                nochat = true;
-        }
 
         //Remove rollIDs and save them
         let parseid = rollexp.match(/(?<=\~)\S*?(?=\~)/g);
@@ -3624,7 +3624,7 @@ export class gActor extends Actor {
         //ROLL EXPRESSION - ROLL TOTAL
         let partroll = new Roll(rollexp);
         roll = await partroll.evaluate({ async: true });
-        if (game.dice3d != null) {
+        if (game.dice3d != null  && !nochat) {
             let rollblind = blindmode;
             let noshow = true;
             if (game.user.isGM)
