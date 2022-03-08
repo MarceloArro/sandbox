@@ -194,25 +194,24 @@ export class gActor extends Actor {
 
                         for (const [propKey, propValues] of Object.entries(actorData.attributes)) {
                             let propKeyObj = game.items.find(y => y.data.data.attKey == propKey);
-                            if (propKeyObj.data.data.datatype == "checkbox" && propKey != key) {
-                                let pointerchkgroupArray = propKeyObj.data.data.checkgroup.split(";");
-                                for (let z = 0; z < chkgroupArray.length; z++) {
-                                    let checkKey = chkgroupArray[z];
-                                    let parsedKey = await auxMeth.autoParser(checkKey, actorData.attributes, null, true);
-                                    if (pointerchkgroupArray.includes(parsedKey))
-                                        propValues.value = false;
+                            if(propKeyObj != null && propKeyObj != undefined && propKeyObj != "") //skip mismatch data (CREATE mod)
+                                if (propKeyObj.data.data.datatype == "checkbox" && propKey != key) {
+                                    let pointerchkgroupArray = propKeyObj.data.data.checkgroup.split(";");
+                                    for (let z = 0; z < chkgroupArray.length; z++) {
+                                        let checkKey = chkgroupArray[z];
+                                        let parsedKey = await auxMeth.autoParser(checkKey, actorData.attributes, null, true);
+                                        if (pointerchkgroupArray.includes(parsedKey))
+                                            propValues.value = false;
+                                    }
                                 }
-                            }
 
                         }
                         if (updateData.citems) {
                             for (let r = 0; r < updateData.citems.length; r++) {
                                 for (const [propKey, propValues] of Object.entries(updateData.citems[r].attributes)) {
-
                                     if (propKey != propObj.data.data.attKey) {
                                         let propKeyObj = game.items.find(y => y.data.data.attKey == propKey);
-                                        if (propKeyObj != null) {
-                                            if (propKeyObj != "") {
+                                        if (propKeyObj != null && propKeyObj != "" && propKeyObj != undefined) {
                                                 let pointerchkgroupArray = propKeyObj.data.data.checkgroup.split(";");
                                                 for (let z = 0; z < chkgroupArray.length; z++) {
                                                     let checkKey = chkgroupArray[z];
@@ -220,20 +219,11 @@ export class gActor extends Actor {
                                                     if (pointerchkgroupArray.includes(parsedKey))
                                                         propValues.value = false;
                                                 }
-
-                                            }
-
                                         }
-
-
                                     }
-
-
                                 }
                             }
                         }
-
-
                     }
 
                 }
