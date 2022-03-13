@@ -4605,7 +4605,7 @@ ${dialogPanel.data.data.title}
         else {
             let tokenId = this.id.split("-")[2];
             let mytoken = canvas.tokens.get(tokenId);
-            await mytoken.update({ "actorData.data.citems": cItemsID });
+            await mytoken.document.update({ "actorData.data.citems": cItemsID });
         }
 
 
