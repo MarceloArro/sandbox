@@ -2880,6 +2880,23 @@ export class gActor extends Actor {
 
     }
 
+    // ALONDAAR - Extracts a specified expression, eg str = "add" extracts all "add(...)"s
+    // And replaces them with blanks, DO NOT USE FOR SUM() or in-line parsing at this time!
+    async extractExpression(str, rollexp, rollformula) {
+        //console.log("Looking for " + str + "() expressions");
+        let re = new RegExp(`(?<=\\b${str}\\b\\().*?(?=\\))`, 'gi');
+        let expArray = rollexp.match(re);
+        if (expArray != null) {
+            for (let i = 0; i < expArray.length; i++) {
+                let tochange = new RegExp(`${str}\\(${expArray[i]}\\)`, 'i');
+                rollexp = rollexp.replace(tochange, "");
+                rollformula = rollformula.replace(tochange, "");
+            }
+        }
+
+        return [expArray, rollexp, rollformula];
+    }
+
 
     async rollSheetDice(rollexp, rollname, rollid, actorattributes, citemattributes, number = 1, target = null, rollcitemID = null, tokenID = null) {
 
