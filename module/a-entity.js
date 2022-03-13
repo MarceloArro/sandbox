@@ -3533,28 +3533,24 @@ export class gActor extends Actor {
         }
 
         //EXPRESSION CATCHERS, REMOVE ANYTHING THAT DOES NOT NEED TO BE PARSED FOR RESULT
-
+        // ALONDAAR
         //ADDer to target implementation - add(property;value)
-        //ALONDAAR MOVED PARSING TO AFTER ROLLTOTAL
-        let adder = rollexp.match(/(?<=\badd\b\().*?(?=\))/g);
-        if (adder != null) {
-            for (let i = 0; i < adder.length; i++) {
-                let tochange = "add(" + adder[i] + ")";
-                rollexp = rollexp.replace(tochange, "");
-                rollformula = rollformula.replace(tochange, "");
-            }
-        }
+        let addArray = null;
+        [addArray, rollexp, rollformula] = await this.extractExpression("ADD", rollexp, rollformula);
+
+        let addSelfArray = null;
+        [addSelfArray, rollexp, rollformula] = await this.extractExpression("ADDSELF", rollexp, rollformula);
 
         //SETer to target implementation - set(property, value)
-        //BASED ON ALONDAAR CODE
-        let setter = rollexp.match(/(?<=\bset\b\().*?(?=\))/g);
-        if (setter != null) {
-            for (let i = 0; i < setter.length; i++) {
-                let tochange = "set(" + setter[i] + ")";
-                rollexp = rollexp.replace(tochange, "");
-                rollformula = rollformula.replace(tochange, "");
-            }
-        }
+        let setArray = null;
+        [setArray, rollexp, rollformula] = await this.extractExpression("SET", rollexp, rollformula);
+
+        let setSelfArray = null;
+        [setSelfArray, rollexp, rollformula] = await this.extractExpression("SETSELF", rollexp, rollformula);
+
+        // Rollable Table from expression: table(table_name;optional_value)
+        let tableArray = null;
+        [tableArray, rollexp, rollformula] = await this.extractExpression("TABLE", rollexp, rollformula);
 
         //ALONDAAR -- Table Lookup from expression: lookupj(journalName;column;row;optionalDefault)
         // JOURNAL NAME SHOULD BE UNIQUE FROM OTHER JOURNALS!
@@ -3615,16 +3611,6 @@ export class gActor extends Actor {
             }
         }*/
 
-        //ALONDAAR -- Rollable Table from expression: table(table_name;optional_value)
-        let getRollableTables = rollexp.match(/(?<=\btable\b\().*?(?=\))/g);
-        if (getRollableTables != null) {
-            for (let i = 0; i < getRollableTables.length; i++) {
-                let tochange = "table(" + getRollableTables[i] + ")";
-                rollexp = rollexp.replace(tochange, "");
-                rollformula = rollformula.replace(tochange, "");
-            }
-        }
-
         //FIX FORMULA
         rollformula = await auxMeth.autoParser(rollformula, actorattributes, citemattributes, true, false, number);
         let formula = rollformula.replace(/\s[0]\s\+/g, "");
@@ -3654,37 +3640,26 @@ export class gActor extends Actor {
             multiroll.push(roll);
 
         //ALONDAAR REPLACE TOTAL IN ADDer WITH rolltotal, and applies all add() to target
-        if (adder != null) {
-            for (let i = 0; i < adder.length; i++) {
-                let blocks = adder[i].split(";");
+        if (addArray != null) {
+            for (let i = 0; i < addArray.length; i++) {
+                let blocks = addArray[i].split(";");
                 let parseprop = await auxMeth.autoParser(blocks[0], actorattributes, citemattributes, true, false, number);
-                if (parseprop.match("self.")) {
-                    parseprop = parseprop.replace("self.", "");
-                    target = "SELF";
-                }
 
                 blocks[1] = blocks[1].replace(/\btotal\b/g, rolltotal);
                 let parsevalue = await auxMeth.autoParser(blocks[1], actorattributes, citemattributes, false, false, number);
                 parsevalue = Number(parsevalue);
                 if (isNaN(parsevalue)) {
-                    ui.notifications.warn("add(" + adder[i] + ") NaN detected.");
+                    console.warn("add(" + addArray[i] + ") NaN detected.");
                     break;
                 }
 
-                let targetattributes = null;
-                let tokenId = null;
-
-                if (target != "SELF") {
-                    targetattributes = target.actor.data.data.attributes;
-                    tokenId = target.id;
-                } else {
-                    targetattributes = this.data.data.attributes;
-                }
+                let targetattributes = target.actor.data.data.attributes;
+                let tokenId = target.id;
 
                 if (targetattributes != null && targetattributes[parseprop] != null) {
                     let attvalue = Number(targetattributes[parseprop].value);
                     if (isNaN(attvalue)) {
-                        ui.notifications.warn("add(" + adder[i] + ") NaN detected.");
+                        console.warn("add(" + addArray[i] + ") NaN detected.");
                         break;
                     }
                     let parsedPropDatatype = game.items.find(y => y.id == targetattributes[parseprop].id).data.data.datatype;
@@ -3693,36 +3668,55 @@ export class gActor extends Actor {
                     else
                         break;
 
-                    if (target == "SELF")
-                        await this.update({ [`data.attributes.${parseprop}.value`]: attvalue });
+                    await this.requestToGM(this, tokenId, parseprop, attvalue);
+                }
+            }
+        }
+
+        // ALONDAAR -- ADDSELF()
+        if (addSelfArray != null) {
+            for (let i = 0; i < addSelfArray.length; i++) {
+                let blocks = addSelfArray[i].split(";");
+                let parseprop = await auxMeth.autoParser(blocks[0], actorattributes, citemattributes, true, false, number);
+
+                blocks[1] = blocks[1].replace(/\btotal\b/g, rolltotal);
+                let parsevalue = await auxMeth.autoParser(blocks[1], actorattributes, citemattributes, false, false, number);
+                parsevalue = Number(parsevalue);
+                if (isNaN(parsevalue)) {
+                    ui.notifications.warn("addself(" + addArray[i] + ") NaN detected.");
+                    break;
+                }
+
+                targetattributes = this.data.data.attributes;
+
+                if (targetattributes != null && targetattributes[parseprop] != null) {
+                    let attvalue = Number(targetattributes[parseprop].value);
+                    if (isNaN(attvalue)) {
+                        console.warn("addself(" + addArray[i] + ") NaN detected.");
+                        break;
+                    }
+                    let parsedPropDatatype = game.items.find(y => y.id == targetattributes[parseprop].id).data.data.datatype;
+                    if (parsedPropDatatype == "simplenumeric" || parsedPropDatatype == "simpletext" || parsedPropDatatype == "badge" || parsedPropDatatype == "radio")
+                        attvalue += parsevalue;
                     else
-                        await this.requestToGM(this, tokenId, parseprop, attvalue);
+                        break;
+
+                    await this.update({ [`data.attributes.${parseprop}.value`]: attvalue });
                 }
             }
         }
 
         //ALONDAAR REPLACE TOTAL IN SETter WITH rolltotal, and applies all set() to target
-        if (setter != null) {
-            for (let i = 0; i < setter.length; i++) {
-                let blocks = setter[i].split(";");
+        if (setArray != null) {
+            for (let i = 0; i < setArray.length; i++) {
+                let blocks = setArray[i].split(";");
                 let parseprop = await auxMeth.autoParser(blocks[0], actorattributes, citemattributes, true, false, number);
-                if (parseprop.match("self.")) {
-                    parseprop = parseprop.replace("self.", "");
-                    target = "SELF";
-                }
 
                 blocks[1] = blocks[1].replace(/\btotal\b/g, rolltotal);
                 let parsevalue = await auxMeth.autoParser(blocks[1], actorattributes, citemattributes, false, false, number);
 
-                let targetattributes = null;
-                let tokenId = null;
-
-                if (target != "SELF") {
-                    targetattributes = target.actor.data.data.attributes;
-                    tokenId = target.id;
-                } else {
-                    targetattributes = this.data.data.attributes;
-                }
+                let targetattributes = target.actor.data.data.attributes;
+                let tokenId = target.id;
 
                 if (targetattributes != null && targetattributes[parseprop] != null) {
                     let attvalue = targetattributes[parseprop].value;
@@ -3732,7 +3726,7 @@ export class gActor extends Actor {
                     else if (parsedPropDatatype == "simplenumeric" || parsedPropDatatype == "badge" || parsedPropDatatype == "radio") {
                         parsevalue = Number(parsevalue);
                         if (isNaN(parsevalue)) {
-                            ui.notifications.warn("set(" + setter[i] + ") NaN detected.");
+                            ui.notifications.warn("set(" + setArray[i] + ") NaN detected.");
                             break;
                         }
                         attvalue = parsevalue;
@@ -3740,10 +3734,39 @@ export class gActor extends Actor {
                     else
                         break;
 
-                    if (target == "SELF")
-                        await this.update({ [`data.attributes.${parseprop}.value`]: attvalue });
+                    await this.requestToGM(this, tokenId, parseprop, attvalue);
+                }
+            }
+        }
+
+        // ALONDAAR -- SETSELF()
+        if (setSelfArray != null) {
+            for (let i = 0; i < setSelfArray.length; i++) {
+                let blocks = setSelfArray[i].split(";");
+                let parseprop = await auxMeth.autoParser(blocks[0], actorattributes, citemattributes, true, false, number);
+
+                blocks[1] = blocks[1].replace(/\btotal\b/g, rolltotal);
+                let parsevalue = await auxMeth.autoParser(blocks[1], actorattributes, citemattributes, false, false, number);
+
+                targetattributes = this.data.data.attributes;
+
+                if (targetattributes != null && targetattributes[parseprop] != null) {
+                    let attvalue = targetattributes[parseprop].value;
+                    let parsedPropDatatype = game.items.find(y => y.id == targetattributes[parseprop].id).data.data.datatype;
+                    if (parsedPropDatatype == "simpletext" || parsedPropDatatype == "checkbox" || parsedPropDatatype == "textarea")
+                        attvalue = parsevalue;
+                    else if (parsedPropDatatype == "simplenumeric" || parsedPropDatatype == "badge" || parsedPropDatatype == "radio") {
+                        parsevalue = Number(parsevalue);
+                        if (isNaN(parsevalue)) {
+                            ui.notifications.warn("setself(" + setArray[i] + ") NaN detected.");
+                            break;
+                        }
+                        attvalue = parsevalue;
+                    }
                     else
-                        await this.requestToGM(this, tokenId, parseprop, attvalue);
+                        break;
+
+                    await this.update({ [`data.attributes.${parseprop}.value`]: attvalue });
                 }
             }
         }
@@ -3925,9 +3948,9 @@ export class gActor extends Actor {
         }
 
         //ALONDAAR -- Find and roll on the rollable table(s)
-        if (getRollableTables != null) {
-            for (let i = 0; i < getRollableTables.length; i++) {
-                let blocks = getRollableTables[i].split(";");
+        if (tableArray != null) {
+            for (let i = 0; i < tableArray.length; i++) {
+                let blocks = tableArray[i].split(";");
                 const table = game.tables.getName(blocks[0]);
 
                 let rmode = "";
@@ -3943,8 +3966,9 @@ export class gActor extends Actor {
                         blocks[1] = blocks[1].replaceAll(/total/ig, rolltotal);
                     parsevalue = await auxMeth.autoParser(blocks[1], actorattributes, citemattributes, false, false, number);
                     parsevalue = Number(parsevalue);
-                    //For some reason it doesn't like just a value
-                    const table_roll = await new Roll("0+" + parsevalue);
+                    if(isNaN(parsevalue))
+                        break;
+                    const table_roll = await new Roll(`${parsevalue}`);
 
                     table.draw({ roll: table_roll, rollMode: rmode });
                 } else {
