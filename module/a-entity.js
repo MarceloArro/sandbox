@@ -2880,15 +2880,88 @@ export class gActor extends Actor {
 
     }
 
+    // ALONDAAR - Processes Target/Self 'property update' expressions (ADD/SET)
+    // PARAM 'mode' accepts: "add" or "set"
+    // PARAM 'target' accepts: target or "SELF"
+    async parseAddSet(expArray, mode, target, actorattributes, citemattributes, number, rolltotal) {
+        if (expArray != null) {
+            for (let i = 0; i < expArray.length; i++) {
+                let blocks = expArray[i].split(";");
+                let parseprop = await auxMeth.autoParser(blocks[0], actorattributes, citemattributes, true, false, number);
+                if (parseprop.match("self.")) {
+                    parseprop = parseprop.replace("self.", "");
+                    target = "SELF";
+                }
+
+                blocks[1] = blocks[1].replace(/\btotal\b/g, rolltotal); // TODO: Make this regexp smarter? maybe enforce parenthesis
+                let parsevalue = await auxMeth.autoParser(blocks[1], actorattributes, citemattributes, false, false, number);
+
+                if (target != null) {
+                    let targetattributes = null;
+                    if (target != "SELF")
+                        targetattributes = target.actor.data.data.attributes;
+                    else
+                        targetattributes = this.data.data.attributes;
+
+                    if (targetattributes != null && targetattributes[parseprop] != null) {
+                        let attvalue = targetattributes[parseprop].value;
+                        if (mode == "add") {
+                            if (!isNaN(attvalue) && !isNaN(parsevalue)) {
+                                attvalue = parseInt(attvalue);
+                                attvalue += parseInt(parsevalue);
+                            }
+                            else {
+                                console.warn("(" + expArray[i] + ") NaN detected.");
+                                continue;
+                            }
+                        }
+
+                        if (mode == "set") {
+                            let dataType = game.items.find(y => y.id == targetattributes[parseprop].id).data.data.datatype;
+                            if (dataType == "checkbox") {
+                                if (parsevalue != "false" && parsevalue != "0")
+                                    attvalue = "true";
+                                else
+                                    attvalue = "false";
+                            }
+                            else if (dataType == "simplenumeric" || dataType == "badge" || dataType == "radio") { //TODO: BUG: Set on Badge type ignore a max value..?
+                                if (isNaN(parsevalue)) {
+                                    console.warn("(" + expArray[i] + ") NaN detected.");
+                                    continue;
+                                }
+                                attvalue = parseInt(parsevalue);
+                            }
+                            else
+                                attvalue = parsevalue;
+                        }
+
+                        if (target != "SELF")
+                            await this.requestToGM(this, target.id, parseprop, attvalue);
+                        else
+                            await this.update({ [`data.attributes.${parseprop}.value`]: attvalue });
+                    }
+                    else {
+                        console.warn("Property key: '" + parseprop + "' not found on target.");
+                        continue;
+                    }
+                }
+                else {
+                    console.warn("No target found for " + mode + "()");
+                    continue;
+                }
+            }
+        }
+    }
+
     // ALONDAAR - Extracts a specified expression, eg str = "add" extracts all "add(...)"s
-    // And replaces them with blanks, DO NOT USE FOR SUM() or in-line parsing at this time!
+    // And replaces found-exp with blanks, DO NOT USE FOR SUM() or in-line parsing at this time!
     async extractExpression(str, rollexp, rollformula) {
         //console.log("Looking for " + str + "() expressions");
         let re = new RegExp(`(?<=\\b${str}\\b\\().*?(?=\\))`, 'gi');
         let expArray = rollexp.match(re);
         if (expArray != null) {
             for (let i = 0; i < expArray.length; i++) {
-                let tochange = new RegExp(`${str}\\(${expArray[i]}\\)`, 'i');
+                let tochange = `${str}(${expArray[i]})`;
                 rollexp = rollexp.replace(tochange, "");
                 rollformula = rollformula.replace(tochange, "");
             }
@@ -2896,7 +2969,6 @@ export class gActor extends Actor {
 
         return [expArray, rollexp, rollformula];
     }
-
 
     async rollSheetDice(rollexp, rollname, rollid, actorattributes, citemattributes, number = 1, target = null, rollcitemID = null, tokenID = null) {
 
@@ -2971,6 +3043,35 @@ export class gActor extends Actor {
             rollexp = await rollexp.replace(/\#{name}/g, citemattributes.name);
         }
 
+        // ALONDAAR -- Parse citem reference
+        // Syntax: ci(citemName;citemKey;optDefault) -- Optional Default is 0
+        /*let findCitem = rawexp.match(/(?<=\bci\b\().*?(?=\))/g);
+        if (findCitem != null) {
+            for (let j = 0; j < findCitem.length; j++) {
+                let idtoreplace = "ci(" + findCitem[j] + ")";
+                let replacewith = 0;
+                let blocks = findCitem[j].split(";");
+
+                if (blocks[2] != null)
+                    replacewith = blocks[2];
+
+                let mycitem = this.data.data.citems.find(ci => ci.name == blocks[0]);
+                if (mycitem != null) {
+                    let citemAtt = mycitem.attributes[blocks[1]];
+                    if (citemAtt != null) {
+                        let citemAttValue = citemAtt.value;
+                        if (citemAttValue != null)
+                            replacewith = citemAttValue;
+                    }
+                    else
+                        console.warn("citem key: '" + blocks[1] + "' on citem named: '" + blocks[0] + "'  not found.");
+                }
+                else
+                    console.warn("citem named: '" + blocks[0] + "' not possessed by actor.");
+
+                rawexp = rawexp.replace(idtoreplace, replacewith);
+            }
+        }*/
 
         //Parse target attributes
         let targetexp = rollexp.match(/(?<=\#{target\|)\S*?(?=\})/g);
@@ -3407,78 +3508,6 @@ export class gActor extends Actor {
         //Parse Roll
         rollexp = await auxMeth.autoParser(rollexp, actorattributes, citemattributes, true, false, number);
 
-        // //ADDer to target implementation - add(property, value)
-        // let is_adding = false
-        // let addblock = {};
-        // let adder = rollexp.match(/(?<=\badd\b\().*?(?=\))/g);
-        // if (adder != null) {
-        //     is_adding = true;
-        //     for (let i = 0; i < adder.length; i++) {
-        //         let tochange = "add(" + adder[i] + ")";
-        //         let blocks = adder[i].split(";");
-        //         addblock.addprop = await auxMeth.autoParser(blocks[0], actorattributes, citemattributes, true, false, number);
-        //         addblock.addvalue = 0;
-        //         addblock.addvalue = await auxMeth.autoParser(blocks[1], actorattributes, citemattributes, false, false, number);
-        //         addblock.addvalue = Number(addblock.addvalue);
-
-        //         rollexp = rollexp.replace(tochange, "");
-        //         rollformula = rollformula.replace(tochange, "");
-        //     }
-
-        // }
-
-        // // ADDER implementatin
-        // if (target != null && is_adding) {
-
-        //     let targetattributes = target.actor.data.data.attributes;
-        //     if (targetattributes[addblock.addprop] != null) {
-        //         let attvalue = parseInt(targetattributes[addblock.addprop].value);
-        //         attvalue += parseInt(addblock.addvalue);
-
-        //         let tokenId = target.id;
-
-        //         this.requestToGM(this, tokenId, addblock.addprop, attvalue);
-        //     }
-
-
-        // }
-
-        // //SETer to target implementation - set(property, value)
-        // let is_seting = false
-        // let setblock = {};
-        // let setter = rollexp.match(/(?<=\bset\b\().*?(?=\))/g);
-        // if (setter != null) {
-        //     is_seting = true;
-        //     for (let i = 0; i < setter.length; i++) {
-        //         let tochange = "set(" + setter[i] + ")";
-        //         let blocks = setter[i].split(";");
-        //         setblock.setprop = await auxMeth.autoParser(blocks[0], actorattributes, citemattributes, true, false, number);
-        //         setblock.setvalue = 0;
-        //         setblock.setvalue = await auxMeth.autoParser(blocks[1], actorattributes, citemattributes, false, false, number);
-        //         setblock.setvalue = Number(setblock.setvalue);
-
-        //         rollexp = rollexp.replace(tochange, "");
-        //         rollformula = rollformula.replace(tochange, "");
-        //     }
-
-        // }
-
-        // // SETER implementatin
-        // if (target != null && is_seting) {
-
-        //     let targetattributes = target.actor.data.data.attributes;
-        //     if (targetattributes[setblock.setprop] != null) {
-        //         //targetattributes[setblock.setprop].value = setblock.setvalue;
-        //         //console.log("changing token prop " + setblock.setprop + " to " + targetattributes[setblock.setprop].value);
-
-        //         let tokenId = target.id;
-        //         //let mytoken = canvas.tokens.get(tokenId);
-        //         this.requestToGM(this, tokenId, setblock.setprop, setblock.setvalue);
-        //         //await mytoken.update({"data.attributes":targetattributes},{diff:false});
-        //     }
-
-        // }
-
         //Remove conditionalexp and save it
         let condid = rollexp.match(/(?<=\&\&)(.*?)(?=\&\&)/g);
         if (condid != null) {
@@ -3532,25 +3561,24 @@ export class gActor extends Actor {
             }
         }
 
-        //EXPRESSION CATCHERS, REMOVE ANYTHING THAT DOES NOT NEED TO BE PARSED FOR RESULT
-        // ALONDAAR
+        // ALONDAAR -- EXPRESSION CATCHERS, REMOVE ANYTHING THAT DOES NOT NEED TO BE PARSED FOR RESULT
         //ADDer to target implementation - add(property;value)
         let addArray = null;
-        [addArray, rollexp, rollformula] = await this.extractExpression("ADD", rollexp, rollformula);
+        [addArray, rollexp, rollformula] = await this.extractExpression("add", rollexp, rollformula);
 
         let addSelfArray = null;
-        [addSelfArray, rollexp, rollformula] = await this.extractExpression("ADDSELF", rollexp, rollformula);
+        [addSelfArray, rollexp, rollformula] = await this.extractExpression("addself", rollexp, rollformula);
 
-        //SETer to target implementation - set(property, value)
+        //SETer to target implementation - set(property;value)
         let setArray = null;
-        [setArray, rollexp, rollformula] = await this.extractExpression("SET", rollexp, rollformula);
+        [setArray, rollexp, rollformula] = await this.extractExpression("set", rollexp, rollformula);
 
         let setSelfArray = null;
-        [setSelfArray, rollexp, rollformula] = await this.extractExpression("SETSELF", rollexp, rollformula);
+        [setSelfArray, rollexp, rollformula] = await this.extractExpression("setself", rollexp, rollformula);
 
         // Rollable Table from expression: table(table_name;optional_value)
         let tableArray = null;
-        [tableArray, rollexp, rollformula] = await this.extractExpression("TABLE", rollexp, rollformula);
+        [tableArray, rollexp, rollformula] = await this.extractExpression("table", rollexp, rollformula);
 
         //ALONDAAR -- Table Lookup from expression: lookupj(journalName;column;row;optionalDefault)
         // JOURNAL NAME SHOULD BE UNIQUE FROM OTHER JOURNALS!
@@ -3639,141 +3667,11 @@ export class gActor extends Actor {
         if (roll.formula.charAt(0) != "-" || roll.formula.charAt(0) != "0")
             multiroll.push(roll);
 
-        //ALONDAAR REPLACE TOTAL IN ADDer WITH rolltotal, and applies all add() to target
-        if (addArray != null) {
-            for (let i = 0; i < addArray.length; i++) {
-                let blocks = addArray[i].split(";");
-                let parseprop = await auxMeth.autoParser(blocks[0], actorattributes, citemattributes, true, false, number);
-
-                blocks[1] = blocks[1].replace(/\btotal\b/g, rolltotal);
-                let parsevalue = await auxMeth.autoParser(blocks[1], actorattributes, citemattributes, false, false, number);
-                parsevalue = Number(parsevalue);
-                if (isNaN(parsevalue)) {
-                    console.warn("add(" + addArray[i] + ") NaN detected.");
-                    break;
-                }
-
-                if (target != null) {
-                    let targetattributes = target.actor.data.data.attributes;
-                    let tokenId = target.id;
-
-                    if (targetattributes != null && targetattributes[parseprop] != null) {
-                        let attvalue = Number(targetattributes[parseprop].value);
-                        if (isNaN(attvalue)) {
-                            console.warn("add(" + addArray[i] + ") NaN detected.");
-                            break;
-                        }
-                        let parsedPropDatatype = game.items.find(y => y.id == targetattributes[parseprop].id).data.data.datatype;
-                        if (parsedPropDatatype == "simplenumeric" || parsedPropDatatype == "simpletext" || parsedPropDatatype == "badge" || parsedPropDatatype == "radio")
-                            attvalue += parsevalue;
-                        else
-                            break;
-
-                        await this.requestToGM(this, tokenId, parseprop, attvalue);
-                    }
-                }
-            }
-        }
-
-        // ALONDAAR -- ADDSELF()
-        if (addSelfArray != null) {
-            for (let i = 0; i < addSelfArray.length; i++) {
-                let blocks = addSelfArray[i].split(";");
-                let parseprop = await auxMeth.autoParser(blocks[0], actorattributes, citemattributes, true, false, number);
-
-                blocks[1] = blocks[1].replace(/\btotal\b/g, rolltotal);
-                let parsevalue = await auxMeth.autoParser(blocks[1], actorattributes, citemattributes, false, false, number);
-                parsevalue = Number(parsevalue);
-                if (isNaN(parsevalue)) {
-                    ui.notifications.warn("addself(" + addArray[i] + ") NaN detected.");
-                    break;
-                }
-
-                let targetattributes = this.data.data.attributes;
-
-                if (targetattributes != null && targetattributes[parseprop] != null) {
-                    let attvalue = Number(targetattributes[parseprop].value);
-                    if (isNaN(attvalue)) {
-                        console.warn("addself(" + addArray[i] + ") NaN detected.");
-                        break;
-                    }
-                    let parsedPropDatatype = game.items.find(y => y.id == targetattributes[parseprop].id).data.data.datatype;
-                    if (parsedPropDatatype == "simplenumeric" || parsedPropDatatype == "simpletext" || parsedPropDatatype == "badge" || parsedPropDatatype == "radio")
-                        attvalue += parsevalue;
-                    else
-                        break;
-
-                    await this.update({ [`data.attributes.${parseprop}.value`]: attvalue });
-                }
-            }
-        }
-
-        //ALONDAAR REPLACE TOTAL IN SETter WITH rolltotal, and applies all set() to target
-        if (setArray != null) {
-            for (let i = 0; i < setArray.length; i++) {
-                let blocks = setArray[i].split(";");
-                let parseprop = await auxMeth.autoParser(blocks[0], actorattributes, citemattributes, true, false, number);
-
-                blocks[1] = blocks[1].replace(/\btotal\b/g, rolltotal);
-                let parsevalue = await auxMeth.autoParser(blocks[1], actorattributes, citemattributes, false, false, number);
-
-                if (target != null) {
-                    let targetattributes = target.actor.data.data.attributes;
-                    let tokenId = target.id;
-
-                    if (targetattributes != null && targetattributes[parseprop] != null) {
-                        let attvalue = targetattributes[parseprop].value;
-                        let parsedPropDatatype = game.items.find(y => y.id == targetattributes[parseprop].id).data.data.datatype;
-                        if (parsedPropDatatype == "simpletext" || parsedPropDatatype == "checkbox" || parsedPropDatatype == "textarea")
-                            attvalue = parsevalue;
-                        else if (parsedPropDatatype == "simplenumeric" || parsedPropDatatype == "badge" || parsedPropDatatype == "radio") {
-                            parsevalue = Number(parsevalue);
-                            if (isNaN(parsevalue)) {
-                                ui.notifications.warn("set(" + setArray[i] + ") NaN detected.");
-                                break;
-                            }
-                            attvalue = parsevalue;
-                        }
-                        else
-                            break;
-
-                        await this.requestToGM(this, tokenId, parseprop, attvalue);
-                    }
-                }
-            }
-        }
-
-        // ALONDAAR -- SETSELF()
-        if (setSelfArray != null) {
-            for (let i = 0; i < setSelfArray.length; i++) {
-                let blocks = setSelfArray[i].split(";");
-                let parseprop = await auxMeth.autoParser(blocks[0], actorattributes, citemattributes, true, false, number);
-
-                blocks[1] = blocks[1].replace(/\btotal\b/g, rolltotal);
-                let parsevalue = await auxMeth.autoParser(blocks[1], actorattributes, citemattributes, false, false, number);
-
-                let targetattributes = this.data.data.attributes;
-
-                if (targetattributes != null && targetattributes[parseprop] != null) {
-                    let attvalue = targetattributes[parseprop].value;
-                    let parsedPropDatatype = game.items.find(y => y.id == targetattributes[parseprop].id).data.data.datatype;
-                    if (parsedPropDatatype == "simpletext" || parsedPropDatatype == "checkbox" || parsedPropDatatype == "textarea")
-                        attvalue = parsevalue;
-                    else if (parsedPropDatatype == "simplenumeric" || parsedPropDatatype == "badge" || parsedPropDatatype == "radio") {
-                        parsevalue = Number(parsevalue);
-                        if (isNaN(parsevalue)) {
-                            ui.notifications.warn("setself(" + setArray[i] + ") NaN detected.");
-                            break;
-                        }
-                        attvalue = parsevalue;
-                    }
-                    else
-                        break;
-
-                    await this.update({ [`data.attributes.${parseprop}.value`]: attvalue });
-                }
-            }
-        }
+        // Alondaar -- Actually parse the ADD/SETs that were found earlier
+        await this.parseAddSet(addArray, "add", target, actorattributes, citemattributes, number, rolltotal);
+        await this.parseAddSet(addSelfArray, "add", "SELF", actorattributes, citemattributes, number, rolltotal);
+        await this.parseAddSet(setArray, "set", target, actorattributes, citemattributes, number, rolltotal);
+        await this.parseAddSet(setSelfArray, "set", "SELF", actorattributes, citemattributes, number, rolltotal);
 
         //CHECK CRITS AND FUMBLES TO COLOR THE ROLL
         let hascrit = false;
@@ -4216,9 +4114,5 @@ export class gActor extends Actor {
         //        }
         //        )();
 
-
-
     }
-
-
 }
