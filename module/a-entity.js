@@ -194,7 +194,7 @@ export class gActor extends Actor {
 
                         for (const [propKey, propValues] of Object.entries(actorData.attributes)) {
                             let propKeyObj = game.items.find(y => y.data.data.attKey == propKey);
-                            if(propKeyObj != null && propKeyObj != undefined && propKeyObj != "") //skip mismatch data (CREATE mod)
+                            if (propKeyObj != null && propKeyObj != undefined && propKeyObj != "") //skip mismatch data (CREATE mod)
                                 if (propKeyObj.data.data.datatype == "checkbox" && propKey != key) {
                                     let pointerchkgroupArray = propKeyObj.data.data.checkgroup.split(";");
                                     for (let z = 0; z < chkgroupArray.length; z++) {
@@ -212,13 +212,13 @@ export class gActor extends Actor {
                                     if (propKey != propObj.data.data.attKey) {
                                         let propKeyObj = game.items.find(y => y.data.data.attKey == propKey);
                                         if (propKeyObj != null && propKeyObj != "" && propKeyObj != undefined) {
-                                                let pointerchkgroupArray = propKeyObj.data.data.checkgroup.split(";");
-                                                for (let z = 0; z < chkgroupArray.length; z++) {
-                                                    let checkKey = chkgroupArray[z];
-                                                    let parsedKey = await auxMeth.autoParser(checkKey, this.actor.data.data.attributes, citem.attributes, true);
-                                                    if (pointerchkgroupArray.includes(parsedKey))
-                                                        propValues.value = false;
-                                                }
+                                            let pointerchkgroupArray = propKeyObj.data.data.checkgroup.split(";");
+                                            for (let z = 0; z < chkgroupArray.length; z++) {
+                                                let checkKey = chkgroupArray[z];
+                                                let parsedKey = await auxMeth.autoParser(checkKey, this.actor.data.data.attributes, citem.attributes, true);
+                                                if (pointerchkgroupArray.includes(parsedKey))
+                                                    propValues.value = false;
+                                            }
                                         }
                                     }
                                 }
@@ -3165,7 +3165,7 @@ export class gActor extends Actor {
                 if (keepImpMod[i].mod)
                     finalroll.dice[i].modifiers.push(keepImpMod[i].mod);
 
-            if (game.dice3d != null  && !nochat) //Dice So Nice Module
+            if (game.dice3d != null && !nochat) //Dice So Nice Module
                 await game.dice3d.showForRoll(partroll, game.user, true, ToGM, blindmode);
 
             sRoll.results = finalroll;
@@ -3620,7 +3620,7 @@ export class gActor extends Actor {
         //ROLL EXPRESSION - ROLL TOTAL
         let partroll = new Roll(rollexp);
         roll = await partroll.evaluate({ async: true });
-        if (game.dice3d != null  && !nochat) {
+        if (game.dice3d != null && !nochat) {
             let rollblind = blindmode;
             let noshow = true;
             if (game.user.isGM)
@@ -3653,22 +3653,24 @@ export class gActor extends Actor {
                     break;
                 }
 
-                let targetattributes = target.actor.data.data.attributes;
-                let tokenId = target.id;
+                if (target != null) {
+                    let targetattributes = target.actor.data.data.attributes;
+                    let tokenId = target.id;
 
-                if (targetattributes != null && targetattributes[parseprop] != null) {
-                    let attvalue = Number(targetattributes[parseprop].value);
-                    if (isNaN(attvalue)) {
-                        console.warn("add(" + addArray[i] + ") NaN detected.");
-                        break;
+                    if (targetattributes != null && targetattributes[parseprop] != null) {
+                        let attvalue = Number(targetattributes[parseprop].value);
+                        if (isNaN(attvalue)) {
+                            console.warn("add(" + addArray[i] + ") NaN detected.");
+                            break;
+                        }
+                        let parsedPropDatatype = game.items.find(y => y.id == targetattributes[parseprop].id).data.data.datatype;
+                        if (parsedPropDatatype == "simplenumeric" || parsedPropDatatype == "simpletext" || parsedPropDatatype == "badge" || parsedPropDatatype == "radio")
+                            attvalue += parsevalue;
+                        else
+                            break;
+
+                        await this.requestToGM(this, tokenId, parseprop, attvalue);
                     }
-                    let parsedPropDatatype = game.items.find(y => y.id == targetattributes[parseprop].id).data.data.datatype;
-                    if (parsedPropDatatype == "simplenumeric" || parsedPropDatatype == "simpletext" || parsedPropDatatype == "badge" || parsedPropDatatype == "radio")
-                        attvalue += parsevalue;
-                    else
-                        break;
-
-                    await this.requestToGM(this, tokenId, parseprop, attvalue);
                 }
             }
         }
@@ -3687,7 +3689,7 @@ export class gActor extends Actor {
                     break;
                 }
 
-                targetattributes = this.data.data.attributes;
+                let targetattributes = this.data.data.attributes;
 
                 if (targetattributes != null && targetattributes[parseprop] != null) {
                     let attvalue = Number(targetattributes[parseprop].value);
@@ -3715,26 +3717,28 @@ export class gActor extends Actor {
                 blocks[1] = blocks[1].replace(/\btotal\b/g, rolltotal);
                 let parsevalue = await auxMeth.autoParser(blocks[1], actorattributes, citemattributes, false, false, number);
 
-                let targetattributes = target.actor.data.data.attributes;
-                let tokenId = target.id;
+                if (target != null) {
+                    let targetattributes = target.actor.data.data.attributes;
+                    let tokenId = target.id;
 
-                if (targetattributes != null && targetattributes[parseprop] != null) {
-                    let attvalue = targetattributes[parseprop].value;
-                    let parsedPropDatatype = game.items.find(y => y.id == targetattributes[parseprop].id).data.data.datatype;
-                    if (parsedPropDatatype == "simpletext" || parsedPropDatatype == "checkbox" || parsedPropDatatype == "textarea")
-                        attvalue = parsevalue;
-                    else if (parsedPropDatatype == "simplenumeric" || parsedPropDatatype == "badge" || parsedPropDatatype == "radio") {
-                        parsevalue = Number(parsevalue);
-                        if (isNaN(parsevalue)) {
-                            ui.notifications.warn("set(" + setArray[i] + ") NaN detected.");
-                            break;
+                    if (targetattributes != null && targetattributes[parseprop] != null) {
+                        let attvalue = targetattributes[parseprop].value;
+                        let parsedPropDatatype = game.items.find(y => y.id == targetattributes[parseprop].id).data.data.datatype;
+                        if (parsedPropDatatype == "simpletext" || parsedPropDatatype == "checkbox" || parsedPropDatatype == "textarea")
+                            attvalue = parsevalue;
+                        else if (parsedPropDatatype == "simplenumeric" || parsedPropDatatype == "badge" || parsedPropDatatype == "radio") {
+                            parsevalue = Number(parsevalue);
+                            if (isNaN(parsevalue)) {
+                                ui.notifications.warn("set(" + setArray[i] + ") NaN detected.");
+                                break;
+                            }
+                            attvalue = parsevalue;
                         }
-                        attvalue = parsevalue;
-                    }
-                    else
-                        break;
+                        else
+                            break;
 
-                    await this.requestToGM(this, tokenId, parseprop, attvalue);
+                        await this.requestToGM(this, tokenId, parseprop, attvalue);
+                    }
                 }
             }
         }
@@ -3748,7 +3752,7 @@ export class gActor extends Actor {
                 blocks[1] = blocks[1].replace(/\btotal\b/g, rolltotal);
                 let parsevalue = await auxMeth.autoParser(blocks[1], actorattributes, citemattributes, false, false, number);
 
-                targetattributes = this.data.data.attributes;
+                let targetattributes = this.data.data.attributes;
 
                 if (targetattributes != null && targetattributes[parseprop] != null) {
                     let attvalue = targetattributes[parseprop].value;
@@ -3966,7 +3970,7 @@ export class gActor extends Actor {
                         blocks[1] = blocks[1].replaceAll(/total/ig, rolltotal);
                     parsevalue = await auxMeth.autoParser(blocks[1], actorattributes, citemattributes, false, false, number);
                     parsevalue = Number(parsevalue);
-                    if(isNaN(parsevalue))
+                    if (isNaN(parsevalue))
                         break;
                     const table_roll = await new Roll(`${parsevalue}`);
 
