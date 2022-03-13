@@ -390,11 +390,12 @@
             {{#ifNot item.data.data.datatype "textarea"}}
             {{#ifNot item.data.data.datatype "list"}}
             {{#ifNot item.data.data.datatype "label"}}
-            {{#ifNot item.data.data.datatype "checkbox"}}
+            
 
             <div class="flexblock">
                 {{#ifNot item.data.data.datatype "simpletext"}}
                 {{#ifNot item.data.data.datatype "button"}}
+                {{#ifNot item.data.data.datatype "checkbox"}}
                 <div class="col-1-2">
                     <div class="new-row">
                         <div class="flexblock-left">
@@ -421,6 +422,7 @@
                 </div>
                 {{/ifNot}}
                 {{/ifNot}}
+                {{/ifNot}}
             </div>
             {{#ifNot item.data.data.datatype "button"}}
             <div class="col-1-1">
@@ -439,7 +441,7 @@
             {{/ifNot}}
             {{/ifNot}}
             {{/ifNot}}
-            {{/ifNot}}
+            
 
             {{#ifCond item.data.data.datatype "list"}}
             <div class="flexblock">
