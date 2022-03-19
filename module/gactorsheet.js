@@ -256,6 +256,17 @@ export class gActorSheet extends ActorSheet {
 
         });
 
+        // Alondaar Drag events for macros.
+        if (this.actor.isOwner) {
+            let handler = ev => this._onDragStart(ev);
+            // Find all items on the character sheet.
+            html.find('.rollable').each((i, rollable) => {
+                // Add draggable attribute and dragstart listener.
+                rollable.setAttribute("draggable", true);
+                rollable.addEventListener("dragstart", handler, false);
+            });
+        }
+
         html.find('.customcheck').click(ev => {
             ev.preventDefault();
             //console.log("Aqui");
@@ -525,6 +536,59 @@ export class gActorSheet extends ActorSheet {
 
         });
 
+    }
+
+    /* ALONDAAR
+    * Sets up the data transfer within a drag event. This function is triggered
+    * when the user starts dragging any rollable element, and dataTransfer is set to the 
+    * relevant data needed by the _onDrop function.
+    */
+    _onDragStart(event, attrID = null, attKey = null, citemID = null, citemKey = null, ciRoll = false, isFree = false, tableKey = null, useData = null) {
+        // If lazily calling _onDragStart(event) with no other parameters
+        // then assume you want a standard actor property (ID, Key)
+        if (!attrID)
+            attrID = event.currentTarget.getAttribute("attid");
+        if (!attKey)
+            attKey = event.currentTarget.getAttribute("id");
+
+        let propertyItem = game.items.get(attrID);
+        let tag = propertyItem.data.data.tag;
+        // If tag is blank, use the property key instead? could also use the item's name.
+        if (tag == "")
+            tag = propertyItem.data.data.attKey
+        let img = propertyItem.img;
+
+        // Use cItem image and name + property tag
+        if (citemID != null && !isFree) {
+            let cItem = game.items.get(citemID);
+            tag = cItem.name + " " + tag;
+            img = cItem.img;
+        }
+
+        // Use Group or Table img & name?
+        if (isFree) {
+            let tableItem = game.items.contents.find(i => i.data.data.attKey === tableKey);
+            let groupItem = game.items.get(tableItem.data.data.group.id);
+            tag = groupItem.name + " " + tag + " (" + citemID + ")";
+            img = groupItem.img;
+        }
+
+        event.dataTransfer.setData("text/plain", JSON.stringify({
+            type: "rollable",
+            actorId: this.actor.data._id,
+            data: {
+                attrID: attrID,
+                attKey: attKey,
+                citemID: citemID,
+                citemKey: citemKey,
+                ciRoll: ciRoll,
+                isFree: isFree,
+                tableKey: tableKey,
+                useData: useData,
+                tag: tag,
+                img: img
+            }
+        }));
     }
 
     async generateRollDialog(dialogID, dialogName, rollexp, rollname, rollid, actorattributes, citemattributes, number, rollcitemID, targets, useData) {
@@ -3912,6 +3976,12 @@ ${dialogPanel.data.data.title}
                                             }
 
                                             if (propdata.hasroll) {
+                                                // Alondaar Drag events for macros.
+                                                if (this.actor.isOwner) {
+                                                    let handler = ev => this._onDragStart(ev, groupprops[k].id, propdata.attKey, ciObject.id, ciObject.ciKey, false, isFree, tableKey, null);
+                                                    new_cell.setAttribute("draggable", true);
+                                                    new_cell.addEventListener("dragstart", handler, false);
+                                                }
                                                 new_cell.className += " rollable";
                                                 new_cell.addEventListener('click', this._onRollCheck.bind(this, groupprops[k].id, propdata.attKey, ciObject.id, ciObject.ciKey, false, isFree, tableKey, null), false);
                                             }
@@ -5223,9 +5293,10 @@ ${dialogPanel.data.data.title}
                         fvble = prevtab.dataset.tab;
                 }
                 else if (next == "next") {
-                    if (nexttab != null && lasttab!=null)
+                    if (nexttab != null && lasttab != null)
                         fvble = nexttab.dataset.tab;
                 }
+                actorsheet._tabs[0].firstvisible = fvble;
                 foundfirst = true;
             }
         })

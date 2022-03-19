@@ -194,46 +194,36 @@ export class gActor extends Actor {
 
                         for (const [propKey, propValues] of Object.entries(actorData.attributes)) {
                             let propKeyObj = game.items.find(y => y.data.data.attKey == propKey);
-                            if (propKeyObj.data.data.datatype == "checkbox" && propKey != key) {
-                                let pointerchkgroupArray = propKeyObj.data.data.checkgroup.split(";");
-                                for (let z = 0; z < chkgroupArray.length; z++) {
-                                    let checkKey = chkgroupArray[z];
-                                    let parsedKey = await auxMeth.autoParser(checkKey, actorData.attributes, null, true);
-                                    if (pointerchkgroupArray.includes(parsedKey))
-                                        propValues.value = false;
+                            if (propKeyObj != null && propKeyObj != undefined && propKeyObj != "") //skip mismatch data (CREATE mod)
+                                if (propKeyObj.data.data.datatype == "checkbox" && propKey != key) {
+                                    let pointerchkgroupArray = propKeyObj.data.data.checkgroup.split(";");
+                                    for (let z = 0; z < chkgroupArray.length; z++) {
+                                        let checkKey = chkgroupArray[z];
+                                        let parsedKey = await auxMeth.autoParser(checkKey, actorData.attributes, null, true);
+                                        if (pointerchkgroupArray.includes(parsedKey))
+                                            propValues.value = false;
+                                    }
                                 }
-                            }
 
                         }
                         if (updateData.citems) {
                             for (let r = 0; r < updateData.citems.length; r++) {
                                 for (const [propKey, propValues] of Object.entries(updateData.citems[r].attributes)) {
-
                                     if (propKey != propObj.data.data.attKey) {
                                         let propKeyObj = game.items.find(y => y.data.data.attKey == propKey);
-                                        if (propKeyObj != null) {
-                                            if (propKeyObj != "") {
-                                                let pointerchkgroupArray = propKeyObj.data.data.checkgroup.split(";");
-                                                for (let z = 0; z < chkgroupArray.length; z++) {
-                                                    let checkKey = chkgroupArray[z];
-                                                    let parsedKey = await auxMeth.autoParser(checkKey, this.actor.data.data.attributes, citem.attributes, true);
-                                                    if (pointerchkgroupArray.includes(parsedKey))
-                                                        propValues.value = false;
-                                                }
-
+                                        if (propKeyObj != null && propKeyObj != "" && propKeyObj != undefined) {
+                                            let pointerchkgroupArray = propKeyObj.data.data.checkgroup.split(";");
+                                            for (let z = 0; z < chkgroupArray.length; z++) {
+                                                let checkKey = chkgroupArray[z];
+                                                let parsedKey = await auxMeth.autoParser(checkKey, this.actor.data.data.attributes, citem.attributes, true);
+                                                if (pointerchkgroupArray.includes(parsedKey))
+                                                    propValues.value = false;
                                             }
-
                                         }
-
-
                                     }
-
-
                                 }
                             }
                         }
-
-
                     }
 
                 }
@@ -2604,6 +2594,62 @@ export class gActor extends Actor {
                     }
                 }
 
+                // ALONDAAR lookupj now works in auto properties !!
+                // TODO: I have no idea if this is optimal or in the correct location however... 
+                /*let getLookupJ = rawexp.match(/(?<=\blookupj\b\().*?(?=\))/g);
+                if (getLookupJ != null) {
+                    for (let i = 0; i < getLookupJ.length; i++) {
+                        let tochange = "lookupj(" + getLookupJ[i] + ")";
+
+                        let blocks = getLookupJ[i].split(";");
+                        let parseprop = await auxMeth.autoParser(blocks[0], attributes, null, exprmode);
+                        let parseCol = await auxMeth.autoParser(blocks[1], attributes, null, exprmode);
+                        let parseRow = await auxMeth.autoParser(blocks[2], attributes, null, exprmode);
+                        let parseDefault = blocks[3];
+                        if (parseDefault == undefined)
+                            parseDefault = 0;
+                        else
+                            parseDefault = await auxMeth.autoParser(blocks[3], attributes, null, exprmode);
+                        let replaceValue = parseDefault;
+
+                        var myJournal = game.journal.getName(parseprop);
+                        if (myJournal != null) {
+                            var myContent = myJournal.data.content;
+                            var doc = new DOMParser().parseFromString(myContent, "text/html");
+                            let myTable = doc.getElementsByTagName("TABLE")[0];
+                            if (myTable != null) {
+                                if (myTable.rows.length > 1) {
+                                    let foundcol = null;
+
+                                    for (var j = 0, col; col = myTable.rows[0].cells[j]; j++) {
+                                        let colchecker = col.innerText.match(parseCol);
+                                        if (colchecker != null) {
+                                            foundcol = j;
+                                            break;
+                                        }
+                                    }
+
+                                    if (foundcol != null)
+                                        for (var k = 1, row; row = myTable.rows[k]; k++) {
+                                            let rowchecker = row.cells[0].innerText.match(parseRow);
+                                            if (rowchecker != null) {
+                                                replaceValue = row.cells[foundcol].innerText;
+                                                break;
+                                            }
+                                        }
+                                }
+                                else
+                                    ui.notifications.error('lookupj() -- Journal with the name "' + parseprop + '" needs a table with at least 2 rows');
+                            }
+                            else
+                                ui.notifications.error('lookupj() -- Journal with the name "' + parseprop + '" does not contain a valid HTML table.');
+                        } else
+                            ui.notifications.error('lookupj() -- Journal with the name "' + parseprop + '" does not exist.');
+
+                        rawexp = rawexp.replace(tochange, replaceValue);
+                    }
+                }*/
+
                 if (rawexp !== "") {
                     //console.log(rawexp);
                     //console.log(exprmode);
@@ -2834,6 +2880,95 @@ export class gActor extends Actor {
 
     }
 
+    // ALONDAAR - Processes Target/Self 'property update' expressions (ADD/SET)
+    // PARAM 'mode' accepts: "add" or "set"
+    // PARAM 'target' accepts: target or "SELF"
+    async parseAddSet(expArray, mode, target, actorattributes, citemattributes, number, rolltotal) {
+        if (expArray != null) {
+            for (let i = 0; i < expArray.length; i++) {
+                let blocks = expArray[i].split(";");
+                let parseprop = await auxMeth.autoParser(blocks[0], actorattributes, citemattributes, true, false, number);
+                if (parseprop.match("self.")) {
+                    parseprop = parseprop.replace("self.", "");
+                    target = "SELF";
+                }
+
+                blocks[1] = blocks[1].replace(/\btotal\b/g, rolltotal); // TODO: Make this regexp smarter? maybe enforce parenthesis
+                let parsevalue = await auxMeth.autoParser(blocks[1], actorattributes, citemattributes, false, false, number);
+
+                if (target != null) {
+                    let targetattributes = null;
+                    if (target != "SELF")
+                        targetattributes = target.actor.data.data.attributes;
+                    else
+                        targetattributes = this.data.data.attributes;
+
+                    if (targetattributes != null && targetattributes[parseprop] != null) {
+                        let attvalue = targetattributes[parseprop].value;
+                        if (mode == "add") {
+                            if (!isNaN(attvalue) && !isNaN(parsevalue)) {
+                                attvalue = parseInt(attvalue);
+                                attvalue += parseInt(parsevalue);
+                            }
+                            else {
+                                console.warn("(" + expArray[i] + ") NaN detected.");
+                                continue;
+                            }
+                        }
+
+                        if (mode == "set") {
+                            let dataType = game.items.find(y => y.id == targetattributes[parseprop].id).data.data.datatype;
+                            if (dataType == "checkbox") {
+                                if (parsevalue != "false" && parsevalue != "0")
+                                    attvalue = "true";
+                                else
+                                    attvalue = "false";
+                            }
+                            else if (dataType == "simplenumeric" || dataType == "badge" || dataType == "radio") { //TODO: BUG: Set on Badge type ignore a max value..?
+                                if (isNaN(parsevalue)) {
+                                    console.warn("(" + expArray[i] + ") NaN detected.");
+                                    continue;
+                                }
+                                attvalue = parseInt(parsevalue);
+                            }
+                            else
+                                attvalue = parsevalue;
+                        }
+
+                        if (target != "SELF")
+                            await this.requestToGM(this, target.id, parseprop, attvalue);
+                        else
+                            await this.update({ [`data.attributes.${parseprop}.value`]: attvalue });
+                    }
+                    else {
+                        console.warn("Property key: '" + parseprop + "' not found on target.");
+                        continue;
+                    }
+                }
+                else {
+                    console.warn("No target found for " + mode + "()");
+                    continue;
+                }
+            }
+        }
+    }
+
+    // ALONDAAR - Extracts a specified expression, eg str = "add" extracts all "add(...)"s
+    // And replaces found-exp with blanks, DO NOT USE FOR SUM() or in-line parsing at this time!
+    async extractExpression(str, rollexp, rollformula) {
+        //console.log("Looking for " + str + "() expressions");
+        let re = new RegExp(`(?<=\\b${str}\\b\\().*?(?=\\))`, 'gi');
+        let expArray = rollexp.match(re);
+        if (expArray != null) {
+            for (let i = 0; i < expArray.length; i++) {
+                let tochange = `${str}(${expArray[i]})`;
+                rollexp = rollexp.replace(tochange, "");
+                rollformula = rollformula.replace(tochange, "");
+            }
+        }
+
+        return [expArray, rollexp, rollformula];
+    }
 
     async rollSheetDice(rollexp, rollname, rollid, actorattributes, citemattributes, number = 1, target = null, rollcitemID = null, tokenID = null) {
 
@@ -2850,6 +2985,26 @@ export class gActor extends Actor {
 
         if (rollexp.includes("~blind~"))
             blindmode = true;
+
+        //Check roll ids
+        if (rollid == null || rollid == "")
+            rollid = [];
+
+        //Checking Roll ID's
+        for (let n = 0; n < rollid.length; n++) {
+            //console.log(rollid[n]);
+            if (rollid[n] == "init")
+                initiative = true;
+
+            if (rollid[n] == "gm")
+                gmmode = true;
+
+            if (rollid[n] == "blind")
+                blindmode = true;
+
+            if (rollid[n] == "nochat")
+                nochat = true;
+        }
 
         let linkmode = false;
 
@@ -2888,6 +3043,35 @@ export class gActor extends Actor {
             rollexp = await rollexp.replace(/\#{name}/g, citemattributes.name);
         }
 
+        // ALONDAAR -- Parse citem reference
+        // Syntax: ci(citemName;citemKey;optDefault) -- Optional Default is 0
+        /*let findCitem = rawexp.match(/(?<=\bci\b\().*?(?=\))/g);
+        if (findCitem != null) {
+            for (let j = 0; j < findCitem.length; j++) {
+                let idtoreplace = "ci(" + findCitem[j] + ")";
+                let replacewith = 0;
+                let blocks = findCitem[j].split(";");
+
+                if (blocks[2] != null)
+                    replacewith = blocks[2];
+
+                let mycitem = this.data.data.citems.find(ci => ci.name == blocks[0]);
+                if (mycitem != null) {
+                    let citemAtt = mycitem.attributes[blocks[1]];
+                    if (citemAtt != null) {
+                        let citemAttValue = citemAtt.value;
+                        if (citemAttValue != null)
+                            replacewith = citemAttValue;
+                    }
+                    else
+                        console.warn("citem key: '" + blocks[1] + "' on citem named: '" + blocks[0] + "'  not found.");
+                }
+                else
+                    console.warn("citem named: '" + blocks[0] + "' not possessed by actor.");
+
+                rawexp = rawexp.replace(idtoreplace, replacewith);
+            }
+        }*/
 
         //Parse target attributes
         let targetexp = rollexp.match(/(?<=\#{target\|)\S*?(?=\})/g);
@@ -2911,6 +3095,12 @@ export class gActor extends Actor {
 
         //Preparsing TO CHECK IF VALID EXPRESSION!!!
         rollexp = await auxMeth.autoParser(rollexp, actorattributes, citemattributes, true, false, number);
+
+        // Early check for ~nochat~ so to prevent 3D Dice from rolling
+        if (rollexp.includes("~nochat~"))
+            nochat = true;
+
+        // Check and parse roll() expressions
         while (rollexp.match(/(?<=\broll\b\().*?(?=\))/g) != null) {
 
             let rollmatch = /\broll\(/g;
@@ -2959,7 +3149,7 @@ export class gActor extends Actor {
 
                 finalroll.extraroll = true;
 
-                if (game.dice3d != null) {
+                if (game.dice3d != null && !nochat) {
 
                     await game.dice3d.showForRoll(partroll, game.user, true, ToGM, blindmode);
                 }
@@ -3019,8 +3209,183 @@ export class gActor extends Actor {
             //}
         }
 
-        rollexp = await auxMeth.autoParser(rollexp, actorattributes, citemattributes, true, false, number);
+        // Check and parse rollp() expressions
+        ///////////////ALONDAAR/////////////// BEGIN rollp() test implementation
+        // DOCUMENTATION:
+        // This new and simplified rollp() function is BEST SUITED for singular dice rolls.
+        // However, I believe any Foundry dice notation is valid, further improvements can be made.
+        // ?[roll] will still return a comma-separated list of ALL dice terms, regardless of operation
+        // ?[roll.total] will return the SINGLE fully parsed TOTAL VALUE of the roll (good for expected results when using special modifiers)
+        // New feature: "xa" -- the previously supported "Explode Adds" option. LIMIT: It will "add" any exploded dice, regardless of dice pools.
+        // New Feature "im" -- supports exploding on results of 1, or more if a number is specified.
+        while (rollexp.match(/(?<=\brollp\b\().*?(?=\))/g) != null) {
+            let rollmatch = /\brollp\(/g;
+            var rollResultResultArray;
+            var rollResult = [];
 
+            while (rollResultResultArray = rollmatch.exec(rollexp)) {
+                let suba = rollexp.substring(rollmatch.lastIndex, rollexp.length);
+                let subb = auxMeth.getParenthesString(suba);
+                rollResult.push(subb);
+            }
+
+            let subrollsexpb = rollResult;
+
+            //Split Roll
+            let tochange = "rollp(" + subrollsexpb[0] + ")";
+            let blocks = subrollsexpb[0].split(";");
+
+            //Definition of sub Roll
+            let sRoll = {};
+            sRoll.name = blocks[0];
+            // Makes auxMeth NOT parse the roll into a singluar value
+            blocks[1] = "|" + blocks[1];
+            sRoll.expr = await auxMeth.autoParser(blocks[1], actorattributes, citemattributes, false, false, number);
+            //TODO: This might be tricky if a property key used in the expression contains xa?
+            //TODO: Can probably do similar to "im" and make it "xa" on only specific rolls...
+            sRoll.addexploding = blocks[1].match(/xa/g);
+            if (sRoll.exploding != null)
+                blocks[1] = blocks[1].replace(/xa/g, "x");
+
+            //1d0 roll protection //This might not be needed anymore?
+            sRoll.expr = sRoll.expr.replace(/[0-9]+d0/g, "0");
+            sRoll.expr = sRoll.expr.replace(/(?<![0-9])0x\d+/g, "0");
+
+            let partroll = new Roll(sRoll.expr);
+            let keepImpMod = [];
+            for (let i = 0; i < partroll.dice.length; i++) {
+                keepImpMod.push({});
+                for (let k = 0; k < partroll.dice[i].modifiers.length; k++)
+                    if (partroll.dice[i].modifiers[k].includes("im"))
+                        keepImpMod[i]["mod"] = partroll.dice[i].modifiers[k];
+            }
+
+            let finalroll = await partroll.evaluate({ async: true });
+            finalroll.extraroll = true;
+            for (let i = 0; i < finalroll.dice.length; i++)
+                if (keepImpMod[i].mod)
+                    finalroll.dice[i].modifiers.push(keepImpMod[i].mod);
+
+            if (game.dice3d != null && !nochat) //Dice So Nice Module
+                await game.dice3d.showForRoll(partroll, game.user, true, ToGM, blindmode);
+
+            sRoll.results = finalroll;
+            await subrolls.push(sRoll);
+
+            rollexp = rollexp.replace(tochange, "");
+            rollformula = rollformula.replace(tochange, sRoll.expr);
+
+            // Get the dice terms of the parsed roll
+            let exptochange = '\\?\\[\\b' + sRoll.name + '\\]';
+            var re = new RegExp(exptochange, 'g');
+
+            // Get the TOTAL associated with the roll
+            let totaltochange = '\\?\\[\\b' + sRoll.name + '.total\\]';
+            var reTotal = new RegExp(totaltochange, 'g');
+
+            let mysubRoll = subrolls.find(y => y.name == sRoll.name);
+            let finalvalue = "";
+            let impTotal = 0;
+
+            if (sRoll.results != null) {
+                let currentDice = sRoll.results.dice;
+                for (let j = 0; j < currentDice.length; j++) {
+                    let dicearray = currentDice[j].results;
+                    let diceNumber = currentDice[j].number
+                    let diceMods = currentDice[j].modifiers
+
+                    // Handle Implosions on natural 1, ignores exploded dice results
+                    // Is there a way to use ".find()" method here?
+                    // Documentation: suffix "im" optional value "im2"
+                    // Causes that dice to be rolled again when a 1 OR (optional value or lower, ie "im2" implodes on 1-2)
+                    // And added to the end of the dice-array that is replaced via ?[roll] as a negative value.
+                    // currently IGNORES exploded dice results, and also does not recursively implode with further results of 1
+                    for (let m = 0; m < diceMods.length; m++) {
+                        if (diceMods[m].includes("im")) {
+                            let impValue = diceMods[m].match(/\d+/g);
+                            if (impValue == null)
+                                impValue = 1;
+
+                            let implodeCount = 0;
+                            //TODO: Set implode range to logical value (ie im2 implodes only on 2, but im<2 is 1 and 2)?
+                            for (let k = 0; k < diceNumber; k++) {
+                                if (dicearray[k].result <= impValue)
+                                    implodeCount++;
+                            }
+
+                            let subImplodingRoll = {};
+                            subImplodingRoll.name = "impl." + j;
+                            subImplodingRoll.expr = implodeCount + "d" + currentDice[j].faces;
+                            let impRoll = new Roll(subImplodingRoll.expr);
+                            let impRollFinal = await impRoll.evaluate({ async: true });
+                            impRollFinal.extraroll = true;
+                            subImplodingRoll.results = impRollFinal;
+                            await subrolls.push(subImplodingRoll);
+                            impTotal = impRollFinal.total;
+                        }
+                    }
+
+                    // Handle ADD explosions
+                    if (mysubRoll.addexploding != null) {
+                        // Count upwards from the original number of dice thrown to tally explosions
+                        let explodeCounter = diceNumber;
+                        for (let k = 0; k < diceNumber; k++) {
+                            if (k > 0)
+                                finalvalue += ",";
+
+                            let rollvalue = 0;
+                            if (dicearray[k].active && !dicearray[k].discarded)
+                                rollvalue = dicearray[k].result;
+
+                            // More testing required if this works properly or not
+                            if (dicearray[k].exploded) {
+                                rollvalue += dicearray[explodeCounter].result;
+                                while (dicearray[explodeCounter].exploded)
+                                    rollvalue += dicearray[++explodeCounter].result;
+                                explodeCounter++;
+                            }
+
+                            finalvalue += rollvalue;
+                        }
+                    } else {
+                        for (let k = 0; k < dicearray.length; k++) {
+                            if (k > 0)
+                                finalvalue += ",";
+
+                            let rollvalue = 0;
+                            if (dicearray[k].active && !dicearray[k].discarded)
+                                rollvalue = dicearray[k].result;
+
+                            finalvalue += rollvalue;
+                        }
+                    }
+
+                    // Necessary if the user inputs multile dice, such as "1d4 + 2d4"
+                    if (j != currentDice.length - 1)
+                        finalvalue += ",";
+                }
+                if (currentDice.length == 0)
+                    finalvalue += "0";
+            }
+            else
+                finalvalue = 0;
+
+            //Subtract the imploded total at the end
+            if (finalvalue != 0 && impTotal != 0)
+                finalvalue += ",-" + impTotal;
+
+            console.log(finalvalue);
+
+            rollformula = rollformula.replace(re, sRoll.expr);
+            rollexp = rollexp.replace(re, finalvalue);
+            rollformula = rollformula.replace(reTotal, sRoll.expr);
+            rollexp = rollexp.replace(reTotal, sRoll.results.total);
+            rollexp = await auxMeth.autoParser(rollexp, actorattributes, citemattributes, true, false, number);
+            rollformula = rollexp;
+        }
+        ////////////////////////////// END rollp() text implementation
+
+        rollexp = await auxMeth.autoParser(rollexp, actorattributes, citemattributes, true, false, number);
 
         //PARSING FOLL FORMULA, TO IMPROVE!!!
         var sumResult = rollformula.match(/(?<=\bsum\b\().*?(?=\))/g);
@@ -3071,33 +3436,10 @@ export class gActor extends Actor {
         }
         rollformula = rollformula.replace(/\bcountE\b\(.*?\)/g, "");
 
-        //Check roll ids
-        if (rollid == null)
-            rollid = [];
-
-        if (rollid == "")
-            rollid = [];
-
-        for (let n = 0; n < rollid.length; n++) {
-            //console.log(rollid[n]);
-            if (rollid[n] == "init")
-                initiative = true;
-
-            if (rollid[n] == "gm")
-                gmmode = true;
-
-            if (rollid[n] == "blind")
-                blindmode = true;
-
-            if (rollid[n] == "nochat")
-                nochat = true;
-        }
-
         //Remove rollIDs and save them
         let parseid = rollexp.match(/(?<=\~)\S*?(?=\~)/g);
 
         //ADV & DIS to rolls
-
         var findIF = rollexp.search("if");
         var findADV = rollexp.search("~ADV~");;
         var findDIS = rollexp.search("~DIS~");
@@ -3124,10 +3466,10 @@ export class gActor extends Actor {
                 if (parseid[j] == "gm")
                     gmmode = true;
 
-                if (parseid[j] == "blind")
+                if (parseid[j] == "blind") // TODO: This is checked early... Remove?
                     blindmode = true;
 
-                if (parseid[j] == "nochat")
+                if (parseid[j] == "nochat") // TODO: This is checked early... Remove?
                     nochat = true;
 
                 if (findIF != -1) {
@@ -3165,78 +3507,6 @@ export class gActor extends Actor {
 
         //Parse Roll
         rollexp = await auxMeth.autoParser(rollexp, actorattributes, citemattributes, true, false, number);
-
-        // //ADDer to target implementation - add(property, value)
-        // let is_adding = false
-        // let addblock = {};
-        // let adder = rollexp.match(/(?<=\badd\b\().*?(?=\))/g);
-        // if (adder != null) {
-        //     is_adding = true;
-        //     for (let i = 0; i < adder.length; i++) {
-        //         let tochange = "add(" + adder[i] + ")";
-        //         let blocks = adder[i].split(";");
-        //         addblock.addprop = await auxMeth.autoParser(blocks[0], actorattributes, citemattributes, true, false, number);
-        //         addblock.addvalue = 0;
-        //         addblock.addvalue = await auxMeth.autoParser(blocks[1], actorattributes, citemattributes, false, false, number);
-        //         addblock.addvalue = Number(addblock.addvalue);
-
-        //         rollexp = rollexp.replace(tochange, "");
-        //         rollformula = rollformula.replace(tochange, "");
-        //     }
-
-        // }
-
-        // // ADDER implementatin
-        // if (target != null && is_adding) {
-
-        //     let targetattributes = target.actor.data.data.attributes;
-        //     if (targetattributes[addblock.addprop] != null) {
-        //         let attvalue = parseInt(targetattributes[addblock.addprop].value);
-        //         attvalue += parseInt(addblock.addvalue);
-
-        //         let tokenId = target.id;
-
-        //         this.requestToGM(this, tokenId, addblock.addprop, attvalue);
-        //     }
-
-
-        // }
-
-        // //SETer to target implementation - set(property, value)
-        // let is_seting = false
-        // let setblock = {};
-        // let setter = rollexp.match(/(?<=\bset\b\().*?(?=\))/g);
-        // if (setter != null) {
-        //     is_seting = true;
-        //     for (let i = 0; i < setter.length; i++) {
-        //         let tochange = "set(" + setter[i] + ")";
-        //         let blocks = setter[i].split(";");
-        //         setblock.setprop = await auxMeth.autoParser(blocks[0], actorattributes, citemattributes, true, false, number);
-        //         setblock.setvalue = 0;
-        //         setblock.setvalue = await auxMeth.autoParser(blocks[1], actorattributes, citemattributes, false, false, number);
-        //         setblock.setvalue = Number(setblock.setvalue);
-
-        //         rollexp = rollexp.replace(tochange, "");
-        //         rollformula = rollformula.replace(tochange, "");
-        //     }
-
-        // }
-
-        // // SETER implementatin
-        // if (target != null && is_seting) {
-
-        //     let targetattributes = target.actor.data.data.attributes;
-        //     if (targetattributes[setblock.setprop] != null) {
-        //         //targetattributes[setblock.setprop].value = setblock.setvalue;
-        //         //console.log("changing token prop " + setblock.setprop + " to " + targetattributes[setblock.setprop].value);
-
-        //         let tokenId = target.id;
-        //         //let mytoken = canvas.tokens.get(tokenId);
-        //         this.requestToGM(this, tokenId, setblock.setprop, setblock.setvalue);
-        //         //await mytoken.update({"data.attributes":targetattributes},{diff:false});
-        //     }
-
-        // }
 
         //Remove conditionalexp and save it
         let condid = rollexp.match(/(?<=\&\&)(.*?)(?=\&\&)/g);
@@ -3291,39 +3561,83 @@ export class gActor extends Actor {
             }
         }
 
-        //EXPRESSION CATCHERS, REMOVE ANYTHING THAT DOES NOT NEED TO BE PARSED FOR RESULT
-
+        // ALONDAAR -- EXPRESSION CATCHERS, REMOVE ANYTHING THAT DOES NOT NEED TO BE PARSED FOR RESULT
         //ADDer to target implementation - add(property;value)
-        //ALONDAAR MOVED PARSING TO AFTER ROLLTOTAL
-        let adder = rollexp.match(/(?<=\badd\b\().*?(?=\))/g);
-        if (adder != null) {
-            for (let i = 0; i < adder.length; i++) {
-                let tochange = "add(" + adder[i] + ")";
-                rollexp = rollexp.replace(tochange, "");
-                rollformula = rollformula.replace(tochange, "");
-            }
-        }
+        let addArray = null;
+        [addArray, rollexp, rollformula] = await this.extractExpression("add", rollexp, rollformula);
 
-        //SETer to target implementation - set(property, value)
-        //BASED ON ALONDAAR CODE
-        let setter = rollexp.match(/(?<=\bset\b\().*?(?=\))/g);
-        if (setter != null) {
-            for (let i = 0; i < setter.length; i++) {
-                let tochange = "set(" + setter[i] + ")";
-                rollexp = rollexp.replace(tochange, "");
-                rollformula = rollformula.replace(tochange, "");
-            }
-        }
+        let addSelfArray = null;
+        [addSelfArray, rollexp, rollformula] = await this.extractExpression("addself", rollexp, rollformula);
 
-        //ALONDAAR -- Rollable Table from expression: callRollTable(table_name;optional_value)
-        let getRollableTables = rollexp.match(/(?<=\btable\b\().*?(?=\))/g);
-        if (getRollableTables != null) {
-            for (let i = 0; i < getRollableTables.length; i++) {
-                let tochange = "table(" + getRollableTables[i] + ")";
-                rollexp = rollexp.replace(tochange, "");
-                rollformula = rollformula.replace(tochange, "");
+        //SETer to target implementation - set(property;value)
+        let setArray = null;
+        [setArray, rollexp, rollformula] = await this.extractExpression("set", rollexp, rollformula);
+
+        let setSelfArray = null;
+        [setSelfArray, rollexp, rollformula] = await this.extractExpression("setself", rollexp, rollformula);
+
+        // Rollable Table from expression: table(table_name;optional_value)
+        let tableArray = null;
+        [tableArray, rollexp, rollformula] = await this.extractExpression("table", rollexp, rollformula);
+
+        //ALONDAAR -- Table Lookup from expression: lookupj(journalName;column;row;optionalDefault)
+        // JOURNAL NAME SHOULD BE UNIQUE FROM OTHER JOURNALS!
+        // ONLY ONE TABLE PER JOURNAL!
+        // LIMIT: This only applies to rolls, not auto-calc props... Can use the same logic elsewehre though?
+        /*let getLookupJ = rollexp.match(/(?<=\blookupj\b\().*?(?=\))/g);
+        if (getLookupJ != null) {
+            for (let i = 0; i < getLookupJ.length; i++) {
+                let tochange = "lookupj(" + getLookupJ[i] + ")";
+
+                let blocks = getLookupJ[i].split(";");
+                let parseprop = await auxMeth.autoParser(blocks[0], actorattributes, citemattributes, true, false, number);
+                let parseCol = await auxMeth.autoParser(blocks[1], actorattributes, citemattributes, false, false, number);
+                let parseRow = await auxMeth.autoParser(blocks[2], actorattributes, citemattributes, false, false, number);
+                let parseDefault = blocks[3];
+                if (parseDefault == undefined)
+                    parseDefault = 0;
+                else
+                    parseDefault = await auxMeth.autoParser(blocks[3], actorattributes, citemattributes, false, false, number);
+                let replaceValue = parseDefault;
+
+                var myJournal = game.journal.getName(parseprop);
+                if (myJournal != null) {
+                    var myContent = myJournal.data.content;
+                    var doc = new DOMParser().parseFromString(myContent, "text/html");
+                    let myTable = doc.getElementsByTagName("TABLE")[0];
+                    if (myTable != null) {
+                        if (myTable.rows.length > 1) {
+                            let foundcol = null;
+
+                            for (var j = 0, col; col = myTable.rows[0].cells[j]; j++) {
+                                let colchecker = col.innerText.match(parseCol);
+                                if (colchecker != null) {
+                                    foundcol = j;
+                                    break;
+                                }
+                            }
+
+                            if (foundcol != null)
+                                for (var k = 1, row; row = myTable.rows[k]; k++) {
+                                    let rowchecker = row.cells[0].innerText.match(parseRow);
+                                    if (rowchecker != null) {
+                                        replaceValue = row.cells[foundcol].innerText;
+                                        break;
+                                    }
+                                }
+                        }
+                        else
+                            ui.notifications.error('lookupj() -- Journal with the name "' + parseprop + '" needs a table with at least 2 rows');
+                    }
+                    else
+                        ui.notifications.error('lookupj() -- Journal with the name "' + parseprop + '" does not contain a valid HTML table.');
+                } else
+                    ui.notifications.error('lookupj() -- Journal with the name "' + parseprop + '" does not exist.');
+
+                rollexp = rollexp.replace(tochange, replaceValue);
+                rollformula = rollformula.replace(tochange, replaceValue);
             }
-        }
+        }*/
 
         //FIX FORMULA
         rollformula = await auxMeth.autoParser(rollformula, actorattributes, citemattributes, true, false, number);
@@ -3334,7 +3648,7 @@ export class gActor extends Actor {
         //ROLL EXPRESSION - ROLL TOTAL
         let partroll = new Roll(rollexp);
         roll = await partroll.evaluate({ async: true });
-        if (game.dice3d != null) {
+        if (game.dice3d != null && !nochat) {
             let rollblind = blindmode;
             let noshow = true;
             if (game.user.isGM)
@@ -3353,65 +3667,11 @@ export class gActor extends Actor {
         if (roll.formula.charAt(0) != "-" || roll.formula.charAt(0) != "0")
             multiroll.push(roll);
 
-        //ALONDAAR REPLACE TOTAL IN ADDer WITH rolltotal, and applies all add() to target
-        if (adder != null) {
-            for (let i = 0; i < adder.length; i++) {
-                let blocks = adder[i].split(";");
-                let parseprop = await auxMeth.autoParser(blocks[0], actorattributes, citemattributes, true, false, number);
-                let parsevalue = 0;
-                blocks[1] = blocks[1].replace(/\btotal\b/g, rolltotal);
-
-                parsevalue = await auxMeth.autoParser(blocks[1], actorattributes, citemattributes, false, false, number);
-                parsevalue = Number(parsevalue);
-
-                let parsedblock = {
-                    "addprop": parseprop,
-                    "addvalue": parsevalue
-                };
-
-                // Apply ADDer to Target
-                if (target != null) {
-                    let targetattributes = target.actor.data.data.attributes;
-                    if (targetattributes[parsedblock.addprop] != null) {
-                        let attvalue = parseInt(targetattributes[parsedblock.addprop].value);
-                        attvalue += parseInt(parsedblock.addvalue);
-                        let tokenId = target.id;
-
-                        await this.requestToGM(this, tokenId, parsedblock.addprop, attvalue);
-                    }
-                }
-            }
-        }
-
-        //ALONDAAR REPLACE TOTAL IN SETter WITH rolltotal, and applies all set() to target
-        if (setter != null) {
-            for (let i = 0; i < setter.length; i++) {
-                let blocks = setter[i].split(";");
-                let parseprop = await auxMeth.autoParser(blocks[0], actorattributes, citemattributes, true, false, number);
-                let parsevalue = 0;
-                blocks[1] = blocks[1].replace(/\btotal\b/g, rolltotal);
-
-                parsevalue = await auxMeth.autoParser(blocks[1], actorattributes, citemattributes, false, false, number);
-                parsevalue = Number(parsevalue);
-
-                let parsedblock = {
-                    "setprop": parseprop,
-                    "setvalue": parsevalue
-                };
-
-                // Apply ADDer to Target
-                if (target != null) {
-                    let targetattributes = target.actor.data.data.attributes;
-                    if (targetattributes[parsedblock.setprop] != null) {
-                        let attvalue = parseInt(targetattributes[parsedblock.setprop].value);
-                        attvalue = parseInt(parsedblock.setvalue);
-                        let tokenId = target.id;
-
-                        await this.requestToGM(this, tokenId, parsedblock.setprop, attvalue);
-                    }
-                }
-            }
-        }
+        // Alondaar -- Actually parse the ADD/SETs that were found earlier
+        await this.parseAddSet(addArray, "add", target, actorattributes, citemattributes, number, rolltotal);
+        await this.parseAddSet(addSelfArray, "add", "SELF", actorattributes, citemattributes, number, rolltotal);
+        await this.parseAddSet(setArray, "set", target, actorattributes, citemattributes, number, rolltotal);
+        await this.parseAddSet(setSelfArray, "set", "SELF", actorattributes, citemattributes, number, rolltotal);
 
         //CHECK CRITS AND FUMBLES TO COLOR THE ROLL
         let hascrit = false;
@@ -3590,9 +3850,9 @@ export class gActor extends Actor {
         }
 
         //ALONDAAR -- Find and roll on the rollable table(s)
-        if (getRollableTables != null) {
-            for (let i = 0; i < getRollableTables.length; i++) {
-                let blocks = getRollableTables[i].split(";");
+        if (tableArray != null) {
+            for (let i = 0; i < tableArray.length; i++) {
+                let blocks = tableArray[i].split(";");
                 const table = game.tables.getName(blocks[0]);
 
                 let rmode = "";
@@ -3608,8 +3868,9 @@ export class gActor extends Actor {
                         blocks[1] = blocks[1].replaceAll(/total/ig, rolltotal);
                     parsevalue = await auxMeth.autoParser(blocks[1], actorattributes, citemattributes, false, false, number);
                     parsevalue = Number(parsevalue);
-                    //For some reason it doesn't like just a value
-                    const table_roll = await new Roll("0+" + parsevalue);
+                    if (isNaN(parsevalue))
+                        break;
+                    const table_roll = await new Roll(`${parsevalue}`);
 
                     table.draw({ roll: table_roll, rollMode: rmode });
                 } else {
@@ -3853,9 +4114,5 @@ export class gActor extends Actor {
         //        }
         //        )();
 
-
-
     }
-
-
 }
