@@ -331,7 +331,7 @@ export class gActorSheet extends ActorSheet {
                             let diceexpr = html[0].getElementsByClassName("dialog-dice");
                             //console.log(diceexpr[0]);
                             let finalroll = this.actor.rollSheetDice(diceexpr[0].value, "Free Roll", "", this.actor.data.data.attributes, null);
-                            //let finalroll = this.actor.rollSheetDice(rollexp,rollname,rollid,actorattributes,citemattributes,number,tokenid);
+                            
                         }
                     },
                     two: {
@@ -591,7 +591,7 @@ export class gActorSheet extends ActorSheet {
         }));
     }
 
-    async generateRollDialog(dialogID, dialogName, rollexp, rollname, rollid, actorattributes, citemattributes, number, rollcitemID, targets, useData) {
+    async generateRollDialog(dialogID, dialogName, rollexp, rollname, rollid, actorattributes, citemattributes, number, isactive,ciuses,rollcitemID, targets, useData) {
 
         //let dialogPanel = await game.items.get(dialogID);
         let dialogPanel = await auxMeth.getTElement(dialogID, "panel", dialogName);
@@ -723,7 +723,7 @@ export class gActorSheet extends ActorSheet {
 
                         }
                         //console.log(dialogProps);
-                        this.rollExpression(rollexp, rollname, rollid, actorattributes, citemattributes, number, rollcitemID, targets, dialogProps, useData);
+                        this.rollExpression(rollexp, rollname, rollid, actorattributes, citemattributes, number, isactive,ciuses,rollcitemID, targets, dialogProps, useData);
                     }
                 },
                 two: {
@@ -984,6 +984,8 @@ ${dialogPanel.data.data.title}
 
         let findcitem;
         let number;
+        let isactive;
+        let ciuses;
         let rollcitemID;
 
         if (citemID != null) {
@@ -1036,14 +1038,18 @@ ${dialogPanel.data.data.title}
 
         let targets = game.user.targets.ids;
 
-        if (findcitem != null)
+        if (findcitem != null){
             number = findcitem.number;
+            isactive = findcitem.isactive;
+            ciuses = findcitem.uses;
+        }
+            
 
         if (hasDialog) {
-            this.generateRollDialog(dialogID, dialogName, rollexp, rollname, rollid, actorattributes, citemattributes, number, rollcitemID, targets, useData);
+            this.generateRollDialog(dialogID, dialogName, rollexp, rollname, rollid, actorattributes, citemattributes, number, isactive,ciuses,rollcitemID, targets, useData);
         }
         else {
-            this.rollExpression(rollexp, rollname, rollid, actorattributes, citemattributes, number, rollcitemID, targets, null, useData)
+            this.rollExpression(rollexp, rollname, rollid, actorattributes, citemattributes, number, isactive,ciuses,rollcitemID, targets, null, useData)
         }
 
 
@@ -1051,7 +1057,7 @@ ${dialogPanel.data.data.title}
 
     }
 
-    async rollExpression(rollexp, rollname, rollid, actorattributes, citemattributes, number, rollcitemID, targets, dialogProps = null, useData = null) {
+    async rollExpression(rollexp, rollname, rollid, actorattributes, citemattributes, number, isactive,ciuses,rollcitemID, targets, dialogProps = null, useData = null) {
 
         rollexp = await auxMeth.parseDialogProps(rollexp, dialogProps);
 
@@ -1066,14 +1072,14 @@ ${dialogPanel.data.data.title}
         if (targets.length > 0 && ((rollexp.includes("#{target|") || rollexp.includes("add(")) || rollexp.includes("set("))) {
             for (let i = 0; i < targets.length; i++) {
                 tokenid = canvas.tokens.placeables.find(y => y.id == targets[i]);
-                finalroll = await this.actor.rollSheetDice(rollexp, rollname, rollid, actorattributes, citemattributes, number, tokenid, rollcitemID);
+                finalroll = await this.actor.rollSheetDice(rollexp, rollname, rollid, actorattributes, citemattributes, number, isactive,ciuses,tokenid, rollcitemID);
             }
         }
 
         else {
             if (this.actor.isToken && this.token != null)
                 tokenid = this.token.id;
-            finalroll = await this.actor.rollSheetDice(rollexp, rollname, rollid, actorattributes, citemattributes, number, null, rollcitemID, tokenid);
+            finalroll = await this.actor.rollSheetDice(rollexp, rollname, rollid, actorattributes, citemattributes, number, isactive,ciuses,null, rollcitemID, tokenid);
         }
 
         if (useData != null) {

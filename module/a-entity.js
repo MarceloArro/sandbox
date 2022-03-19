@@ -2970,7 +2970,7 @@ export class gActor extends Actor {
         return [expArray, rollexp, rollformula];
     }
 
-    async rollSheetDice(rollexp, rollname, rollid, actorattributes, citemattributes, number = 1, target = null, rollcitemID = null, tokenID = null) {
+    async rollSheetDice(rollexp, rollname, rollid, actorattributes, citemattributes, number = 1, isactive = null,ciuses = null,target = null, rollcitemID = null, tokenID = null) {
 
         //console.log(rollexp);
         //console.log(rollid);
@@ -3030,8 +3030,12 @@ export class gActor extends Actor {
 
         //Check roll mode
         let rollmode = this.data.data.rollmode;
-        if (citemattributes != null)
+        if (citemattributes != null){
             rollname = rollname.replace(/\#{name}/g, citemattributes.name);
+            rollname = rollname.replace(/\#{active}/g, isactive);
+            rollname = rollname.replace(/\#{uses}/g, ciuses);
+        }
+            
 
         //Parse roll difficulty in name, and general atts
         rollname = rollname.replace(/\#{diff}/g, diff);
@@ -3041,6 +3045,8 @@ export class gActor extends Actor {
         rollexp = rollexp.replace(/\#{diff}/g, diff);
         if (citemattributes != null) {
             rollexp = await rollexp.replace(/\#{name}/g, citemattributes.name);
+            rollexp = await rollexp.replace(/\#{active}/g, isactive);
+            rollexp = await rollexp.replace(/\#{uses}/g, ciuses);
         }
 
         // ALONDAAR -- Parse citem reference
