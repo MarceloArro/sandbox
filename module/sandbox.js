@@ -423,6 +423,21 @@ Hooks.once("init", async function () {
         return newObj;
     };
 
+    /*     JournalEntry.prototype.show = async function (mode = "text", force = false) {
+        if (!this.isOwner) throw new Error("You may only request to show Journal Entries which you own.");
+        return new Promise((resolve) => {
+            game.socket.emit("showEntry", this.uuid, mode, force, entry => {
+                Journal._showEntry(this.uuid, mode, true);
+                // ui.notifications.info(game.i18n.format("JOURNAL.ActionShowSuccess", {
+                //     mode: mode,
+                //     title: this.name,
+                //     which: force ? "all" : "authorized"
+                // }));
+                return resolve(this);
+            });
+        });
+    }; */
+
     CONFIG.Combat.initiative = {
         formula: "1d20",
         decimals: 2
