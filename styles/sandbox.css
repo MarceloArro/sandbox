@@ -319,6 +319,13 @@
     font-size:13px;
 }
 
+.sandbox.sheet .label-tiny {
+    margin: 0;
+    padding: 5px 5px;
+    width: 40px;
+    font-size:13px;
+}
+
 .sandbox.sheet .list-noneditable {
     pointer-events: none;
 }
@@ -1567,7 +1574,7 @@
     font-weight: bold;
     font-size: 12px;
     text-align:center;
-    height:10%;
+    height:20px;
     width:100%;
     padding: 3px 3px;
 
@@ -1579,7 +1586,7 @@
     text-align:center;
     width:100%;
     padding:5px 5px;
-    height:10%;
+    height:70px;
 }
 
 .roll-iscrit{
@@ -2284,4 +2291,8 @@ div.dmtk-tooltip.visible {
 
 textarea:disabled {
     color: black;
+}
+
+.chat-message .message-content {
+    word-break: normal;
 }
