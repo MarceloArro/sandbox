@@ -1028,6 +1028,11 @@ Hooks.on("renderChatMessage", async (app, html, data) => {
 
     //
     //
+    let iamWhispered = data.message.whisper.find(y => y == game.user.id);
+    if (iamWhispered == null && data.message.whisper.length>0) {
+        hide = true;
+    }
+
     if (!game.user.isGM && hide) {
         //console.log(html);
         //console.log(_html);
