@@ -683,7 +683,10 @@ export class gActor extends Actor {
                                 let jumpmod = await this.checkModConditional(this.data, addsetmods[i], _basecitem);
                                 //console.log("cItem NO cumple condicional: " + jumpmod);
                                 if (((toRemove.isactive && !toRemoveObj.ispermanent) || (toRemoveObj.usetype == "PAS" && !toRemoveObj.selfdestruct)) && !jumpmod) {
-                                    if (seedprop.data.data.datatype == "list") {
+                                    
+                                    let pdatatype = seedprop?.data.data.datatype || "other";
+
+                                    if (pdatatype == "list") {
                                         let options = seedprop.data.data.listoptions.split(",");
                                         let optIndex = options.indexOf(actorAtt[attProp]);
                                         let newvalue = optIndex - myAttValue;
@@ -1753,7 +1756,9 @@ export class gActor extends Actor {
                         if (!_mod.exec || (myAtt[modvable] && !_mod.once)) {
                             myAtt.prev = myAtt[attProp];
 
-                            if (seedprop.data.data.datatype == "list") {
+                            let pdatatype = seedprop?.data.data.datatype || "other";
+
+                            if (pdatatype == "list") {
                                 let options = seedprop.data.data.listoptions.split(",");
                                 let optIndex = options.indexOf(myAtt[attProp]);
                                 let newvalue = optIndex + finalvalue;
@@ -2970,7 +2975,7 @@ export class gActor extends Actor {
         return [expArray, rollexp, rollformula];
     }
 
-    async rollSheetDice(rollexp, rollname, rollid, actorattributes, citemattributes, number = 1, isactive = null,ciuses = null,target = null, rollcitemID = null, tokenID = null) {
+    async rollSheetDice(rollexp, rollname, rollid, actorattributes, citemattributes, number = 1, isactive = null, ciuses = null, target = null, rollcitemID = null, tokenID = null) {
 
         //console.log(rollexp);
         //console.log(rollid);
@@ -2982,6 +2987,7 @@ export class gActor extends Actor {
         let gmmode = false;
         let blindmode = false;
         let nochat = false;
+        let initrollexp = rollexp;
 
         if (rollexp.includes("~blind~"))
             blindmode = true;
@@ -3030,12 +3036,12 @@ export class gActor extends Actor {
 
         //Check roll mode
         let rollmode = this.data.data.rollmode;
-        if (citemattributes != null){
+        if (citemattributes != null) {
             rollname = rollname.replace(/\#{name}/g, citemattributes.name);
             rollname = rollname.replace(/\#{active}/g, isactive);
             rollname = rollname.replace(/\#{uses}/g, ciuses);
         }
-            
+
 
         //Parse roll difficulty in name, and general atts
         rollname = rollname.replace(/\#{diff}/g, diff);
@@ -3813,43 +3819,51 @@ export class gActor extends Actor {
             iscrit: hascrit,
             isfumble: hasfumble,
             blind: blindmode,
-            link: linkmode
+            link: linkmode,
+            rollexp: initrollexp,
+            actorid: this.id,
+            msgid: null
         };
 
-        if (!nochat)
-            renderTemplate("systems/sandbox/templates/dice.html", rollData).then(html => {
-                let rolltype = document.getElementsByClassName("roll-type-select");
-                let rtypevalue = rolltype[0].value;
-                let rvalue = 0;
-                if (rtypevalue == "gmroll")
-                    rvalue = 1;
+        
 
-                var wrapper = document.createElement('div');
-                wrapper.innerHTML = html;
-                let cilink = wrapper.querySelector(".roll-citemlink");
+        if (!nochat){
+            let newhtml = await renderTemplate("systems/sandbox/templates/dice.html", rollData);
+            let rolltype = document.getElementsByClassName("roll-type-select");
+            let rtypevalue = rolltype[0].value;
+            let rvalue = 0;
+            if (rtypevalue == "gmroll")
+                rvalue = 1;
 
-                if (cilink != null)
-                    cilink.setAttribute('id', rollcitemID);
+            var wrapper = document.createElement('div');
+            wrapper.innerHTML = newhtml;
+            let cilink = wrapper.querySelector(".roll-citemlink");
 
-                //console.log(cilink);
+            if (cilink != null)
+                cilink.setAttribute('id', rollcitemID);
 
-                let messageData = {
-                    content: wrapper.innerHTML,
-                    type: rvalue,
-                    blind: blindmode
-                };
+            //console.log(cilink);
 
-                if (gmmode)
-                    messageData.whisper = ChatMessage.getWhisperRecipients('GM');
+            let messageData = {
+                content: wrapper.innerHTML,
+                type: rvalue,
+                blind: blindmode
+            };
 
-                //console.log(blindmode);
+            if (gmmode)
+                messageData.whisper = ChatMessage.getWhisperRecipients('GM');
 
-                let newmessage = ChatMessage.create(messageData);
+            //console.log(blindmode);
 
-                //if(game.user.isGM){
-                auxMeth.rollToMenu(html);
-                //}
-            });
+            let newmessage = await ChatMessage.create(messageData);
+            rollData.msgid = newmessage.id;
+
+            //if(game.user.isGM){
+            auxMeth.rollToMenu(newhtml);
+
+            //}
+        }
+        
         //console.log(initiative);
         if (initiative) {
             await this.setInit(rollData.result, tokenID);
@@ -3885,7 +3899,9 @@ export class gActor extends Actor {
             }
         }
 
-        return rollData.result;
+        //TEST SERE FOR BETTER ROLL RESULTS
+        //return rollData.result;
+        return rollData;
     }
 
     sendMsgChat(flavor, msg, submsg) {
