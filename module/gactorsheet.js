@@ -1082,14 +1082,20 @@ ${dialogPanel.data.data.title}
         if (targets.length > 0 && ((rollexp.includes("#{target|") || rollexp.includes("add(")) || rollexp.includes("set("))) {
             for (let i = 0; i < targets.length; i++) {
                 tokenid = canvas.tokens.placeables.find(y => y.id == targets[i]);
-                finalroll = await this.actor.rollSheetDice(rollexp, rollname, rollid, actorattributes, citemattributes, number, isactive, ciuses, tokenid, rollcitemID);
+                //TEST SERE FOR BETTER ROLL RESULTS
+                //finalroll = await this.actor.rollSheetDice(rollexp, rollname, rollid, actorattributes, citemattributes, number, isactive, ciuses, tokenid, rollcitemID);
+                let finalrollprev = await this.actor.rollSheetDice(rollexp, rollname, rollid, actorattributes, citemattributes, number, isactive, ciuses, tokenid, rollcitemID);
+                finalroll = finalrollprev.result;
             }
         }
 
         else {
             if (this.actor.isToken && this.token != null)
                 tokenid = this.token.id;
-            finalroll = await this.actor.rollSheetDice(rollexp, rollname, rollid, actorattributes, citemattributes, number, isactive, ciuses, null, rollcitemID, tokenid);
+            //TEST SERE FOR BETTER ROLL RESULTS
+            //finalroll = await this.actor.rollSheetDice(rollexp, rollname, rollid, actorattributes, citemattributes, number, isactive, ciuses, null, rollcitemID, tokenid);
+            let finalrollprev = await this.actor.rollSheetDice(rollexp, rollname, rollid, actorattributes, citemattributes, number, isactive, ciuses, null, rollcitemID, tokenid);
+            finalroll = finalrollprev.result;
         }
 
         if (useData != null) {
@@ -5131,9 +5137,9 @@ ${dialogPanel.data.data.title}
                             let clickValue = j;
                             radiocontainer.setAttribute("clickValue", clickValue);
                             radiocontainer.className = "radio-element";
-                            radiocontainer.style = "font-size:14px;";
-                            if (radiotype == "S")
-                                radiocontainer.style = "font-size:16px;";
+                            //radiocontainer.style = "font-size:14px;";
+                            //if (radiotype == "S")
+                                //radiocontainer.style = "font-size:16px;";
 
 
                             let radiobutton = document.createElement('i');
@@ -5247,9 +5253,9 @@ ${dialogPanel.data.data.title}
         //await this.actor.update({"data.attributes":attributes}, {diff: false});
         if (clickValue > 0) {
             target.className = "fas fa-circle";
-            target.style = "font-size:14px;";
+            //target.style = "font-size:14px;";
             if (radiotype == "S") {
-                target.style = "font-size:16px;";
+                //target.style = "font-size:16px;";
                 target.className = "fas fa-square";
             }
         }
