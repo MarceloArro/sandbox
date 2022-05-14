@@ -849,7 +849,7 @@ export class auxMeth {
         return expr;
     }
 
-    static async autoParser(expr, attributes, itemattributes, exprmode, noreg = false, number = 1) {
+    static async autoParser(expr, attributes, itemattributes, exprmode, noreg = false, number = 1, uses = 0) {
         var toreturn = expr;
         //console.log("autoparsing");
         //console.log(expr);
@@ -955,6 +955,11 @@ export class auxMeth {
         //Parses number of citems
         if (itemattributes != null && expr.includes("#{num}")) {
             expr = expr.replace(/\#{num}/g, number);
+        }
+
+        //Parses number of citems
+        if (itemattributes != null && expr.includes("#{uses}")) {
+            expr = expr.replace(/\#{uses}/g, uses);
         }
 
         if (itemattributes != null && expr.includes("#{name}")) {

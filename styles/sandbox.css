@@ -319,6 +319,13 @@
     font-size:13px;
 }
 
+.sandbox.sheet .label-tiny {
+    margin: 0;
+    padding: 5px 5px;
+    width: 40px;
+    font-size:13px;
+}
+
 .sandbox.sheet .list-noneditable {
     pointer-events: none;
 }
@@ -1550,6 +1557,7 @@
 
 .roll-delete-button{
     width:10px;
+    margin-right: 5px;
 }
 
 .roll-flavor{
@@ -2284,4 +2292,8 @@ div.dmtk-tooltip.visible {
 
 textarea:disabled {
     color: black;
+}
+
+.chat-message .message-content {
+    word-break: normal;
 }

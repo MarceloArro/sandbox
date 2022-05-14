@@ -20,7 +20,7 @@
         {{/if}}
 
         {{#if flavor}}
-        <div class="roll-flavor">
+        <div class="roll-flavor" data-rollname="{{flavor}}" data-actorId="{{actorid}}">
             {{#if link}}
             <div class="roll-citemlink">
                 {{{flavor}}}
@@ -58,32 +58,32 @@
 
             <div class="roll-detail">
                 <div class="roll-area">
-                    <div class="roll-flexrow">
+                    <div class="roll-flexrow formula-row" data-rollexp="{{rollexp}}">
                         <label class="label-roll">Formula:</label>
                         <div class="roll-formula">{{{formula}}}</div>
                     </div>
-                    <div class="roll-flexrow">
+                    <div class="roll-flexrow modifier-row">
                         <label class="label-roll">Modifier:</label>
-                        <div class="roll-formula">{{{mod}}}</div>
+                        <div class="roll-mod">{{{mod}}}</div>
                     </div>
-                    <ol class="roll-list">
+                    <ol class="roll-list regular-rolls">
                         {{#each dice as |die key|}}
                         <li class="roll-flexrow" data-item-id="{{key}}">
                             <label class="label-roll">{{{die.results.length}}}d{{{die.faces}}}:</label>
                             {{#each die.results as |roll id|}}
-                            <div class="roll-die">{{{roll.result}}}</div>
+                            <div class="roll-die regular-die">{{{roll.result}}}</div>
                             {{/each}}
                         </li>
                         {{/each}}
                     </ol>
-                    <ol class="roll-list">
+                    <ol class="roll-list sub-rolls">
                         {{#each subdice as |subdie key|}}
-                        <li class="roll-flexrow" data-item-id="{{key}}">
+                        <li class="roll-flexrow sub-roll" data-item-id="{{key}}" data-rollname="{{subdie.name}}">
                             <label class="label-roll">{{{subdie.name}}} ({{{subdie.expr}}}):</label>
                             {{#each subdie.results.dice as |subrolldie id|}}
 
                             {{#each subrolldie.results as |subrollresult cid|}}
-                            <div class="roll-die">{{{subrollresult.result}}}</div>
+                            <div class="roll-die sub-die">{{{subrollresult.result}}}</div>
                             {{/each}}
 
                             {{/each}}

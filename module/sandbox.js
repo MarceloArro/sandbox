@@ -13,6 +13,96 @@ import { SBOX } from "./config.js";
 import { auxMeth } from "./auxmeth.js";
 import { sToken } from "./sandboxtoken.js";
 
+// ALONDAAR this function creates a macro when data is dragged to the macro hotbar
+async function createSandboxMacro(data, slot) {
+    if (data.type != "rollable") return;
+    let rollData = data.data;
+
+    // Add quotes to the strings if they are NOT null/true/false
+    rollData.attrID = await placeholderParser(rollData.attrID);
+    rollData.attKey = await placeholderParser(rollData.attKey);
+    rollData.citemID = await placeholderParser(rollData.citemID);
+    rollData.citemKey = await placeholderParser(rollData.citemKey);
+    rollData.tableKey = await placeholderParser(rollData.tableKey);
+
+    // Do not put whitespace above the start of the macro,
+    // or else (command === m.data.command) is always false
+    const command =
+        `let rollData = {
+    attrID: ${rollData.attrID},
+    attKey: ${rollData.attKey},
+    citemID: ${rollData.citemID},
+    citemKey: ${rollData.citemKey},
+    ciRoll: ${rollData.ciRoll},
+    isFree: ${rollData.isFree},
+    tableKey: ${rollData.tableKey},
+    useData: ${rollData.useData}
+};
+
+// This is the ID the macro was dragged from
+// For checking Free Table ID's
+let originalActorId = "${data.actorId}";
+
+const speaker = ChatMessage.getSpeaker();
+let actor;
+if (speaker.token) actor = game.actors.tokens[speaker.token];
+if (!actor) actor = game.actors.get(speaker.actor);
+if (actor) {
+    let letsContinue = true;
+    // Check if actor possess the citem
+    if(rollData.citemKey != null)
+        if(!actor.data.data.citems.find(ci => ci.ciKey === rollData.citemKey))
+            return ui.notifications.warn("Current actor does not possess the required citem.");
+
+    // Check if the free table item still exists
+    if(rollData.isFree)
+        if(!actor.data.data.attributes[rollData.tableKey].tableitems.find(ti => ti.id === rollData.citemID))
+            return ui.notifications.warn("Current actor does not possess the referenced Free Table id.");
+        // Check if the selected actor is the original
+        else if (actor.data._id != originalActorId)
+            await Dialog.confirm({
+                title: "ARE YOU SURE ABOUT THAT?",
+                content: "You are about to roll a Free Table id that isn't from the same actor you created the macro from.<br><br>This may have unintended results due to targetting a different id owned by that actor.",
+                yes: () => {},
+                no: () => {letsContinue = false;},
+                defaultYes: true
+            });
+
+        if(letsContinue)
+            actor.sheet._onRollCheck(${rollData.attrID}, ${rollData.attKey}, ${rollData.citemID}, ${rollData.citemKey}, ${rollData.ciRoll}, ${rollData.isFree}, ${rollData.tableKey}, ${rollData.useData});
+    } else
+    ui.notifications.warn("Couldn't find actor. Select a token.");`;
+
+    let actorName = game.actors.get(data.actorId).name;
+    if (game.user.isGM)
+        actorName = "GM";
+    let macroName = "[" + actorName + "] " + rollData.tag;
+
+    let macro = game.macros.contents.find(m => (m.name === macroName) && (m.data.command === command));
+    if (!macro) {
+        macro = await Macro.create({
+            name: macroName,
+            type: "script",
+            img: rollData.img,
+            command: command,
+            flags: {},
+            permission: game.actors.get(data.actorId).data.permission
+        });
+        ui.notifications.warn('Macro created.');
+    }
+
+    await game.user.assignHotbarMacro(macro, slot);
+    return false;
+}
+
+// ALONDAAR Add quotes to the strings if they are NOT null/true/false
+async function placeholderParser(str) {
+    if (str != null && str != true && str != false) {
+        str = "\"" + str + "\"";
+    }
+    return str;
+}
+
 /* -------------------------------------------- */
 /*  Hooks                 */
 /* -------------------------------------------- */
@@ -333,6 +423,21 @@ Hooks.once("init", async function () {
         return newObj;
     };
 
+    /*     JournalEntry.prototype.show = async function (mode = "text", force = false) {
+        if (!this.isOwner) throw new Error("You may only request to show Journal Entries which you own.");
+        return new Promise((resolve) => {
+            game.socket.emit("showEntry", this.uuid, mode, force, entry => {
+                Journal._showEntry(this.uuid, mode, true);
+                // ui.notifications.info(game.i18n.format("JOURNAL.ActionShowSuccess", {
+                //     mode: mode,
+                //     title: this.name,
+                //     which: force ? "all" : "authorized"
+                // }));
+                return resolve(this);
+            });
+        });
+    }; */
+
     CONFIG.Combat.initiative = {
         formula: "1d20",
         decimals: 2
@@ -357,6 +462,8 @@ Hooks.once("init", async function () {
 
 Hooks.once('ready', async () => {
     //console.log("ready!");
+    Hooks.on("hotbarDrop", (bar, data, slot) => createSandboxMacro(data, slot)); // ALONDAAR
+
     //Custom styling
 
     if (game.settings.get("sandbox", "customStyle") != "") {
@@ -721,7 +828,7 @@ Hooks.on("preCreateItem", (entity, options, userId) => {
     //    }
     //
     //    console.log(image);
-    
+
 
 
 });
@@ -743,7 +850,7 @@ Hooks.on("createItem", async (entity) => {
         //         entity.data.data.ciKey = entity.id;
         //         do_update = true;
         //     }
-                
+
         // }
 
         for (let i = 0; i < entity.data.data.mods.length; i++) {
@@ -921,6 +1028,11 @@ Hooks.on("renderChatMessage", async (app, html, data) => {
 
     //
     //
+    let iamWhispered = data.message.whisper.find(y => y == game.user.id);
+    if (iamWhispered == null && data.message.whisper.length>0) {
+        hide = true;
+    }
+
     if (!game.user.isGM && hide) {
         //console.log(html);
         //console.log(_html);
@@ -1190,7 +1302,7 @@ Hooks.on("renderDialog", async (app, html, data) => {
 
                         let attKey = event.target.parentElement.getAttribute("attkey");
 
-                        let currentValue = await auxMeth.autoParser(dialogProps[attKey].value,app.data.attributes, app.data.citemattributes, false, null, app.data.number);
+                        let currentValue = await auxMeth.autoParser(dialogProps[attKey].value, app.data.attributes, app.data.citemattributes, false, null, app.data.number);
 
                         dialogProps[attKey].value = parseInt(currentValue) + 1;
 
@@ -1205,7 +1317,7 @@ Hooks.on("renderDialog", async (app, html, data) => {
 
                         let attKey = event.target.parentElement.getAttribute("attkey");
 
-                        let currentValue = await auxMeth.autoParser(dialogProps[attKey].value,app.data.attributes, app.data.citemattributes, false, null, app.data.number);
+                        let currentValue = await auxMeth.autoParser(dialogProps[attKey].value, app.data.attributes, app.data.citemattributes, false, null, app.data.number);
 
                         dialogProps[attKey].value = parseInt(currentValue) - 1;
 

@@ -167,7 +167,8 @@ export class gActorSheet extends ActorSheet {
             await this.actor.update({ [`data.attributes.${attKey}.value`]: stringvalue });
 
             this.actor.sendMsgChat("USES 1 ", property.data.data.tag, "TOTAL: " + newvalue);
-            this._onRollCheck(attId, attKey, null, null, false);
+            if(property.data.data.rollexp!="")
+                this._onRollCheck(attId, attKey, null, null, false);
             //this.actor.sendMsgChat("Utiliza 1",property.data.data.tag, "Le quedan " + newvalue); to  this.actor.sendMsgChat("Uses 1",property.data.data.tag, "Remains " + newvalue);
 
         });
@@ -197,6 +198,11 @@ export class gActorSheet extends ActorSheet {
 
             let attKey = ev.target.parentElement.getAttribute("attKey");
 
+            let arrlock = ev.target.parentElement.getAttribute("arrlock");
+
+            if (arrlock != null && !game.user.isGM)
+                return;
+
             let newvalue = parseInt(attributes[attKey].value) + 1;
 
             let stringvalue = "";
@@ -211,6 +217,11 @@ export class gActorSheet extends ActorSheet {
             const attributes = this.actor.data.data.attributes;
 
             let attKey = ev.target.parentElement.getAttribute("attKey");
+
+            let arrlock = ev.target.parentElement.getAttribute("arrlock");
+
+            if (arrlock != null && !game.user.isGM)
+                return;
 
             let newvalue = parseInt(attributes[attKey].value) - 1;
 
@@ -255,6 +266,17 @@ export class gActorSheet extends ActorSheet {
             this._onRollCheck(attId, attKey, citemId, null, false);
 
         });
+
+        // Alondaar Drag events for macros.
+        if (this.actor.isOwner) {
+            let handler = ev => this._onDragStart(ev);
+            // Find all items on the character sheet.
+            html.find('.rollable').each((i, rollable) => {
+                // Add draggable attribute and dragstart listener.
+                rollable.setAttribute("draggable", true);
+                rollable.addEventListener("dragstart", handler, false);
+            });
+        }
 
         html.find('.customcheck').click(ev => {
             ev.preventDefault();
@@ -320,7 +342,7 @@ export class gActorSheet extends ActorSheet {
                             let diceexpr = html[0].getElementsByClassName("dialog-dice");
                             //console.log(diceexpr[0]);
                             let finalroll = this.actor.rollSheetDice(diceexpr[0].value, "Free Roll", "", this.actor.data.data.attributes, null);
-                            //let finalroll = this.actor.rollSheetDice(rollexp,rollname,rollid,actorattributes,citemattributes,number,tokenid);
+
                         }
                     },
                     two: {
@@ -527,7 +549,60 @@ export class gActorSheet extends ActorSheet {
 
     }
 
-    async generateRollDialog(dialogID, dialogName, rollexp, rollname, rollid, actorattributes, citemattributes, number, rollcitemID, targets, useData) {
+    /* ALONDAAR
+    * Sets up the data transfer within a drag event. This function is triggered
+    * when the user starts dragging any rollable element, and dataTransfer is set to the 
+    * relevant data needed by the _onDrop function.
+    */
+    _onDragStart(event, attrID = null, attKey = null, citemID = null, citemKey = null, ciRoll = false, isFree = false, tableKey = null, useData = null) {
+        // If lazily calling _onDragStart(event) with no other parameters
+        // then assume you want a standard actor property (ID, Key)
+        if (!attrID)
+            attrID = event.currentTarget.getAttribute("attid");
+        if (!attKey)
+            attKey = event.currentTarget.getAttribute("id");
+
+        let propertyItem = game.items.get(attrID);
+        let tag = propertyItem.data.data.tag;
+        // If tag is blank, use the property key instead? could also use the item's name.
+        if (tag == "")
+            tag = propertyItem.data.data.attKey
+        let img = propertyItem.img;
+
+        // Use cItem image and name + property tag
+        if (citemID != null && !isFree) {
+            let cItem = game.items.get(citemID);
+            tag = cItem.name + " " + tag;
+            img = cItem.img;
+        }
+
+        // Use Group or Table img & name?
+        if (isFree) {
+            let tableItem = game.items.contents.find(i => i.data.data.attKey === tableKey);
+            let groupItem = game.items.get(tableItem.data.data.group.id);
+            tag = groupItem.name + " " + tag + " (" + citemID + ")";
+            img = groupItem.img;
+        }
+
+        event.dataTransfer.setData("text/plain", JSON.stringify({
+            type: "rollable",
+            actorId: this.actor.data._id,
+            data: {
+                attrID: attrID,
+                attKey: attKey,
+                citemID: citemID,
+                citemKey: citemKey,
+                ciRoll: ciRoll,
+                isFree: isFree,
+                tableKey: tableKey,
+                useData: useData,
+                tag: tag,
+                img: img
+            }
+        }));
+    }
+
+    async generateRollDialog(dialogID, dialogName, rollexp, rollname, rollid, actorattributes, citemattributes, number, isactive, ciuses, rollcitemID, targets, useData) {
 
         //let dialogPanel = await game.items.get(dialogID);
         let dialogPanel = await auxMeth.getTElement(dialogID, "panel", dialogName);
@@ -659,7 +734,7 @@ export class gActorSheet extends ActorSheet {
 
                         }
                         //console.log(dialogProps);
-                        this.rollExpression(rollexp, rollname, rollid, actorattributes, citemattributes, number, rollcitemID, targets, dialogProps, useData);
+                        this.rollExpression(rollexp, rollname, rollid, actorattributes, citemattributes, number, isactive, ciuses, rollcitemID, targets, dialogProps, useData);
                     }
                 },
                 two: {
@@ -920,6 +995,8 @@ ${dialogPanel.data.data.title}
 
         let findcitem;
         let number;
+        let isactive;
+        let ciuses;
         let rollcitemID;
 
         if (citemID != null) {
@@ -972,14 +1049,18 @@ ${dialogPanel.data.data.title}
 
         let targets = game.user.targets.ids;
 
-        if (findcitem != null)
+        if (findcitem != null) {
             number = findcitem.number;
+            isactive = findcitem.isactive;
+            ciuses = findcitem.uses;
+        }
+
 
         if (hasDialog) {
-            this.generateRollDialog(dialogID, dialogName, rollexp, rollname, rollid, actorattributes, citemattributes, number, rollcitemID, targets, useData);
+            this.generateRollDialog(dialogID, dialogName, rollexp, rollname, rollid, actorattributes, citemattributes, number, isactive, ciuses, rollcitemID, targets, useData);
         }
         else {
-            this.rollExpression(rollexp, rollname, rollid, actorattributes, citemattributes, number, rollcitemID, targets, null, useData)
+            this.rollExpression(rollexp, rollname, rollid, actorattributes, citemattributes, number, isactive, ciuses, rollcitemID, targets, null, useData)
         }
 
 
@@ -987,7 +1068,7 @@ ${dialogPanel.data.data.title}
 
     }
 
-    async rollExpression(rollexp, rollname, rollid, actorattributes, citemattributes, number, rollcitemID, targets, dialogProps = null, useData = null) {
+    async rollExpression(rollexp, rollname, rollid, actorattributes, citemattributes, number, isactive, ciuses, rollcitemID, targets, dialogProps = null, useData = null) {
 
         rollexp = await auxMeth.parseDialogProps(rollexp, dialogProps);
 
@@ -1002,14 +1083,20 @@ ${dialogPanel.data.data.title}
         if (targets.length > 0 && ((rollexp.includes("#{target|") || rollexp.includes("add(")) || rollexp.includes("set("))) {
             for (let i = 0; i < targets.length; i++) {
                 tokenid = canvas.tokens.placeables.find(y => y.id == targets[i]);
-                finalroll = await this.actor.rollSheetDice(rollexp, rollname, rollid, actorattributes, citemattributes, number, tokenid, rollcitemID);
+                //TEST SERE FOR BETTER ROLL RESULTS
+                //finalroll = await this.actor.rollSheetDice(rollexp, rollname, rollid, actorattributes, citemattributes, number, isactive, ciuses, tokenid, rollcitemID);
+                let finalrollprev = await this.actor.rollSheetDice(rollexp, rollname, rollid, actorattributes, citemattributes, number, isactive, ciuses, tokenid, rollcitemID);
+                finalroll = finalrollprev.result;
             }
         }
 
         else {
             if (this.actor.isToken && this.token != null)
                 tokenid = this.token.id;
-            finalroll = await this.actor.rollSheetDice(rollexp, rollname, rollid, actorattributes, citemattributes, number, null, rollcitemID, tokenid);
+            //TEST SERE FOR BETTER ROLL RESULTS
+            //finalroll = await this.actor.rollSheetDice(rollexp, rollname, rollid, actorattributes, citemattributes, number, isactive, ciuses, null, rollcitemID, tokenid);
+            let finalrollprev = await this.actor.rollSheetDice(rollexp, rollname, rollid, actorattributes, citemattributes, number, isactive, ciuses, null, rollcitemID, tokenid);
+            finalroll = finalrollprev.result;
         }
 
         if (useData != null) {
@@ -1383,30 +1470,30 @@ ${dialogPanel.data.data.title}
 
 
             if (tabitem.data.condop == "EQU") {
-                if (tabitem.data.condvalue == "true" || tabitem.data.condvalue == "false" || tabitem.data.condvalue == true || tabitem.data.condvalue == false) {
-                    newElement.insertAdjacentHTML('beforebegin', "{{#if actor.data.attributes." + tabitem.data.condat + attProp + "}}");
-                    newElement.insertAdjacentHTML('afterend', "{{/if}}");
-                }
-                else {
-                    newElement.insertAdjacentHTML('afterbegin', "{{#ifCond actor.data.attributes." + tabitem.data.condat + attProp + " '" + tabitem.data.condvalue + "'}}");
-                    newElement.insertAdjacentHTML('beforeend', "{{/ifCond}}");
-                }
+                // if (tabitem.data.condvalue == "true" || tabitem.data.condvalue == "false" || tabitem.data.condvalue == true || tabitem.data.condvalue == false) {
+                newElement.insertAdjacentHTML('beforebegin', "{{#if actor.data.attributes." + tabitem.data.condat + attProp + "}}");
+                newElement.insertAdjacentHTML('afterend', "{{/if}}");
+                // }
+                // else {
+                //     newElement.insertAdjacentHTML('afterbegin', "{{#ifCond actor.data.attributes." + tabitem.data.condat + attProp + " '" + tabitem.data.condvalue + "'}}");
+                //     newElement.insertAdjacentHTML('beforeend', "{{/ifCond}}");
+                // }
 
             }
 
             else if (tabitem.data.condop == "HIH") {
-                newElement.insertAdjacentHTML('afterbegin', "{{#ifGreater actor.data.attributes." + tabitem.data.condat + attProp + " '" + tabitem.data.condvalue + "'}}");
-                newElement.insertAdjacentHTML('beforeend', "{{/ifGreater}}");
+                newElement.insertAdjacentHTML('beforebegin', "{{#ifGreater actor.data.attributes." + tabitem.data.condat + attProp + " '" + tabitem.data.condvalue + "'}}");
+                newElement.insertAdjacentHTML('afterend', "{{/ifGreater}}");
             }
 
             else if (tabitem.data.condop == "LOW") {
-                newElement.insertAdjacentHTML('afterbegin', "{{#ifLess actor.data.attributes." + tabitem.data.condat + attProp + " '" + tabitem.data.condvalue + "'}}");
-                newElement.insertAdjacentHTML('beforeend', "{{/ifLess}}");
+                newElement.insertAdjacentHTML('beforebegin', "{{#ifLess actor.data.attributes." + tabitem.data.condat + attProp + " '" + tabitem.data.condvalue + "'}}");
+                newElement.insertAdjacentHTML('afterend', "{{/ifLess}}");
             }
 
             else if (tabitem.data.condop == "NOT") {
-                newElement.insertAdjacentHTML('afterbegin', "{{#ifNot actor.data.attributes." + tabitem.data.condat + attProp + " '" + tabitem.data.condvalue + "'}}");
-                newElement.insertAdjacentHTML('beforeend', "{{/ifNot}}");
+                newElement.insertAdjacentHTML('beforebegin', "{{#ifNot actor.data.attributes." + tabitem.data.condat + attProp + " '" + tabitem.data.condvalue + "'}}");
+                newElement.insertAdjacentHTML('afterend', "{{/ifNot}}");
             }
         }
 
@@ -2314,7 +2401,7 @@ ${dialogPanel.data.data.title}
                             sInputMax.setAttribute("value", "{{data.data.attributes." + property.data.attKey + ".max}}");
                         }
 
-                        if (property.data.arrows) {
+                        if (property.data.arrows && !property.data.ishidden) {
                             sInputArrows = deftemplate.createElement("SPAN");
                             let arrContainer = deftemplate.createElement("A");
                             arrContainer.className = "arrcontainer";
@@ -2324,6 +2411,10 @@ ${dialogPanel.data.data.title}
                             arrUp.className = "arrup";
                             let arrDown = deftemplate.createElement("I");
                             arrDown.className = "arrdown";
+
+                            if (!property.data.editable) {
+                                arrContainer.setAttribute("arrlock", true);
+                            }
 
                             arrContainer.appendChild(arrUp);
                             arrContainer.appendChild(arrDown);
@@ -3300,7 +3391,7 @@ ${dialogPanel.data.data.title}
             if (this.actor.id == dropdata.ownerID)
                 return;
 
-            this.showTransferDialog(dropdata.id, dropdata.ownerID);
+            this.showTransferDialog(dropdata.id, dropdata.ownerID, dropdata.tokenID);
             return;
         }
 
@@ -3799,19 +3890,22 @@ ${dialogPanel.data.data.title}
                                                 }
 
                                                 constantvalue = ciTemplate.data.data.attributes[propKey].value;
+                                                if(propdata.auto!="")
+                                                    constantvalue = propdata.auto;
                                                 let cvalueToString = constantvalue.toString();
                                                 let nonumsum = /[#@]{|\%\[|\if\[|\?\[/g;
                                                 let checknonumsum = cvalueToString.match(nonumsum);
                                                 if (checknonumsum)
-                                                    constantvalue = await auxMeth.autoParser(constantvalue, this.actor.data.data.attributes, ciObject.attributes, true, false, ciObject.number);
+                                                    constantvalue = await auxMeth.autoParser(constantvalue, this.actor.data.data.attributes, ciObject.attributes, true, false, ciObject.number,ciObject.uses);
                                             }
 
                                             else {
                                                 constantvalue = propdata.defvalue;
                                             }
-
-                                        if (propdata.auto != "")
-                                            constantvalue = ciObject.attributes[propKey].value;
+                                        
+                                        //AUTO FOR CITEMS CHANGED!!!
+                                        // if (propdata.auto != "")
+                                        //     constantvalue = ciObject.attributes[propKey].value;
 
                                         if (isconstant) {
                                             let cContent = constantvalue;
@@ -3912,6 +4006,12 @@ ${dialogPanel.data.data.title}
                                             }
 
                                             if (propdata.hasroll) {
+                                                // Alondaar Drag events for macros.
+                                                if (this.actor.isOwner) {
+                                                    let handler = ev => this._onDragStart(ev, groupprops[k].id, propdata.attKey, ciObject.id, ciObject.ciKey, false, isFree, tableKey, null);
+                                                    new_cell.setAttribute("draggable", true);
+                                                    new_cell.addEventListener("dragstart", handler, false);
+                                                }
                                                 new_cell.className += " rollable";
                                                 new_cell.addEventListener('click', this._onRollCheck.bind(this, groupprops[k].id, propdata.attKey, ciObject.id, ciObject.ciKey, false, isFree, tableKey, null), false);
                                             }
@@ -4051,6 +4151,10 @@ ${dialogPanel.data.data.title}
                                                     cellvalue.value = constantvalue;
                                                 }
 
+                                                // Set attribute value to the actual value for css selector functionality
+                                                cellvalue.setAttribute("value", cellvalue.value);
+
+
                                                 if (propdata.auto != "") {
 
                                                     cellvalue.setAttribute("readonly", true);
@@ -4112,8 +4216,10 @@ ${dialogPanel.data.data.title}
                             wraptransferCell.title = "Grab Item";
                             wraptransferCell.draggable = "true";
                             transferCell.appendChild(wraptransferCell);
-
-                            transferCell.addEventListener("dragstart", (event) => this.dragcItem(event, ciObject.id, ciObject.number, this.actor.id));
+                            let tokenID;
+                            if(this.token!=null)
+                                tokenID = this.token.id;
+                            transferCell.addEventListener("dragstart", (event) => this.dragcItem(event, ciObject.id, ciObject.number, this.actor.id,tokenID));
                             new_row.appendChild(transferCell);
                         }
 
@@ -4320,21 +4426,28 @@ ${dialogPanel.data.data.title}
         //console.log("refreshcItem finished");
     }
 
-    async dragcItem(ev, iD, number, originiD) {
+    async dragcItem(ev, iD, number, originiD,tokenID=null) {
         ev.stopPropagation();
 
         let ciTemTemplate = game.items.get(iD);
 
-        let dragData = { type: ciTemTemplate, id: iD, ownerID: originiD };
+        let dragData = { type: ciTemTemplate, id: iD, ownerID: originiD, tokenID:tokenID };
         ev.dataTransfer.setData("text/plain", JSON.stringify(dragData));
         this._dragType = dragData.type;
     }
 
-    async showTransferDialog(id, ownerID) {
-        let actorOwner = game.actors.get(ownerID);
+    async showTransferDialog(id, ownerID, tokenID) {
+        let actorOwner;
+        if(tokenID == null){
+            actorOwner = game.actors.get(ownerID);
+        }
+        else{
+            let myToken = canvas.tokens.get(tokenID);
+            actorOwner = myToken.actor;
+        }
         let ownercItems = duplicate(actorOwner.data.data.citems);
         let cItem = ownercItems.find(y => y.id == id);
-        let cItemOrig = game.items.get(id);
+        let cItemOrig = await auxMeth.getcItem(id);
 
         let d = new Dialog({
             title: "Transfer from " + actorOwner.name,
@@ -5028,9 +5141,9 @@ ${dialogPanel.data.data.title}
                             let clickValue = j;
                             radiocontainer.setAttribute("clickValue", clickValue);
                             radiocontainer.className = "radio-element";
-                            radiocontainer.style = "font-size:14px;";
-                            if (radiotype == "S")
-                                radiocontainer.style = "font-size:16px;";
+                            //radiocontainer.style = "font-size:14px;";
+                            //if (radiotype == "S")
+                                //radiocontainer.style = "font-size:16px;";
 
 
                             let radiobutton = document.createElement('i');
@@ -5058,8 +5171,8 @@ ${dialogPanel.data.data.title}
                             }
 
                             radiocontainer.appendChild(radiobutton);
-
-                            radiobutton.addEventListener("click", (event) => this.clickRadioInput(clickValue, propId, event.target));
+                            if (property.data.data.editable || game.user.isGM)
+                                radiobutton.addEventListener("click", (event) => this.clickRadioInput(clickValue, propId, event.target));
 
                             await radioNode.appendChild(radiocontainer);
 
@@ -5144,9 +5257,9 @@ ${dialogPanel.data.data.title}
         //await this.actor.update({"data.attributes":attributes}, {diff: false});
         if (clickValue > 0) {
             target.className = "fas fa-circle";
-            target.style = "font-size:14px;";
+            //target.style = "font-size:14px;";
             if (radiotype == "S") {
-                target.style = "font-size:16px;";
+                //target.style = "font-size:16px;";
                 target.className = "fas fa-square";
             }
         }
@@ -5209,8 +5322,19 @@ ${dialogPanel.data.data.title}
         let displaying = false;
         let displaycounter = 0;
         let fvble = actorsheet._tabs[0].active;
-        if (actorsheet._tabs[0].firstvisible != null)
-            fvble = actorsheet._tabs[0].firstvisible;
+        if (actorsheet._tabs[0].firstvisible != null) {
+            let currentOn;
+            currentOn = tabs.find(y => y.dataset?.tab == actorsheet._tabs[0].firstvisible);
+            tabs.each(async function (i, tab){
+                if(tab.dataset.tab ==actorsheet._tabs[0].firstvisible){
+                    currentOn = tab;
+                }
+            })
+            
+            if (currentOn!=null)
+                fvble = actorsheet._tabs[0].firstvisible;
+        }
+
 
         tabs.each(async function (i, tab) {
 
@@ -5223,7 +5347,7 @@ ${dialogPanel.data.data.title}
                         fvble = prevtab.dataset.tab;
                 }
                 else if (next == "next") {
-                    if (nexttab != null && lasttab!=null)
+                    if (nexttab != null && lasttab != null)
                         fvble = nexttab.dataset.tab;
                 }
                 actorsheet._tabs[0].firstvisible = fvble;
