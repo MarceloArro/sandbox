@@ -167,7 +167,8 @@ export class gActorSheet extends ActorSheet {
             await this.actor.update({ [`data.attributes.${attKey}.value`]: stringvalue });
 
             this.actor.sendMsgChat("USES 1 ", property.data.data.tag, "TOTAL: " + newvalue);
-            this._onRollCheck(attId, attKey, null, null, false);
+            if(property.data.data.rollexp!="")
+                this._onRollCheck(attId, attKey, null, null, false);
             //this.actor.sendMsgChat("Utiliza 1",property.data.data.tag, "Le quedan " + newvalue); to  this.actor.sendMsgChat("Uses 1",property.data.data.tag, "Remains " + newvalue);
 
         });
@@ -3889,19 +3890,22 @@ ${dialogPanel.data.data.title}
                                                 }
 
                                                 constantvalue = ciTemplate.data.data.attributes[propKey].value;
+                                                if(propdata.auto!="")
+                                                    constantvalue = propdata.auto;
                                                 let cvalueToString = constantvalue.toString();
                                                 let nonumsum = /[#@]{|\%\[|\if\[|\?\[/g;
                                                 let checknonumsum = cvalueToString.match(nonumsum);
                                                 if (checknonumsum)
-                                                    constantvalue = await auxMeth.autoParser(constantvalue, this.actor.data.data.attributes, ciObject.attributes, true, false, ciObject.number);
+                                                    constantvalue = await auxMeth.autoParser(constantvalue, this.actor.data.data.attributes, ciObject.attributes, true, false, ciObject.number,ciObject.uses);
                                             }
 
                                             else {
                                                 constantvalue = propdata.defvalue;
                                             }
-
-                                        if (propdata.auto != "")
-                                            constantvalue = ciObject.attributes[propKey].value;
+                                        
+                                        //AUTO FOR CITEMS CHANGED!!!
+                                        // if (propdata.auto != "")
+                                        //     constantvalue = ciObject.attributes[propKey].value;
 
                                         if (isconstant) {
                                             let cContent = constantvalue;
@@ -5319,8 +5323,15 @@ ${dialogPanel.data.data.title}
         let displaycounter = 0;
         let fvble = actorsheet._tabs[0].active;
         if (actorsheet._tabs[0].firstvisible != null) {
-            let currentOn = tabs.find(y => y.id == actorsheet._tabs[0].firstvisible);
-            if (currentOn.length > 0)
+            let currentOn;
+            currentOn = tabs.find(y => y.dataset?.tab == actorsheet._tabs[0].firstvisible);
+            tabs.each(async function (i, tab){
+                if(tab.dataset.tab ==actorsheet._tabs[0].firstvisible){
+                    currentOn = tab;
+                }
+            })
+            
+            if (currentOn!=null)
                 fvble = actorsheet._tabs[0].firstvisible;
         }
 
