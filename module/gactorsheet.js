@@ -4050,9 +4050,7 @@ ${dialogPanel.data.data.title}
                                                 if (ciObject.attributes[propKey].value == "") {
                                                     cellvalue.value = constantvalue;
                                                 }
-                                                // Set attribute value to the actual value for css selector functionality
-                                                cellvalue.setAttribute("value", cellvalue.value);
-                                                
+
                                                 if (propdata.auto != "") {
 
                                                     cellvalue.setAttribute("readonly", true);
