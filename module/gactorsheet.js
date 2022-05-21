@@ -167,7 +167,7 @@ export class gActorSheet extends ActorSheet {
             await this.actor.update({ [`data.attributes.${attKey}.value`]: stringvalue });
 
             this.actor.sendMsgChat("USES 1 ", property.data.data.tag, "TOTAL: " + newvalue);
-            if(property.data.data.rollexp!="")
+            if (property.data.data.rollexp != "")
                 this._onRollCheck(attId, attKey, null, null, false);
             //this.actor.sendMsgChat("Utiliza 1",property.data.data.tag, "Le quedan " + newvalue); to  this.actor.sendMsgChat("Uses 1",property.data.data.tag, "Remains " + newvalue);
 
@@ -3882,6 +3882,7 @@ ${dialogPanel.data.data.title}
                                     else if (propdata.datatype != "radio" && propdata.datatype != "table") {
 
                                         let constantvalue;
+                                        let constantauto=false;
                                         if (propdata.datatype != "label")
                                             if (!isFree) {
                                                 if (ciTemplate.data.data.attributes[propKey] == null) {
@@ -3890,19 +3891,24 @@ ${dialogPanel.data.data.title}
                                                 }
 
                                                 constantvalue = ciTemplate.data.data.attributes[propKey].value;
-                                                if(propdata.auto!="")
+                                                if (propdata.auto != ""){
+                                                    constantauto = true;
                                                     constantvalue = propdata.auto;
+                                                }
                                                 let cvalueToString = constantvalue.toString();
                                                 let nonumsum = /[#@]{|\%\[|\if\[|\?\[/g;
                                                 let checknonumsum = cvalueToString.match(nonumsum);
+                                                constantvalue = await constantvalue.replace(/\#{name}/g, ciObject.name);
+                                                constantvalue = await constantvalue.replace(/\#{active}/g, ciObject.isactive);
+                                                constantvalue = await constantvalue.replace(/\#{uses}/g, ciObject.uses);
                                                 if (checknonumsum)
-                                                    constantvalue = await auxMeth.autoParser(constantvalue, this.actor.data.data.attributes, ciObject.attributes, true, false, ciObject.number,ciObject.uses);
+                                                    constantvalue = await auxMeth.autoParser(constantvalue, this.actor.data.data.attributes, ciObject.attributes, true, false, ciObject.number, ciObject.uses);
                                             }
 
                                             else {
                                                 constantvalue = propdata.defvalue;
                                             }
-                                        
+
                                         //AUTO FOR CITEMS CHANGED!!!
                                         // if (propdata.auto != "")
                                         //     constantvalue = ciObject.attributes[propKey].value;
@@ -4145,11 +4151,12 @@ ${dialogPanel.data.data.title}
                                                 cellvalue.setAttribute("readonly", true);
 
                                             if (propdata.datatype != "checkbox") {
-                                                cellvalue.value = ciObject.attributes[propKey].value;
 
-                                                if (ciObject.attributes[propKey].value == "") {
-                                                    cellvalue.value = constantvalue;
+                                                if (ciObject.attributes[propKey].value == "" || constantauto) {
+                                                    ciObject.attributes[propKey].value = constantvalue;
                                                 }
+
+                                                cellvalue.value = ciObject.attributes[propKey].value;
 
                                                 // Set attribute value to the actual value for css selector functionality
                                                 cellvalue.setAttribute("value", cellvalue.value);
@@ -4217,9 +4224,9 @@ ${dialogPanel.data.data.title}
                             wraptransferCell.draggable = "true";
                             transferCell.appendChild(wraptransferCell);
                             let tokenID;
-                            if(this.token!=null)
+                            if (this.token != null)
                                 tokenID = this.token.id;
-                            transferCell.addEventListener("dragstart", (event) => this.dragcItem(event, ciObject.id, ciObject.number, this.actor.id,tokenID));
+                            transferCell.addEventListener("dragstart", (event) => this.dragcItem(event, ciObject.id, ciObject.number, this.actor.id, tokenID));
                             new_row.appendChild(transferCell);
                         }
 
@@ -4426,22 +4433,22 @@ ${dialogPanel.data.data.title}
         //console.log("refreshcItem finished");
     }
 
-    async dragcItem(ev, iD, number, originiD,tokenID=null) {
+    async dragcItem(ev, iD, number, originiD, tokenID = null) {
         ev.stopPropagation();
 
         let ciTemTemplate = game.items.get(iD);
 
-        let dragData = { type: ciTemTemplate, id: iD, ownerID: originiD, tokenID:tokenID };
+        let dragData = { type: ciTemTemplate, id: iD, ownerID: originiD, tokenID: tokenID };
         ev.dataTransfer.setData("text/plain", JSON.stringify(dragData));
         this._dragType = dragData.type;
     }
 
     async showTransferDialog(id, ownerID, tokenID) {
         let actorOwner;
-        if(tokenID == null){
+        if (tokenID == null) {
             actorOwner = game.actors.get(ownerID);
         }
-        else{
+        else {
             let myToken = canvas.tokens.get(tokenID);
             actorOwner = myToken.actor;
         }
@@ -4649,8 +4656,13 @@ ${dialogPanel.data.data.title}
         //console.log(value);
 
         if (propObj.data.data.datatype != "checkbox") {
+            if (propObj.data.data.automax != "") {
+                let ciMax = await auxMeth.autoParser(propObj.data.data.automax, this.actor.data.data.attributes, citem.attributes, false);
+                if (value > ciMax) {
+                    value = ciMax;
+                }
+            }
             citem.attributes[propKey].value = value;
-
         }
 
         else {
@@ -5143,7 +5155,7 @@ ${dialogPanel.data.data.title}
                             radiocontainer.className = "radio-element";
                             //radiocontainer.style = "font-size:14px;";
                             //if (radiotype == "S")
-                                //radiocontainer.style = "font-size:16px;";
+                            //radiocontainer.style = "font-size:16px;";
 
 
                             let radiobutton = document.createElement('i');
@@ -5202,26 +5214,11 @@ ${dialogPanel.data.data.title}
     }
 
     async addHeaderButtons(basehtml) {
-        // const headerElm = await basehtml.find(".window-header");
+        
+    }
 
-        // if (headerElm.length == 0)
-        //     return;
-
-        // let atagEl = document.createElement('a');
-        // atagEl.className = "header-button hide-template";
-
-        // let imgEl = document.createElement('i');
-        // imgEl.className = "far fa-eye";
-        // imgEl.textContent = "Hide";
-
-        // atagEl.appendChild(imgEl);
-
-        // headerElm[0].insertBefore(atagEl, headerElm[0].children[0].nextSibling);
-
-        // imgEl.addEventListener("click", async (event) => {
-        //     event.preventDefault();
-        //     console.log("muestrate");
-        // });
+    async customCallOverride(basehtml) {
+        
     }
 
     //Set external images
@@ -5325,13 +5322,13 @@ ${dialogPanel.data.data.title}
         if (actorsheet._tabs[0].firstvisible != null) {
             let currentOn;
             currentOn = tabs.find(y => y.dataset?.tab == actorsheet._tabs[0].firstvisible);
-            tabs.each(async function (i, tab){
-                if(tab.dataset.tab ==actorsheet._tabs[0].firstvisible){
+            tabs.each(async function (i, tab) {
+                if (tab.dataset.tab == actorsheet._tabs[0].firstvisible) {
                     currentOn = tab;
                 }
             })
-            
-            if (currentOn!=null)
+
+            if (currentOn != null)
                 fvble = actorsheet._tabs[0].firstvisible;
         }
 
