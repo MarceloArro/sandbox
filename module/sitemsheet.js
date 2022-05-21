@@ -936,6 +936,10 @@ export class sItemSheet extends ItemSheet {
         //this.item.update(this.item.data);
     }
 
+    async customCallOverride(basehtml,data){
+
+    }
+
     async scrollBarTest(basehtml) {
         const wcontent = await this._element[0].getElementsByClassName("window-content");
         let newheight = parseInt(wcontent[0].offsetHeight) - 152;
