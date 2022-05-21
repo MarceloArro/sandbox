@@ -423,7 +423,7 @@ Hooks.once("init", async function () {
         return newObj;
     };
 
-    /*     JournalEntry.prototype.show = async function (mode = "text", force = false) {
+         JournalEntry.prototype.show = async function (mode = "text", force = false) {
         if (!this.isOwner) throw new Error("You may only request to show Journal Entries which you own.");
         return new Promise((resolve) => {
             game.socket.emit("showEntry", this.uuid, mode, force, entry => {
@@ -436,7 +436,7 @@ Hooks.once("init", async function () {
                 return resolve(this);
             });
         });
-    }; */
+    }; 
 
     CONFIG.Combat.initiative = {
         formula: "1d20",
@@ -871,6 +871,8 @@ Hooks.on("createItem", async (entity) => {
 Hooks.on("rendersItemSheet", async (app, html, data) => {
     //console.log(app);
 
+    app.customCallOverride(html,app.object.data);
+
     if (app.object.data.type == "cItem") {
         app.refreshCIAttributes(html);
     }
@@ -908,6 +910,7 @@ Hooks.on("rendergActorSheet", async (app, html, data) => {
         app.setImages(html);
         app.setCheckboxImages(html);
         app.addHeaderButtons(html);
+        app.customCallOverride(html);
         await app.setSheetStyle(actor);
         //app.scrollBarLoad(html);
 
@@ -1373,7 +1376,7 @@ Hooks.on("renderDialog", async (app, html, data) => {
                     if (changeProp == null)
                         return;
 
-                    if (changeProp.data.data.datatype = "checkbox")
+                    if (changeProp.data.data.datatype == "checkbox")
                         changedvalue = event.target.checked;
 
                     dialogProps[changekey].value = changedvalue;
