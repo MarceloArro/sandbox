@@ -1575,7 +1575,8 @@
     font-weight: bold;
     font-size: 12px;
     text-align:center;
-    height:20px;
+    height:10%;
+    min-height: 20px;
     width:100%;
     padding: 3px 3px;
 
@@ -1587,7 +1588,8 @@
     text-align:center;
     width:100%;
     padding:5px 5px;
-    height:70px;
+    height:10%;
+    min-height: 74px;
 }
 
 .roll-iscrit{
