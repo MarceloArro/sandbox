@@ -2356,11 +2356,12 @@ export class gActor extends Actor {
                     continue;
 
                 let totalGroupID = tableObj.data.data.group.id;
+                let totalGroupIKey = tableObj.data.data.group.ikey;
                 //FREE TABLE AUTO PROP CALCULATION
                 if (t_Prop.tableitems != null) {
 
                     //let groupObj = game.items.get(totalGroupID);
-                    let groupObj = await auxMeth.getTElement(totalGroupID, "group", tableObj.data.data.group.ikey);
+                    let groupObj = await auxMeth.getTElement(totalGroupID, "group", totalGroupIKey);
                     if (groupObj == null)
                         continue;
                     let groupProps = groupObj.data.data.properties;
@@ -2388,7 +2389,7 @@ export class gActor extends Actor {
                 let gcitems;
 
                 if (!tableObj.data.data.isfreetable) {
-                    gcitems = await citemIDs.filter(y => y.groups.filter(x => x.id == totalGroupID));
+                    gcitems = await citemIDs.filter(y => y.groups.some(x => x.ikey == totalGroupIKey));
                 }
                 else {
                     gcitems = t_Prop.tableitems;
