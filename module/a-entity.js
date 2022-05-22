@@ -249,8 +249,13 @@ export class gActor extends Actor {
                 if (actorData.attributes[key].istable && hasProperty(attributes[key], "tableitems"))
                     actorData.attributes[key].tableitems = attributes[key].tableitems;
 
-                if (actorData.attributes[key].istable && hasProperty(attributes[key], "totals"))
-                    actorData.attributes[key].totals = attributes[key].totals;
+                if (actorData.attributes[key].istable && hasProperty(attributes[key], "totals")){
+                    for (var totkey in attributes[key].totals){
+                        actorData.attributes[key].totals[totkey] = attributes[key].totals[totkey];
+                    }
+                    
+                }
+                    
             }
             else {
                 //console.log("adding " + key)
