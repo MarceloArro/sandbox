@@ -2,7 +2,7 @@
     "name": "sandbox",
     "title": "Sandbox System Builder",
     "description": "Custom system builder to build character sheets and rulesets for any game.",
-    "version": "0.13.0",
+    "version": "0.13.1",
     "minimumCoreVersion": "9",
     "compatibleCoreVersion": "9",
     "templateVersion": 1,
