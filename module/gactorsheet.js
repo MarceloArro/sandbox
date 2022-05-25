@@ -2122,6 +2122,7 @@ ${dialogPanel.data.data.title}
 
                     let badgelabel = deftemplate.createElement("LABEL");
                     badgelabel.className = "badgelabel";
+                    badgelabel.className += " badgelabel-" + property.data.attKey;
                     badgelabel.textContent = property.data.tag;
 
                     if (property.data.tooltip != null)
@@ -3882,7 +3883,7 @@ ${dialogPanel.data.data.title}
                                     else if (propdata.datatype != "radio" && propdata.datatype != "table") {
 
                                         let constantvalue;
-                                        let constantauto=false;
+                                        let constantauto = false;
                                         if (propdata.datatype != "label")
                                             if (!isFree) {
                                                 if (ciTemplate.data.data.attributes[propKey] == null) {
@@ -3891,18 +3892,24 @@ ${dialogPanel.data.data.title}
                                                 }
 
                                                 constantvalue = ciTemplate.data.data.attributes[propKey].value;
-                                                if (propdata.auto != ""){
+                                                if (propdata.auto != "") {
                                                     constantauto = true;
                                                     constantvalue = propdata.auto;
                                                 }
                                                 let cvalueToString = constantvalue.toString();
                                                 let nonumsum = /[#@]{|\%\[|\if\[|\?\[/g;
                                                 let checknonumsum = cvalueToString.match(nonumsum);
-                                                constantvalue = await constantvalue.replace(/\#{name}/g, ciObject.name);
-                                                constantvalue = await constantvalue.replace(/\#{active}/g, ciObject.isactive);
-                                                constantvalue = await constantvalue.replace(/\#{uses}/g, ciObject.uses);
-                                                if (checknonumsum)
-                                                    constantvalue = await auxMeth.autoParser(constantvalue, this.actor.data.data.attributes, ciObject.attributes, true, false, ciObject.number, ciObject.uses);
+
+                                                let justexpr = true;
+                                                if (propdata.datatype == "simplenumeric")
+                                                    justexpr = false;
+                                                if (checknonumsum) {
+                                                    constantvalue = await constantvalue.replace(/\#{name}/g, ciObject.name);
+                                                    constantvalue = await constantvalue.replace(/\#{active}/g, ciObject.isactive);
+                                                    constantvalue = await constantvalue.replace(/\#{uses}/g, ciObject.uses);
+                                                    constantvalue = await auxMeth.autoParser(constantvalue, this.actor.data.data.attributes, ciObject.attributes, justexpr, false, ciObject.number, ciObject.uses);
+                                                }
+
                                             }
 
                                             else {
@@ -5214,11 +5221,11 @@ ${dialogPanel.data.data.title}
     }
 
     async addHeaderButtons(basehtml) {
-        
+
     }
 
     async customCallOverride(basehtml) {
-        
+
     }
 
     //Set external images
@@ -5330,6 +5337,9 @@ ${dialogPanel.data.data.title}
 
             if (currentOn != null)
                 fvble = actorsheet._tabs[0].firstvisible;
+
+            if (nonbio && actorsheet._tabs[0].firstvisible == "description")
+                fvble = actorsheet._tabs[0].active;
         }
 
 
