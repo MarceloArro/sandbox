@@ -106,6 +106,22 @@ export class sItemSheet extends ItemSheet {
             this.adnewCIMod();
         });
 
+        html.find('.check-hasuses').click(ev => {
+            let activated = this._element[0].getElementsByClassName("check-hasactivation");
+            const value = ev.target.checked;
+            if (value)
+                activated[0].checked = true;
+
+        });
+
+        html.find('.check-hasactivation').click(ev => {
+            let uses = this._element[0].getElementsByClassName("check-hasuses");
+            const value = ev.target.checked;
+            if (!value)
+                uses[0].checked = false;
+
+        });
+
         html.find('.checkonPath').click(ev => {
 
             new FilePicker({
@@ -936,7 +952,7 @@ export class sItemSheet extends ItemSheet {
         //this.item.update(this.item.data);
     }
 
-    async customCallOverride(basehtml,data){
+    async customCallOverride(basehtml, data) {
 
     }
 
