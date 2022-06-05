@@ -249,13 +249,13 @@ export class gActor extends Actor {
                 if (actorData.attributes[key].istable && hasProperty(attributes[key], "tableitems"))
                     actorData.attributes[key].tableitems = attributes[key].tableitems;
 
-                if (actorData.attributes[key].istable && hasProperty(attributes[key], "totals")){
-                    for (var totkey in attributes[key].totals){
+                if (actorData.attributes[key].istable && hasProperty(attributes[key], "totals")) {
+                    for (var totkey in attributes[key].totals) {
                         actorData.attributes[key].totals[totkey] = attributes[key].totals[totkey];
                     }
-                    
+
                 }
-                    
+
             }
             else {
                 //console.log("adding " + key)
@@ -688,7 +688,7 @@ export class gActor extends Actor {
                                 let jumpmod = await this.checkModConditional(this.data, addsetmods[i], _basecitem);
                                 //console.log("cItem NO cumple condicional: " + jumpmod);
                                 if (((toRemove.isactive && !toRemoveObj.ispermanent) || (toRemoveObj.usetype == "PAS" && !toRemoveObj.selfdestruct)) && !jumpmod) {
-                                    
+
                                     let pdatatype = seedprop?.data.data.datatype || "other";
 
                                     if (pdatatype == "list") {
@@ -1722,6 +1722,8 @@ export class gActor extends Actor {
                     //console.log(mods);
 
                     const _basecitem = await citemIDs.find(y => y.id == mod.citem && y.mods.find(x => x.index == mod.index));
+                    if (_basecitem == null)
+                        break;
                     const _mod = await _basecitem.mods.find(x => x.index == mod.index);
                     const _origmod = await _citem.mods.find(x => x.index == mod.index);
 
@@ -2276,6 +2278,9 @@ export class gActor extends Actor {
                             let propauto = propdata.data.data.auto;
 
                             if (propauto != "") {
+                                propauto = await propauto.replace(/\#{name}/g, citemIDs[n].name);
+                                propauto = await propauto.replace(/\#{active}/g, citemIDs[n].isactive);
+                                propauto = await propauto.replace(/\#{uses}/g, citemIDs[n].uses);
                                 let rawvalue = await auxMeth.autoParser(propauto, attributes, citmAttr, false, false, citmNum);
 
                                 if (isNaN(rawvalue) && propdata.data.data.datatype != "simpletext") {
@@ -3831,9 +3836,9 @@ export class gActor extends Actor {
             msgid: null
         };
 
-        
 
-        if (!nochat){
+
+        if (!nochat) {
             let newhtml = await renderTemplate("systems/sandbox/templates/dice.html", rollData);
             let rolltype = document.getElementsByClassName("roll-type-select");
             let rtypevalue = rolltype[0].value;
@@ -3869,7 +3874,7 @@ export class gActor extends Actor {
 
             //}
         }
-        
+
         //console.log(initiative);
         if (initiative) {
             await this.setInit(rollData.result, tokenID);
