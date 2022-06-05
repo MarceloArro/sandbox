@@ -115,7 +115,7 @@ Hooks.once("init", async function () {
      * @type {String}
      */
 
-    CONFIG.debug.hooks = true;
+    //CONFIG.debug.hooks = true;
     CONFIG.Actor.documentClass = gActor;
     CONFIG.Item.documentClass = gItem;
     CONFIG.Token.documentClass = sToken;
@@ -423,7 +423,7 @@ Hooks.once("init", async function () {
         return newObj;
     };
 
-    /*     JournalEntry.prototype.show = async function (mode = "text", force = false) {
+         JournalEntry.prototype.show = async function (mode = "text", force = false) {
         if (!this.isOwner) throw new Error("You may only request to show Journal Entries which you own.");
         return new Promise((resolve) => {
             game.socket.emit("showEntry", this.uuid, mode, force, entry => {
@@ -436,7 +436,7 @@ Hooks.once("init", async function () {
                 return resolve(this);
             });
         });
-    }; */
+    }; 
 
     CONFIG.Combat.initiative = {
         formula: "1d20",
@@ -871,6 +871,8 @@ Hooks.on("createItem", async (entity) => {
 Hooks.on("rendersItemSheet", async (app, html, data) => {
     //console.log(app);
 
+    app.customCallOverride(html,app.object.data);
+
     if (app.object.data.type == "cItem") {
         app.refreshCIAttributes(html);
     }
@@ -908,6 +910,7 @@ Hooks.on("rendergActorSheet", async (app, html, data) => {
         app.setImages(html);
         app.setCheckboxImages(html);
         app.addHeaderButtons(html);
+        app.customCallOverride(html);
         await app.setSheetStyle(actor);
         //app.scrollBarLoad(html);
 
@@ -939,6 +942,7 @@ Hooks.on("renderChatMessage", async (app, html, data) => {
 
     let _html = await html[0].outerHTML;
     let realuser = game.users.get(data.message.user);
+    let alias = data.alias;
     //
     //    if(((data.cssClass == "whisper")||(data.message.type==1)) && game.user.id!=data.message.user && !game.user.isgM)
     //        hide=true;
@@ -950,7 +954,7 @@ Hooks.on("renderChatMessage", async (app, html, data) => {
                 img: "icons/svg/d20-black.svg",
                 name: "Free Roll"
             },
-            actor: realuser.data.name,
+            actor: alias,
             flavor: "Roll",
             formula: app._roll.formula,
             mod: 0,
@@ -989,7 +993,7 @@ Hooks.on("renderChatMessage", async (app, html, data) => {
 
         let msgData = {
             message: data.message.content,
-            user: realuser.data.name,
+            user: alias,
             isWhisper: data.isWhisper,
             whisperTo: data.whisperTo
         };
@@ -1373,7 +1377,7 @@ Hooks.on("renderDialog", async (app, html, data) => {
                     if (changeProp == null)
                         return;
 
-                    if (changeProp.data.data.datatype = "checkbox")
+                    if (changeProp.data.data.datatype == "checkbox")
                         changedvalue = event.target.checked;
 
                     dialogProps[changekey].value = changedvalue;
