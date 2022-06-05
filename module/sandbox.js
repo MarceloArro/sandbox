@@ -115,7 +115,7 @@ Hooks.once("init", async function () {
      * @type {String}
      */
 
-    CONFIG.debug.hooks = true;
+    //CONFIG.debug.hooks = true;
     CONFIG.Actor.documentClass = gActor;
     CONFIG.Item.documentClass = gItem;
     CONFIG.Token.documentClass = sToken;
@@ -942,6 +942,7 @@ Hooks.on("renderChatMessage", async (app, html, data) => {
 
     let _html = await html[0].outerHTML;
     let realuser = game.users.get(data.message.user);
+    let alias = data.alias;
     //
     //    if(((data.cssClass == "whisper")||(data.message.type==1)) && game.user.id!=data.message.user && !game.user.isgM)
     //        hide=true;
@@ -953,7 +954,7 @@ Hooks.on("renderChatMessage", async (app, html, data) => {
                 img: "icons/svg/d20-black.svg",
                 name: "Free Roll"
             },
-            actor: realuser.data.name,
+            actor: alias,
             flavor: "Roll",
             formula: app._roll.formula,
             mod: 0,
@@ -992,7 +993,7 @@ Hooks.on("renderChatMessage", async (app, html, data) => {
 
         let msgData = {
             message: data.message.content,
-            user: realuser.data.name,
+            user: alias,
             isWhisper: data.isWhisper,
             whisperTo: data.whisperTo
         };
