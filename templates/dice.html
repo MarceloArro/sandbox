@@ -32,6 +32,7 @@
         {{/if}}
 
         <div class="roll-result">
+            {{#if showresult}}
             {{#if iscrit}}
             <div class="roll-iscrit">
                 {{{result}}}
@@ -45,7 +46,7 @@
             {{{result}}}
             {{/if}}
             {{/if}}
-
+            {{/if}}
 
             {{#if conditional}}
             <div class="roll-conditional">
