@@ -115,7 +115,7 @@ Hooks.once("init", async function () {
      * @type {String}
      */
 
-    //CONFIG.debug.hooks = true;
+    CONFIG.debug.hooks = true;
     CONFIG.Actor.documentClass = gActor;
     CONFIG.Item.documentClass = gItem;
     CONFIG.Token.documentClass = sToken;
@@ -960,7 +960,8 @@ Hooks.on("renderChatMessage", async (app, html, data) => {
             mod: 0,
             result: app._roll.total,
             dice: app._roll.dice,
-            user: realuser.data.name
+            user: realuser.data.name,
+            showresult: true
         };
 
 
@@ -1037,7 +1038,7 @@ Hooks.on("renderChatMessage", async (app, html, data) => {
         hide = true;
     }
 
-    if (!game.user.isGM && hide) {
+    if (!game.user.isGM && hide && (game.user.id != data.author.id )) {
         //console.log(html);
         //console.log(_html);
         html.hide();
