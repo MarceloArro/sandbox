@@ -1080,6 +1080,9 @@ ${dialogPanel.data.data.title}
 
         let finalroll;
 
+        //PARSE actor name
+        rollexp = await rollexp.replace(/\#{actor}/g, this.actor.name);
+
         if (targets.length > 0 && ((rollexp.includes("#{target|") || rollexp.includes("add(")) || rollexp.includes("set("))) {
             for (let i = 0; i < targets.length; i++) {
                 tokenid = canvas.tokens.placeables.find(y => y.id == targets[i]);
@@ -2212,10 +2215,20 @@ ${dialogPanel.data.data.title}
 
                 else if (property.data.datatype === "button") {
                     sInput = deftemplate.createElement("a");
-                    sInput.className = "sbbutton";
+                    if (property.data.labelformat != "D") {
+                        sInput.className = "sbbutton";
+                    }
+
                     let buttonContent = deftemplate.createElement("i");
+
                     buttonContent.className = property.data.attKey + "_button macrobutton";
-                    buttonContent.textContent = property.data.tag;
+                    if (property.data.labelformat != "D") {
+                        buttonContent.textContent = property.data.tag;
+                    }
+                    else {
+                        buttonContent.className += " fas fa-dice-d20 ";
+                    }
+
                     buttonContent.setAttribute("macroid", property.data.macroid);
                     sInput.appendChild(buttonContent);
                 }
@@ -2310,6 +2323,8 @@ ${dialogPanel.data.data.title}
 
                                 //let propTable = game.items.get(groupprops[i].id);
                                 let propTable = await auxMeth.getTElement(groupprops[i].id, "property", groupprops[i].ikey);
+                                if (propTable == null)
+                                    break;
                                 let hCell = deftemplate.createElement("TH");
 
                                 hCell.className = "input-med";
@@ -3890,7 +3905,7 @@ ${dialogPanel.data.data.title}
                                                     ui.notifications.warn("Inconsistent cItem. Please remove and readd cItem " + ciTemplate.data.name + " to Actor");
                                                     console.log(propKey + " fails from " + ciTemplate.data.name);
                                                 }
-
+                                                //REDUNDANT MUCH LIKELY - CONSTANTVALUE MIGHT NOT BE NEEDED
                                                 constantvalue = ciTemplate.data.data.attributes[propKey].value;
                                                 if (propdata.auto != "") {
                                                     constantauto = true;
@@ -3903,6 +3918,7 @@ ${dialogPanel.data.data.title}
                                                 let justexpr = true;
                                                 if (propdata.datatype == "simplenumeric")
                                                     justexpr = false;
+                                                //REDUNDANT MUCH LIKELY
                                                 if (checknonumsum) {
                                                     constantvalue = await constantvalue.replace(/\#{name}/g, ciObject.name);
                                                     constantvalue = await constantvalue.replace(/\#{active}/g, ciObject.isactive);
@@ -4436,7 +4452,7 @@ ${dialogPanel.data.data.title}
         }
 
         if (forceUpdate)
-            this.actor.update({ "data.citems": citems });
+            await this.actor.update({ "data.citems": citems });
         //console.log("refreshcItem finished");
     }
 
