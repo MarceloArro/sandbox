@@ -17,6 +17,6 @@
     "primaryTokenAttribute": "health",
     "secondaryTokenAttribute": "power",
     "url": "https://gitlab.com/rolnl/sandbox-system-builder/",
-    "manifest": "https://gitlab.com/rolnl/sandbox-system-builder/raw/master/system.json",
-    "download": "https://gitlab.com/rolnl/sandbox-system-builder/-/archive/master/sandbox-master.zip"
+    "manifest": "https://gitlab.com/rolnl/sandbox-system-builder/raw/dev_0.13.4/system.json",
+    "download": "https://gitlab.com/rolnl/sandbox-system-builder/-/archive/dev_0.13.4/sandbox-master.zip"
 }
