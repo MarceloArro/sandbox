@@ -2773,8 +2773,8 @@ export class gActor extends Actor {
                 //console.log("calculating auto " + _rawattname + " " + _attAuto);
 
                 //let propertybase = await game.items.filter(y => y.data.type == "property" && y.data.data.attKey == _rawattname);
-                let propertybase = await auxMeth.getTElement(null, "property", _rawattname);
-                let property = propertybase[0];
+                let property = await auxMeth.getTElement(null, "property", _rawattname);
+                //let property = propertybase[0];
 
                 //                if(attributes[_rawattname]==null)
                 //                    ui.notifications.warn("Attribute " + _rawattname + " used in expression not found in actor");
