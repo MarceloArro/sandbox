@@ -1,5 +1,5 @@
 {
-    "name": "sandbox",
+    "id": "sandbox",
     "title": "Sandbox System Builder",
     "description": "Custom system builder to build character sheets and rulesets for any game.",
     "version": "0.13.4",
