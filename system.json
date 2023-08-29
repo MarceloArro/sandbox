@@ -20,7 +20,7 @@
     "gridUnits": "ft",
     "primaryTokenAttribute": "health",
     "secondaryTokenAttribute": "power",
-    "download": "https://gitlab.com/rolnl/sandbox-system-builder/-/archive/dev_0.13.4/sandbox-master.zip",
+    "download": "https://github.com/MarceloArro/sandbox/raw/master/build/sandbox-system-builder-dev_0.13.4-420e6a766d7fae929b362c2e93b55c45a003e02a.zip",
     "manifest": "https://raw.githubusercontent.com/MarceloArro/sandbox/master/system.json"
 
 }
