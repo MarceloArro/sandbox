@@ -19,6 +19,8 @@
     "gridDistance": 5,
     "gridUnits": "ft",
     "primaryTokenAttribute": "health",
-    "secondaryTokenAttribute": "power"
+    "secondaryTokenAttribute": "power",
+    "download": "https://gitlab.com/rolnl/sandbox-system-builder/-/archive/dev_0.13.4/sandbox-master.zip",
+    "manifest": "https://raw.githubusercontent.com/MarceloArro/sandbox/master/system.json"
 
 }
